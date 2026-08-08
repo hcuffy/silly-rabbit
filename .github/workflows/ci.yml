@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  leakcheck-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # .leakcheck holds real target patterns (app name, hostname, routes) and
+      # must never be tracked — the local pre-commit hook is the actual leak
+      # guard; this just protects the blocklist itself from ending up public.
+      - run: |
+          if git ls-files | grep -qi leakcheck; then
+            echo ".leakcheck is tracked — must stay untracked/local-only." >&2
+            git ls-files | grep -i leakcheck >&2
+            exit 1
+          fi
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm --filter @silly-rabbit/driver exec playwright install --with-deps chromium
+
+      - run: pnpm run typecheck
+
+      # Root `tsc -b` excludes packages/frontend (it needs Vite's `bundler`
+      # module resolution, incompatible with the rest of the repo's NodeNext) —
+      # this is the only step that actually typechecks + builds it.
+      - run: pnpm --filter @silly-rabbit/frontend run build
+
+      - run: pnpm lint
+
+      - run: pnpm -r run test

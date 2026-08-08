@@ -1,0 +1,23 @@
+{
+  "name": "@silly-rabbit/explorer",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@silly-rabbit/engine": "workspace:*",
+    "@silly-rabbit/shared": "workspace:*",
+    "playwright": "^1.60.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@silly-rabbit/driver": "workspace:*",
+    "typescript": "^5.6.0",
+    "vitest": "^4.0.0"
+  }
+}

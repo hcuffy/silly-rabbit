@@ -1,0 +1,40 @@
+#!/bin/sh
+# Block commits containing patterns from .leakcheck (case-insensitive).
+# Fail closed: no .leakcheck -> block commit, don't silently pass.
+
+REPO_ROOT=$(git rev-parse --show-toplevel)
+LEAKCHECK="$REPO_ROOT/.leakcheck"
+
+if [ ! -f "$LEAKCHECK" ]; then
+  echo "pre-commit: .leakcheck missing — refusing to commit (fail closed)." >&2
+  exit 1
+fi
+
+STAGED=$(git diff --cached --name-only --diff-filter=ACM)
+[ -z "$STAGED" ] && exit 0
+
+FOUND=0
+while IFS= read -r pattern; do
+  [ -z "$pattern" ] && continue
+  case "$pattern" in \#*) continue ;; esac
+  while IFS= read -r file; do
+    [ -z "$file" ] && continue
+    [ -f "$file" ] || continue
+    MATCHES=$(git show ":$file" 2>/dev/null | grep -inF -- "$pattern")
+    if [ -n "$MATCHES" ]; then
+      FOUND=1
+      echo "$MATCHES" | while IFS= read -r line; do
+        echo "pre-commit: leak pattern '$pattern' in $file: $line" >&2
+      done
+    fi
+  done <<EOF
+$STAGED
+EOF
+done < "$LEAKCHECK"
+
+if [ "$FOUND" -eq 1 ]; then
+  echo "pre-commit: blocked — leaked pattern(s) found in staged files." >&2
+  exit 1
+fi
+
+exit 0

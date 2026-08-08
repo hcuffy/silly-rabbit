@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.env
+*.log
+.DS_Store
+coverage/
+*.tsbuildinfo
+.silly-rabbit/
+repro-specs/
+screenshots/
+docs/*
+Milestones.md
+.leakcheck
+!docs/about.md
+!docs/developer-wiki.md
