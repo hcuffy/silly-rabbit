@@ -40,12 +40,12 @@ export function CycleCard({
       {cycle.status === "active" && (
         <div className="cycle-card__actions">
           {!isActive && (
-            <button type="button" disabled={isActivating} onClick={onActivate}>
+            <button type="button" className="button button--secondary" disabled={isActivating} onClick={onActivate}>
               Set active
             </button>
           )}
           {!cycle.isDefault && (
-            <button type="button" className="button-danger" disabled={isArchiving} onClick={onArchive}>
+            <button type="button" className="button button--destructive" disabled={isArchiving} onClick={onArchive}>
               Archive
             </button>
           )}

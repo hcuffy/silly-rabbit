@@ -23,8 +23,10 @@ export function FindingCard({ finding, isActive = false }: { finding: Finding; i
   const hasPixelDiffInputs = Boolean(finding.beforeScreenshotPath && finding.screenshotPath);
   const { data: pixelDiffScore } = usePixelDiff(finding.id, hasPixelDiffInputs);
 
+  const verdictClass = finding.verdict ? ` finding-card--verdict-${finding.verdict.toLowerCase()}` : "";
+
   return (
-    <li className={`finding-card${isActive ? " finding-card--active" : ""}`}>
+    <li className={`finding-card${verdictClass}${isActive ? " finding-card--active" : ""}`}>
       <div className="finding-card__header">
         <span className="finding-card__type">{finding.type}</span>
         {finding.verdict && (

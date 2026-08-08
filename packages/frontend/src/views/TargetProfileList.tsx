@@ -112,17 +112,18 @@ export function TargetProfileList() {
                   <td className="target-profile-list__actions">
                     <button
                       type="button"
+                      className="button button--secondary"
                       disabled={activateMutation.isPending || deactivateMutation.isPending}
                       onClick={() => void handleToggleActive(profile.id)}
                     >
                       {isActive ? "Deactivate" : "Activate"}
                     </button>
-                    <button type="button" onClick={() => setEditingId(profile.id)}>
+                    <button type="button" className="button button--secondary" onClick={() => setEditingId(profile.id)}>
                       Edit
                     </button>
                     <button
                       type="button"
-                      className="button-danger"
+                      className="button button--destructive"
                       disabled={deleteMutation.isPending}
                       onClick={() => void handleDelete(profile.id, profile.name)}
                     >

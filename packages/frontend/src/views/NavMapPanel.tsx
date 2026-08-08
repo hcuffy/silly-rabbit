@@ -72,11 +72,21 @@ export function NavMapPanel() {
       />
 
       <div className="nav-map-panel__actions">
-        <button type="button" disabled={!isValidUrl(baseUrlInput) || crawlMutation.isPending} onClick={handleCrawl}>
+        <button
+          type="button"
+          className="button button--primary"
+          disabled={!isValidUrl(baseUrlInput) || crawlMutation.isPending}
+          onClick={handleCrawl}
+        >
           {crawlMutation.isPending ? "Crawling…" : "Crawl"}
         </button>
         {navMap && (
-          <button type="button" className="button-danger" disabled={deleteMutation.isPending} onClick={() => void handleDelete()}>
+          <button
+            type="button"
+            className="button button--destructive"
+            disabled={deleteMutation.isPending}
+            onClick={() => void handleDelete()}
+          >
             {deleteMutation.isPending ? "Deleting…" : "Delete map"}
           </button>
         )}

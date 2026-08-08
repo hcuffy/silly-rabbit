@@ -88,7 +88,12 @@ export function RunHistory() {
         ))}
       </table>
       <div className="run-history__pagination">
-        <button type="button" onClick={() => setOffset(Math.max(offset - PAGE_SIZE, 0))} disabled={offset === 0}>
+        <button
+          type="button"
+          className="button button--secondary"
+          onClick={() => setOffset(Math.max(offset - PAGE_SIZE, 0))}
+          disabled={offset === 0}
+        >
           Previous
         </button>
         <span>
@@ -96,6 +101,7 @@ export function RunHistory() {
         </span>
         <button
           type="button"
+          className="button button--secondary"
           onClick={() => setOffset(offset + PAGE_SIZE)}
           disabled={pageEnd >= data.total}
         >

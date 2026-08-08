@@ -107,6 +107,68 @@ describe("button system consolidation", () => {
     expect(css).toMatch(/\.button--secondary \{/);
     expect(css).toMatch(/\.button--destructive \{/);
     expect(css).toMatch(/border-radius: var\(--radius-pill\);/);
-    expect(css).toMatch(/padding: 0\.75rem 1\.5rem;/);
+    expect(css).toMatch(/padding: var\(--space-3\) var\(--space-5\);/);
+  });
+
+  it("removes the now-dead .button-danger class — every former consumer moved to .button--destructive", () => {
+    expect(css).not.toMatch(/\.button-danger/);
+  });
+});
+
+function compositeOverWhite(rgbaTriplet: [number, number, number], alpha: number): string {
+  const [r, g, b] = rgbaTriplet;
+  const toHexByte = (channel: number) =>
+    Math.round(channel * alpha + 255 * (1 - alpha))
+      .toString(16)
+      .padStart(2, "0");
+  return `#${toHexByte(r)}${toHexByte(g)}${toHexByte(b)}`;
+}
+
+describe("phase 2 — card gradient tints still clear AA for the text sitting on them", () => {
+  it.each([
+    ["tint-critical-bg", "text"],
+    ["tint-pass-bg", "text"],
+    ["tint-warning-bg", "text"],
+    ["tint-neutral-bg", "text"],
+    ["tint-critical-bg", "text-muted"],
+    ["tint-pass-bg", "text-muted"],
+    ["tint-warning-bg", "text-muted"],
+    ["tint-neutral-bg", "text-muted"],
+  ] as const)(
+    "FindingCard body text (--%s) on the --%s verdict-gradient's most saturated stop clears 4.5:1",
+    (bgToken, textToken) => {
+      const ratio = contrastRatio(readToken(css, textToken), readToken(css, bgToken));
+      expect(ratio).toBeGreaterThanOrEqual(4.5);
+    },
+  );
+
+  it("CycleCard's accent-tint-bg gradient stop (8% teal over white) still clears 4.5:1 for --text and --text-muted", () => {
+    // --accent-tint-bg is rgba(15, 118, 110, 0.08), locked in phase 1 — composited over white here
+    // since CSS custom properties can't be read as computed alpha-blended color from a static file.
+    const compositedAccentTint = compositeOverWhite([15, 118, 110], 0.08);
+    expect(contrastRatio(readToken(css, "text"), compositedAccentTint)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(readToken(css, "text-muted"), compositedAccentTint)).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
+describe("phase 2 — CycleCard and FindingCard styled per spec, plain tables stay flat", () => {
+  it("CycleCard gets real card styling (radius-md, space-4 padding, accent-tint gradient) — was a bare unstyled div before", () => {
+    expect(css).toMatch(/\.cycle-card \{[^}]*border-radius: var\(--radius-md\);/s);
+    expect(css).toMatch(/\.cycle-card \{[^}]*padding: var\(--space-4\);/s);
+    expect(css).toMatch(/\.cycle-card \{[^}]*background: linear-gradient\(135deg, var\(--accent-tint-bg\), var\(--surface\)\);/s);
+  });
+
+  it("FindingCard gets a verdict-tinted gradient modifier per verdict, reusing the locked §4 semantic tint-bg tokens", () => {
+    expect(css).toMatch(/\.finding-card--verdict-regression \{[^}]*var\(--tint-critical-bg\)/s);
+    expect(css).toMatch(/\.finding-card--verdict-intended_change \{[^}]*var\(--tint-pass-bg\)/s);
+    expect(css).toMatch(/\.finding-card--verdict-needs_human \{[^}]*var\(--tint-warning-bg\)/s);
+    expect(css).toMatch(/\.finding-card--verdict-known \{[^}]*var\(--tint-neutral-bg\)/s);
+  });
+
+  it("plain tabular views (run-history, check-outcomes) stay flat — no gradient background", () => {
+    const runHistoryBlock = css.match(/\.run-history \{[^}]*\}/s)?.[0] ?? "";
+    const checkOutcomesBlock = css.match(/\.check-outcomes__table \{[^}]*\}/s)?.[0] ?? "";
+    expect(runHistoryBlock).not.toMatch(/gradient/);
+    expect(checkOutcomesBlock).not.toMatch(/gradient/);
   });
 });
