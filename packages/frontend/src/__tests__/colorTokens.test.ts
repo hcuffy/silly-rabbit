@@ -199,3 +199,42 @@ describe("live-review bugfix round — required-field inline validation styling"
     expect(css).toMatch(/:user-invalid[^{]*\{\s*border-color: var\(--tint-critical-text\);/s);
   });
 });
+
+describe("live-review bugfix round #2 — NavMap input matches the shared form-input styling", () => {
+  it("the base-url input in NavMapPanel is styled by the same rule block as every other form input, " +
+    "not left bare — it was missing from the shared selector group entirely (no .new-run-form ancestor, " +
+    "since the crawl-result table below it can't be squeezed to the form's 480px max-width)", () => {
+    const sharedInputBlock = css.match(/\.new-run-form textarea,\n\.new-run-form input,\n\.new-run-form select,\n\.nav-map-panel input \{[^}]*\}/);
+    expect(sharedInputBlock).not.toBeNull();
+    expect(sharedInputBlock?.[0]).toMatch(/border: 1px solid var\(--border\);/);
+    expect(sharedInputBlock?.[0]).toMatch(/border-radius: var\(--radius-sm\);/);
+    expect(sharedInputBlock?.[0]).toMatch(/background: var\(--surface\);/);
+  });
+
+  it("the NavMap input also gets the same focus-visible outline as every other form input", () => {
+    expect(css).toMatch(/\.new-run-form textarea:focus-visible,\n\.new-run-form input:focus-visible,\n\.nav-map-panel input:focus-visible \{/);
+  });
+});
+
+describe("live-review bugfix round #2 — FieldHint tooltip contrast (real audit, not eyeballed)", () => {
+  it("the tooltip's background/text tokens (as written in .field-hint::after) resolve to real hex " +
+    "and clear 4.5:1 AA — audit conclusion: both already reference light-theme tokens (var(--surface), " +
+    "var(--text)), giving 17.8:1 in the current stylesheet; this test locks that in as a regression guard", () => {
+    const tooltipBlock = css.match(/\.field-hint::after \{[^}]*\}/s)?.[0] ?? "";
+    const backgroundMatch = tooltipBlock.match(/background: var\(--([\w-]+)\);/);
+    const colorMatch = tooltipBlock.match(/\n {2}color: var\(--([\w-]+)\);/);
+    expect(backgroundMatch).not.toBeNull();
+    expect(colorMatch).not.toBeNull();
+
+    const backgroundHex = readToken(css, backgroundMatch![1]);
+    const textHex = readToken(css, colorMatch![1]);
+    expect(contrastRatio(textHex, backgroundHex)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("opacity is the only animated property on the tooltip — background/color are never mid-transition, " +
+    "so there is no possible opacity-vs-background timing race in the current rule", () => {
+    const tooltipBlock = css.match(/\.field-hint::after \{[^}]*\}/s)?.[0] ?? "";
+    const transitionMatch = tooltipBlock.match(/transition: ([^;]+);/);
+    expect(transitionMatch?.[1]).toBe("opacity 0.1s ease");
+  });
+});

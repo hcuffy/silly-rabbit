@@ -255,7 +255,8 @@ button:focus-visible {
 
 .new-run-form textarea,
 .new-run-form input,
-.new-run-form select {
+.new-run-form select,
+.nav-map-panel input {
   font: inherit;
   padding: var(--space-2);
   background: var(--surface);
@@ -265,7 +266,8 @@ button:focus-visible {
 }
 
 .new-run-form textarea:focus-visible,
-.new-run-form input:focus-visible {
+.new-run-form input:focus-visible,
+.nav-map-panel input:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
