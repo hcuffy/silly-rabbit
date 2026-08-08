@@ -214,11 +214,11 @@ export function TargetProfileForm(
       />
 
       <div className="target-profile-form__actions">
-        <button type="submit" disabled={isSubmitting}>
+        <button type="submit" className="button button--primary" disabled={isSubmitting}>
           {isSubmitting ? "Saving…" : mode === "create" ? "Create profile" : "Save changes"}
         </button>
         {onCancel && (
-          <button type="button" onClick={onCancel} disabled={isSubmitting}>
+          <button type="button" className="button button--secondary" onClick={onCancel} disabled={isSubmitting}>
             Cancel
           </button>
         )}

@@ -48,10 +48,10 @@ export function CycleForm({
         <option value="sprint">Sprint</option>
       </select>
       <div className="cycle-form__actions">
-        <button type="submit" disabled={isSubmitting}>
+        <button type="submit" className="button button--primary" disabled={isSubmitting}>
           {isSubmitting ? "Creating…" : "Create cycle"}
         </button>
-        <button type="button" onClick={onCancel}>
+        <button type="button" className="button button--secondary" onClick={onCancel}>
           Cancel
         </button>
       </div>

@@ -22,7 +22,7 @@ export function LoginScreen() {
           onChange={(event) => setPassword(event.target.value)}
           autoFocus
         />
-        <button type="submit" disabled={mutation.isPending}>
+        <button type="submit" className="button button--primary" disabled={mutation.isPending}>
           {mutation.isPending ? "Signing in…" : "Sign in"}
         </button>
         {mutation.isError && (

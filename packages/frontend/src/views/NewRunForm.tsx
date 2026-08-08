@@ -78,7 +78,7 @@ export function NewRunForm({ onCreated }: { onCreated: (runId: string) => void }
         placeholder="https://dev.rabbit.example"
       />
       <CycleSelect id="cycleId" label="Cycle" value={cycleId} onChange={setCycleId} />
-      <button type="submit" disabled={mutation.isPending}>
+      <button type="submit" className="button button--primary" disabled={mutation.isPending}>
         {mutation.isPending ? "Starting…" : "Run"}
       </button>
       {validationError && (

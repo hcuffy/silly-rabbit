@@ -98,7 +98,7 @@ export function NewExplorerRunForm({ onCreated }: { onCreated: (runId: string) =
         placeholder="https://dev.rabbit.example"
       />
       <CycleSelect id="explorerCycleId" label="Cycle" value={cycleId} onChange={setCycleId} />
-      <button type="submit" disabled={mutation.isPending}>
+      <button type="submit" className="button button--primary" disabled={mutation.isPending}>
         {mutation.isPending ? "Starting…" : "Run explorer"}
       </button>
       {validationError && (
