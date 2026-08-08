@@ -38,6 +38,9 @@ export function NewRunForm({ onCreated }: { onCreated: (runId: string) => void }
       <h2>New run</h2>
       <div className="field-label">
         <label htmlFor="charter">Charter</label>
+        <span className="field-required" aria-hidden="true">
+          *
+        </span>
         <FieldHint
           text={
             'A full plain-language instruction: what to do, step by step if needed. ' +
@@ -51,6 +54,7 @@ export function NewRunForm({ onCreated }: { onCreated: (runId: string) => void }
         onChange={(event) => setCharter(event.target.value)}
         placeholder="test the locations flow"
         rows={3}
+        required
       />
       <select
         aria-label="Insert an example charter"
@@ -68,6 +72,9 @@ export function NewRunForm({ onCreated }: { onCreated: (runId: string) => void }
       </select>
       <div className="field-label">
         <label htmlFor="targetBaseUrl">Target base URL</label>
+        <span className="field-required" aria-hidden="true">
+          *
+        </span>
         <FieldHint text="The base URL of the target app to run this charter against (scheme + host, no path)." />
       </div>
       <input
@@ -76,6 +83,7 @@ export function NewRunForm({ onCreated }: { onCreated: (runId: string) => void }
         value={targetBaseUrl}
         onChange={(event) => setTargetBaseUrl(event.target.value)}
         placeholder="https://dev.rabbit.example"
+        required
       />
       <CycleSelect id="cycleId" label="Cycle" value={cycleId} onChange={setCycleId} />
       <button type="submit" className="button button--primary" disabled={mutation.isPending}>

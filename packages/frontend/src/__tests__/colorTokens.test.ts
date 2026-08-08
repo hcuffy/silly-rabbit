@@ -172,3 +172,30 @@ describe("phase 2 — CycleCard and FindingCard styled per spec, plain tables st
     expect(checkOutcomesBlock).not.toMatch(/gradient/);
   });
 });
+
+describe("live-review bugfix round — real spacing between cards and sections", () => {
+  it("CycleCard instances get a real gap in the cycles list (was flush, no rule existed at all)", () => {
+    expect(css).toMatch(/\.cycle-list__cards \{[^}]*gap: var\(--space-4\);/s);
+  });
+
+  it("Settings page sections (target profiles vs NavMap) get a real visual boundary, not just whitespace", () => {
+    const navMapBlock = css.match(/\.nav-map-panel \{[^}]*\}/s)?.[0] ?? "";
+    expect(navMapBlock).toMatch(/margin-top: var\(--space-6\);/);
+    expect(navMapBlock).toMatch(/border-top: 1px solid var\(--border\);/);
+  });
+
+  it("New Run / New Explorer Run forms get a real card boundary (border+radius+padding), not a bare flex row", () => {
+    const newRunFormBlock = css.match(/\.new-run-form \{[^}]*\}/s)?.[0] ?? "";
+    expect(newRunFormBlock).toMatch(/border: 1px solid var\(--border\);/);
+    expect(newRunFormBlock).toMatch(/border-radius: var\(--radius-md\);/);
+    expect(newRunFormBlock).toMatch(/padding: var\(--space-4\);/);
+  });
+});
+
+describe("live-review bugfix round — required-field inline validation styling", () => {
+  it("defines a visible required-marker style and a real invalid-state border color, scoped to form fields", () => {
+    expect(css).toMatch(/\.field-required \{[^}]*color: var\(--tint-critical-text\);/s);
+    expect(css).toContain(".new-run-form textarea:user-invalid,");
+    expect(css).toMatch(/:user-invalid[^{]*\{\s*border-color: var\(--tint-critical-text\);/s);
+  });
+});

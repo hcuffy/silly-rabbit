@@ -54,6 +54,13 @@ describe("NewRunForm (frontend-spec §5)", () => {
     expect(fetchMock.mock.calls.some(([, init]) => init?.method === "POST")).toBe(false);
   });
 
+  it("marks Charter and Target base URL required (real, non-optional fields per CreateRunInputSchema)", () => {
+    renderWithClient(<NewRunForm onCreated={vi.fn()} />);
+
+    expect(screen.getByLabelText("Charter")).toBeRequired();
+    expect(screen.getByLabelText("Target base URL")).toBeRequired();
+  });
+
   it("picking an example charter fills the textarea (onboarding-friction fix)", async () => {
     const user = userEvent.setup();
     renderWithClient(<NewRunForm onCreated={vi.fn()} />);

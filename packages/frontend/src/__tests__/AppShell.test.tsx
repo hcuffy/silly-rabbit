@@ -4,8 +4,8 @@ import { describe, expect, it } from "vitest";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { AppShell } from "../AppShell.js";
 
-function renderShell(): void {
-  render(
+function renderShell() {
+  return render(
     <MemoryRouter initialEntries={["/"]}>
       <Routes>
         <Route path="/" element={<AppShell />}>
@@ -45,7 +45,8 @@ describe("AppShell — persistent rail with real nav links, collapsible", () => 
     expect(logo).toHaveAttribute("src", "/images/silly-rabbit-logo-detailed-1024.png");
   });
 
-  it("collapsing the sidebar hides the brand/full labels but keeps every link and the toggle reachable", async () => {
+  it("collapsing the sidebar hides the brand/full text labels but keeps every link (via icon + " +
+    "aria-label) and the toggle reachable", async () => {
     const user = userEvent.setup();
     renderShell();
 
@@ -53,14 +54,27 @@ describe("AppShell — persistent rail with real nav links, collapsible", () => 
 
     expect(screen.queryByText("Silly Rabbit")).not.toBeInTheDocument();
     expect(screen.queryByAltText("Silly Rabbit logo")).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "N" })).toHaveAttribute("href", "/");
-    expect(screen.getByRole("link", { name: "R" })).toHaveAttribute("href", "/runs");
-    expect(screen.getByRole("link", { name: "S" })).toHaveAttribute("href", "/session-recordings");
-    expect(screen.getByRole("link", { name: "T" })).toHaveAttribute("href", "/settings");
+    // Collapsed nav links keep their full accessible name via aria-label — only the visible text node
+    // disappears (replaced by an icon), so the same real name-based queries still resolve each link.
+    expect(screen.getByRole("link", { name: "New run" })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("link", { name: "Run history" })).toHaveAttribute("href", "/runs");
+    expect(screen.getByRole("link", { name: "Session recordings" })).toHaveAttribute("href", "/session-recordings");
+    expect(screen.getByRole("link", { name: "Cycles" })).toHaveAttribute("href", "/cycles");
+    expect(screen.getByRole("link", { name: "Settings" })).toHaveAttribute("href", "/settings");
 
     await user.click(screen.getByRole("button", { name: "Expand sidebar" }));
     expect(screen.getByText("Silly Rabbit")).toBeInTheDocument();
     expect(screen.getByAltText("Silly Rabbit logo")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Run history" })).toBeInTheDocument();
+  });
+
+  it("every nav link renders an icon in both expanded and collapsed states", async () => {
+    const user = userEvent.setup();
+    const { container } = renderShell();
+
+    expect(container.querySelectorAll(".app-shell__link svg")).toHaveLength(5);
+
+    await user.click(screen.getByRole("button", { name: "Collapse sidebar" }));
+    expect(container.querySelectorAll(".app-shell__link svg")).toHaveLength(5);
   });
 });

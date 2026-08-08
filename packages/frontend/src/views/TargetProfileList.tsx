@@ -148,7 +148,7 @@ export function TargetProfileList() {
           }}
         />
       ) : (
-        <button type="button" onClick={() => setShowCreateForm(true)}>
+        <button type="button" className="button button--secondary" onClick={() => setShowCreateForm(true)}>
           + New target profile
         </button>
       )}

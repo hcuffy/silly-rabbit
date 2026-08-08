@@ -61,6 +61,15 @@ describe("NewExplorerRunForm (D8 dashboard trigger UI)", () => {
     expect(fetchMock.mock.calls.some(([, init]) => init?.method === "POST")).toBe(false);
   });
 
+  it("marks Feature name, Section description, and Target base URL required (real, non-optional " +
+    "fields per CreateExplorerRunInputSchema)", () => {
+    renderWithClient(<NewExplorerRunForm onCreated={vi.fn()} />);
+
+    expect(screen.getByLabelText("Feature name")).toBeRequired();
+    expect(screen.getByLabelText("Section description")).toBeRequired();
+    expect(screen.getByLabelText("Target base URL")).toBeRequired();
+  });
+
   it("picking an example description fills the textarea (onboarding-friction fix)", async () => {
     const user = userEvent.setup();
     renderWithClient(<NewExplorerRunForm onCreated={vi.fn()} />);

@@ -60,12 +60,24 @@ export function TargetProfileForm(
 
       <div className="field-label">
         <label htmlFor="tp-name">Name</label>
+        <span className="field-required" aria-hidden="true">
+          *
+        </span>
         <FieldHint text='A display name to tell this profile apart from others, e.g. "Release" or "Dev".' />
       </div>
-      <input id="tp-name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Release" />
+      <input
+        id="tp-name"
+        value={name}
+        onChange={(event) => setName(event.target.value)}
+        placeholder="Release"
+        required
+      />
 
       <div className="field-label">
         <label htmlFor="tp-baseUrl">Base URL</label>
+        <span className="field-required" aria-hidden="true">
+          *
+        </span>
         <FieldHint text="The base URL of the target app (scheme + host, no path)." />
       </div>
       <input
@@ -73,6 +85,7 @@ export function TargetProfileForm(
         value={baseUrl}
         onChange={(event) => setBaseUrl(event.target.value)}
         placeholder="https://release.rabbit.example"
+        required
       />
 
       <div className="field-label">
@@ -199,6 +212,9 @@ export function TargetProfileForm(
 
       <div className="field-label">
         <label htmlFor="tp-allowedDomains">Allowed domains</label>
+        <span className="field-required" aria-hidden="true">
+          *
+        </span>
         <FieldHint
           text={
             "Comma-separated list of hostnames a run against this profile is allowed to navigate to — " +
@@ -211,6 +227,7 @@ export function TargetProfileForm(
         value={allowedDomains}
         onChange={(event) => setAllowedDomains(event.target.value)}
         placeholder="release.rabbit.example"
+        required
       />
 
       <div className="target-profile-form__actions">

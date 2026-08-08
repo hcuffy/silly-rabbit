@@ -74,4 +74,11 @@ describe("TargetProfileList (Settings page)", () => {
 
     expect(screen.getByRole("heading", { name: "New target profile" })).toBeInTheDocument();
   });
+
+  it("the '+ New target profile' trigger uses the shared .button system, not a plain unstyled button", async () => {
+    renderWithClient(<TargetProfileList />);
+    await screen.findByText("Release");
+
+    expect(screen.getByRole("button", { name: "+ New target profile" })).toHaveClass("button", "button--secondary");
+  });
 });

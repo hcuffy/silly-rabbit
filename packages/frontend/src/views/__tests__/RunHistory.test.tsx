@@ -182,6 +182,48 @@ describe("RunHistory — list restructuring (run-number, date-grouping, paginati
     expect(await screen.findByRole("button", { name: "Previous" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
   });
+
+  it("shows flat 'Run #N' in the Run column for an uncycled run — the hash is still present, just no " +
+    "longer the primary visible identifier", async () => {
+    vi.stubGlobal("fetch", vi.fn((url: string) => {
+      if (url.includes("/cycles")) return Promise.resolve(jsonResponse([]));
+      return Promise.resolve(jsonResponse({ runs: [makeRun(RUN_A)], total: 1 }));
+    }));
+
+    const { container } = renderRouted();
+
+    expect(await screen.findByText("Run #1")).toBeInTheDocument();
+    expect(container.querySelector(".run-id__short")?.textContent).toBe(RUN_A.slice(0, 8));
+  });
+
+  it("shows '{cycle name}, Run N' in the Run column for a cycled run, using the persisted " +
+    "cycleRunNumber and the real cycle name fetched from the cycles list", async () => {
+    const cycleId = "33333333-3333-4333-8333-333333333333";
+    vi.stubGlobal("fetch", vi.fn((url: string) => {
+      if (url.includes("/cycles")) {
+        return Promise.resolve(
+          jsonResponse([
+            {
+              id: cycleId,
+              name: "Release 3.22",
+              kind: "release",
+              status: "active",
+              isDefault: false,
+              runCounter: 4,
+              sessionReplayRunCounter: 0,
+              createdAt: "2026-01-01T00:00:00.000Z",
+            },
+          ]),
+        );
+      }
+      return Promise.resolve(jsonResponse({ runs: [makeRun(RUN_A, { cycleId, cycleRunNumber: 4 })], total: 1 }));
+    }));
+
+    renderRouted();
+
+    expect(await screen.findByText("Release 3.22, Run 4")).toBeInTheDocument();
+    expect(screen.queryByText("Run #1")).not.toBeInTheDocument();
+  });
 });
 
 describe("RunHistory — ?cycleId= filtering (run-cycles-spec.md §4.2's overview-card links)", () => {

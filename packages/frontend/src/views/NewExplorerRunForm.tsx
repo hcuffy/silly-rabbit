@@ -44,6 +44,9 @@ export function NewExplorerRunForm({ onCreated }: { onCreated: (runId: string) =
       <h2>New explorer run</h2>
       <div className="field-label">
         <label htmlFor="featureId">Feature name</label>
+        <span className="field-required" aria-hidden="true">
+          *
+        </span>
         <FieldHint text='A short name/slug for this feature, not a sentence. Example: "billing-invoices"' />
       </div>
       <input
@@ -52,9 +55,13 @@ export function NewExplorerRunForm({ onCreated }: { onCreated: (runId: string) =
         value={featureId}
         onChange={(event) => setFeatureId(event.target.value)}
         placeholder="locations"
+        required
       />
       <div className="field-label">
         <label htmlFor="sectionDescription">Section description</label>
+        <span className="field-required" aria-hidden="true">
+          *
+        </span>
         <FieldHint
           text={
             'A SHORT description matching how this section appears in navigation ' +
@@ -71,6 +78,7 @@ export function NewExplorerRunForm({ onCreated }: { onCreated: (runId: string) =
         onChange={(event) => setSectionDescription(event.target.value)}
         placeholder="the locations list and detail view"
         rows={3}
+        required
       />
       <select
         aria-label="Insert an example section description"
@@ -88,6 +96,9 @@ export function NewExplorerRunForm({ onCreated }: { onCreated: (runId: string) =
       </select>
       <div className="field-label">
         <label htmlFor="explorerTargetBaseUrl">Target base URL</label>
+        <span className="field-required" aria-hidden="true">
+          *
+        </span>
         <FieldHint text="The base URL of the target app to run this explorer session against (scheme + host, no path)." />
       </div>
       <input
@@ -96,6 +107,7 @@ export function NewExplorerRunForm({ onCreated }: { onCreated: (runId: string) =
         value={targetBaseUrl}
         onChange={(event) => setTargetBaseUrl(event.target.value)}
         placeholder="https://dev.rabbit.example"
+        required
       />
       <CycleSelect id="explorerCycleId" label="Cycle" value={cycleId} onChange={setCycleId} />
       <button type="submit" className="button button--primary" disabled={mutation.isPending}>

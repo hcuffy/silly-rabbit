@@ -2,10 +2,19 @@ import { useState, type KeyboardEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { RunId } from "../components/RunId.js";
 import { StatusIcon } from "../components/StatusIcon.js";
+import { useCyclesList } from "../lib/cycleQueries.js";
 import { groupRunsByDay } from "../lib/dateGrouping.js";
 import { formatTime } from "../lib/formatDateTime.js";
 import { useRunsList } from "../lib/queries.js";
 import { computeRunNumber } from "../lib/runNumbering.js";
+import type { Run } from "@silly-rabbit/shared";
+
+function runLabel(run: Run, flatRunNumber: number | undefined, cycleNameById: Map<string, string>): string {
+  if (run.cycleId && run.cycleRunNumber !== undefined) {
+    return `${cycleNameById.get(run.cycleId) ?? "…"}, Run ${run.cycleRunNumber}`;
+  }
+  return `Run #${flatRunNumber}`;
+}
 
 const PAGE_SIZE = 25;
 
@@ -22,6 +31,8 @@ export function RunHistory() {
   const [searchParameters] = useSearchParams();
   const cycleId = searchParameters.get("cycleId") ?? undefined;
   const { data, isPending, isError, error } = useRunsList({ limit: PAGE_SIZE, offset, cycleId });
+  const { data: cycles } = useCyclesList();
+  const cycleNameById = new Map((cycles ?? []).map((cycle) => [cycle.id, cycle.name]));
 
   if (isPending) return <p>Loading run history…</p>;
   if (isError)
@@ -70,6 +81,7 @@ export function RunHistory() {
                 >
                   <td className="run-history__number">{runNumber}</td>
                   <td>
+                    <div className="run-history__run-label">{runLabel(run, runNumber, cycleNameById)}</div>
                     <RunId id={run.id} />
                   </td>
                   <td>{run.charter}</td>

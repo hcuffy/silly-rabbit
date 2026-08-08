@@ -78,7 +78,18 @@ describe("TargetProfileForm (Settings page — target profile create/edit)", () 
     expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ password: "new-password" }));
   });
 
-  it("shows a validation error and does not call onSubmit when a required field is missing", async () => {
+  it("marks the real required fields (per TargetProfileWriteInputSchema) with the native required attribute", () => {
+    render(<TargetProfileForm mode="create" isSubmitting={false} onSubmit={vi.fn()} />);
+
+    expect(screen.getByLabelText("Name")).toBeRequired();
+    expect(screen.getByLabelText("Base URL")).toBeRequired();
+    expect(screen.getByLabelText("Allowed domains")).toBeRequired();
+    expect(screen.getByLabelText("Login URL")).not.toBeRequired();
+    expect(screen.getByLabelText("Login email")).not.toBeRequired();
+  });
+
+  it("does not call onSubmit when a required field is empty — native constraint validation blocks " +
+    "the submit before our JS handler runs, and marks the field invalid", async () => {
     const onSubmit = vi.fn();
     const user = userEvent.setup();
     render(<TargetProfileForm mode="create" isSubmitting={false} onSubmit={onSubmit} />);
@@ -86,7 +97,22 @@ describe("TargetProfileForm (Settings page — target profile create/edit)", () 
     await user.click(screen.getByRole("button", { name: "Create profile" }));
 
     expect(onSubmit).not.toHaveBeenCalled();
-    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    expect(screen.getByLabelText("Name")).toBeInvalid();
+  });
+
+  it("still shows our own validation error for a zod-only constraint once required fields are filled " +
+    "(a malformed URL passes native required but fails the schema's .url() check)", async () => {
+    const onSubmit = vi.fn();
+    const user = userEvent.setup();
+    render(<TargetProfileForm mode="create" isSubmitting={false} onSubmit={onSubmit} />);
+
+    await user.type(screen.getByLabelText("Name"), "Dev");
+    await user.type(screen.getByLabelText("Base URL"), "not-a-url");
+    await user.type(screen.getByLabelText("Allowed domains"), "dev.example.com");
+    await user.click(screen.getByRole("button", { name: "Create profile" }));
+
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(await screen.findByRole("alert")).toHaveTextContent(/valid URL/i);
   });
 
   it("Cancel calls onCancel, not onSubmit", async () => {

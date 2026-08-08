@@ -122,6 +122,24 @@ describe("CycleList (run-cycles-spec.md §4 — cycle management + overview, one
     expect(within(defaultCard).queryByRole("button", { name: "Archive" })).not.toBeInTheDocument();
   });
 
+  it("the '+ New cycle' trigger uses the shared .button system, not a plain unstyled button", async () => {
+    renderWithClient(<CycleList />);
+    await screen.findByText("Release 3.22");
+
+    expect(screen.getByRole("button", { name: "+ New cycle" })).toHaveClass("button", "button--secondary");
+  });
+
+  it("the cycle-create form marks Name and Kind required (real, non-optional fields per CycleWriteInputSchema)", async () => {
+    const user = userEvent.setup();
+    renderWithClient(<CycleList />);
+    await screen.findByText("Release 3.22");
+
+    await user.click(screen.getByRole("button", { name: "+ New cycle" }));
+
+    expect(screen.getByLabelText("Name")).toBeRequired();
+    expect(screen.getByLabelText("Kind")).toBeRequired();
+  });
+
   it("creating a cycle shows the form, then hides it again on success", async () => {
     const user = userEvent.setup();
     renderWithClient(<CycleList />);

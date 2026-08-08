@@ -122,12 +122,18 @@ body {
 }
 
 .app-shell__link {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   color: var(--text-muted);
   text-decoration: none;
   font-size: 0.9em;
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-sm);
+}
+
+.app-shell__link svg {
+  flex-shrink: 0;
 }
 
 .app-shell__link:hover {
@@ -180,12 +186,21 @@ button:focus-visible {
   min-width: 0;
   max-width: 480px;
   margin-bottom: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
 }
 
 .field-label {
   display: flex;
   align-items: center;
   gap: var(--space-1);
+}
+
+.field-required {
+  color: var(--tint-critical-text);
+  font-weight: 600;
 }
 
 .field-hint {
@@ -253,6 +268,12 @@ button:focus-visible {
 .new-run-form input:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
+}
+
+.new-run-form textarea:user-invalid,
+.new-run-form input:user-invalid,
+.new-run-form select:user-invalid {
+  border-color: var(--tint-critical-text);
 }
 
 .new-run-form .button {
@@ -359,6 +380,11 @@ button:focus-visible {
 .run-history__pagination span {
   color: var(--text-muted);
   font-size: 0.9em;
+}
+
+.run-history__run-label {
+  font-weight: 500;
+  margin-bottom: var(--space-1);
 }
 
 .run-id {
@@ -627,6 +653,17 @@ button:focus-visible {
   font-size: 0.85em;
 }
 
+.cycle-list__cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.cycle-list__archived {
+  margin-top: var(--space-6);
+}
+
 .cycle-card {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
@@ -773,6 +810,8 @@ button:focus-visible {
 
 .nav-map-panel {
   margin-top: var(--space-6);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--border);
 }
 
 .nav-map-panel__actions {

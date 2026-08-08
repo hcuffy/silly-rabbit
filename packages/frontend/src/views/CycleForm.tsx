@@ -32,6 +32,9 @@ export function CycleForm({
       <h3>New cycle</h3>
       <div className="field-label">
         <label htmlFor="cycleName">Name</label>
+        <span className="field-required" aria-hidden="true">
+          *
+        </span>
       </div>
       <input
         id="cycleName"
@@ -39,11 +42,20 @@ export function CycleForm({
         value={name}
         onChange={(event) => setName(event.target.value)}
         placeholder="Release 3.22"
+        required
       />
       <div className="field-label">
         <label htmlFor="cycleKind">Kind</label>
+        <span className="field-required" aria-hidden="true">
+          *
+        </span>
       </div>
-      <select id="cycleKind" value={kind} onChange={(event) => setKind(event.target.value as "sprint" | "release")}>
+      <select
+        id="cycleKind"
+        value={kind}
+        onChange={(event) => setKind(event.target.value as "sprint" | "release")}
+        required
+      >
         <option value="release">Release</option>
         <option value="sprint">Sprint</option>
       </select>

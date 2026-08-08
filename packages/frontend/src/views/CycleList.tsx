@@ -75,7 +75,7 @@ export function CycleList() {
           }}
         />
       ) : (
-        <button type="button" onClick={() => setShowCreateForm(true)}>
+        <button type="button" className="button button--secondary" onClick={() => setShowCreateForm(true)}>
           + New cycle
         </button>
       )}
