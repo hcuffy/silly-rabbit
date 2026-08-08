@@ -37,6 +37,14 @@ describe("AppShell — persistent rail with real nav links, collapsible", () => 
     expect(screen.getByRole("link", { name: "Run history" })).not.toHaveAttribute("aria-current");
   });
 
+  it("renders the brand logo image alongside the brand text when expanded", () => {
+    renderShell();
+
+    const logo = screen.getByAltText("Silly Rabbit logo");
+    expect(logo).toBeInTheDocument();
+    expect(logo).toHaveAttribute("src", "/images/silly-rabbit-logo-detailed-1024.png");
+  });
+
   it("collapsing the sidebar hides the brand/full labels but keeps every link and the toggle reachable", async () => {
     const user = userEvent.setup();
     renderShell();
@@ -44,6 +52,7 @@ describe("AppShell — persistent rail with real nav links, collapsible", () => 
     await user.click(screen.getByRole("button", { name: "Collapse sidebar" }));
 
     expect(screen.queryByText("Silly Rabbit")).not.toBeInTheDocument();
+    expect(screen.queryByAltText("Silly Rabbit logo")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "N" })).toHaveAttribute("href", "/");
     expect(screen.getByRole("link", { name: "R" })).toHaveAttribute("href", "/runs");
     expect(screen.getByRole("link", { name: "S" })).toHaveAttribute("href", "/session-recordings");
@@ -51,6 +60,7 @@ describe("AppShell — persistent rail with real nav links, collapsible", () => 
 
     await user.click(screen.getByRole("button", { name: "Expand sidebar" }));
     expect(screen.getByText("Silly Rabbit")).toBeInTheDocument();
+    expect(screen.getByAltText("Silly Rabbit logo")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Run history" })).toBeInTheDocument();
   });
 });

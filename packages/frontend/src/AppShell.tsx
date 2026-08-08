@@ -8,7 +8,18 @@ export function AppShell() {
     <div className={`app-shell${collapsed ? " app-shell--collapsed" : ""}`}>
       <nav className="app-shell__rail">
         <div className="app-shell__rail-header">
-          {!collapsed && <span className="app-shell__brand">Silly Rabbit</span>}
+          {!collapsed && (
+            <span className="app-shell__brand">
+              <img
+                src="/images/silly-rabbit-logo-detailed-1024.png"
+                alt="Silly Rabbit logo"
+                className="app-shell__brand-logo"
+                width={28}
+                height={28}
+              />
+              Silly Rabbit
+            </span>
+          )}
           <button
             type="button"
             className="app-shell__collapse-toggle"

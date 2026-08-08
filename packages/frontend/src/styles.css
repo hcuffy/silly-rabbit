@@ -90,8 +90,18 @@ body {
 }
 
 .app-shell__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
   font-weight: 600;
   font-size: 1.1rem;
+}
+
+.app-shell__brand-logo {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 .app-shell__collapse-toggle {
