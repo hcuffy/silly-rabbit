@@ -65,6 +65,16 @@ describe("maskText — masking golden fixtures (engine-spec §6, §4 B.1/B.2)", 
   it("masks the exact real row shape from the repro spec — clock time masked, IDs and counts preserved", () => {
     expect(maskText("333 47 51642 4 08 35")).toBe("<TIME> 333 47 51642 4");
   });
+
+  it(
+    "masks clock time glued directly to a trailing locale word, no separator (real target evidence: " +
+      "German 'Uhr' suffix glued with no space broke the trailing \\b boundary, leaking '08 35' " +
+      "unmasked next to real ID-like values)",
+    () => {
+      expect(maskText("25.07.2026 08:35Uhr")).toBe("<TIME> <TIME> <TEXT>");
+      expect(maskText("25.07.2026 08:35Uhr brian91896")).toBe("<TIME> <TIME> 91896 <TEXT>");
+    },
+  );
 });
 
 describe("maskErrorMessage — dedup-signature masking (engine-spec §5 C.1)", () => {

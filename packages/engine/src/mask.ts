@@ -17,7 +17,11 @@ const RELATIVE_TIME_AGO_DE = new RegExp(`\\bvor\\s+\\d+\\s+(?:${GERMAN_TIME_UNIT
 const RELATIVE_TIME_IN_DE = new RegExp(`\\bin\\s+\\d+\\s+(?:${GERMAN_TIME_UNITS})\\b`, "gi");
 const RELATIVE_TIME_NOW_DE = /\bgerade eben\b/gi;
 
-const BARE_CLOCK_TIME = /\b(?:[01]\d|2[0-3])[:\s][0-5]\d\b/g;
+// Digit-adjacency lookaround, not \b: a locale suffix glued with no separator (e.g. German
+// "08:35Uhr") is a word→word transition, so \b never fires and the match silently fails.
+// ISO_TIMESTAMP/SIMPLE_DATE/relative-time/ID_PATTERNS above are still \b-bounded and share this
+// risk class in theory — none has a confirmed real-target trigger yet, so left as-is.
+const BARE_CLOCK_TIME = /(?<!\d)(?:[01]\d|2[0-3])[:\s][0-5]\d(?!\d)/g;
 
 export const TIME_PATTERNS = [
   ISO_TIMESTAMP,
