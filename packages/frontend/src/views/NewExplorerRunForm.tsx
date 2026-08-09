@@ -4,6 +4,11 @@ import { CycleSelect } from "../components/CycleSelect.js";
 import { FieldHint } from "../components/FieldHint.js";
 import { getLastUsedCycleId, setLastUsedCycleId } from "../lib/lastUsedCycle.js";
 import { useCreateExplorerRun } from "../lib/queries.js";
+import { findEmptyRequiredFields, focusFirstInvalidField } from "../lib/requiredFieldValidation.js";
+
+const FEATURE_ID_REQUIRED_MESSAGE = "Feature name is required.";
+const SECTION_DESCRIPTION_REQUIRED_MESSAGE = "Section description is required.";
+const TARGET_BASE_URL_REQUIRED_MESSAGE = "Target base URL is required.";
 
 const EXAMPLE_SECTION_DESCRIPTIONS: readonly string[] = [
   "the locations list and detail view",
@@ -18,10 +23,24 @@ export function NewExplorerRunForm({ onCreated }: { onCreated: (runId: string) =
   const [targetBaseUrl, setTargetBaseUrl] = useState("");
   const [cycleId, setCycleId] = useState(() => getLastUsedCycleId() ?? "");
   const [validationError, setValidationError] = useState<string | undefined>(undefined);
+  const [invalidFields, setInvalidFields] = useState<Set<string>>(new Set());
   const mutation = useCreateExplorerRun();
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
+    const requiredFields = [
+      { key: "featureId", id: "featureId", value: featureId },
+      { key: "sectionDescription", id: "sectionDescription", value: sectionDescription },
+      { key: "targetBaseUrl", id: "explorerTargetBaseUrl", value: targetBaseUrl },
+    ];
+    const emptyFields = findEmptyRequiredFields(requiredFields);
+    if (emptyFields.size > 0) {
+      setInvalidFields(emptyFields);
+      focusFirstInvalidField(requiredFields, emptyFields);
+      return;
+    }
+    setInvalidFields(new Set());
+
     const parsed = CreateExplorerRunInputSchema.safeParse({
       featureId,
       sectionDescription,
@@ -40,7 +59,7 @@ export function NewExplorerRunForm({ onCreated }: { onCreated: (runId: string) =
   }
 
   return (
-    <form className="new-run-form" onSubmit={handleSubmit}>
+    <form className="new-run-form" onSubmit={handleSubmit} noValidate>
       <h2>New explorer run</h2>
       <div className="field-label">
         <label htmlFor="featureId">Feature name</label>
@@ -56,7 +75,13 @@ export function NewExplorerRunForm({ onCreated }: { onCreated: (runId: string) =
         onChange={(event) => setFeatureId(event.target.value)}
         placeholder="locations"
         required
+        aria-invalid={invalidFields.has("featureId")}
       />
+      {invalidFields.has("featureId") && (
+        <p className="form-error" role="alert">
+          {FEATURE_ID_REQUIRED_MESSAGE}
+        </p>
+      )}
       <div className="field-label">
         <label htmlFor="sectionDescription">Section description</label>
         <span className="field-required" aria-hidden="true">
@@ -79,7 +104,13 @@ export function NewExplorerRunForm({ onCreated }: { onCreated: (runId: string) =
         placeholder="the locations list and detail view"
         rows={3}
         required
+        aria-invalid={invalidFields.has("sectionDescription")}
       />
+      {invalidFields.has("sectionDescription") && (
+        <p className="form-error" role="alert">
+          {SECTION_DESCRIPTION_REQUIRED_MESSAGE}
+        </p>
+      )}
       <select
         aria-label="Insert an example section description"
         value=""
@@ -108,7 +139,13 @@ export function NewExplorerRunForm({ onCreated }: { onCreated: (runId: string) =
         onChange={(event) => setTargetBaseUrl(event.target.value)}
         placeholder="https://dev.rabbit.example"
         required
+        aria-invalid={invalidFields.has("targetBaseUrl")}
       />
+      {invalidFields.has("targetBaseUrl") && (
+        <p className="form-error" role="alert">
+          {TARGET_BASE_URL_REQUIRED_MESSAGE}
+        </p>
+      )}
       <CycleSelect id="explorerCycleId" label="Cycle" value={cycleId} onChange={setCycleId} />
       <button type="submit" className="button button--primary" disabled={mutation.isPending}>
         {mutation.isPending ? "Starting…" : "Run explorer"}

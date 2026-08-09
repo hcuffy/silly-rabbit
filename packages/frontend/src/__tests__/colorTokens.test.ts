@@ -238,3 +238,21 @@ describe("live-review bugfix round #2 — FieldHint tooltip contrast (real audit
     expect(transitionMatch?.[1]).toBe("opacity 0.1s ease");
   });
 });
+
+describe("live-review bugfix round #3 — native-bubble suppression, aria-invalid stays reliable", () => {
+  it("marks empty required fields invalid via a real border-color token, keyed off aria-invalid — " +
+    "reliable regardless of whether the browser's :user-invalid still activates once noValidate " +
+    "suppresses the interactive-validation step that normally drives it", () => {
+    expect(css).toContain('.new-run-form textarea[aria-invalid="true"],');
+    expect(css).toContain('.new-run-form input[aria-invalid="true"],');
+    expect(css).toContain('.new-run-form select[aria-invalid="true"] {');
+    const ariaInvalidBlock = css.match(/\[aria-invalid="true"\] \{[^}]*\}/s)?.[0] ?? "";
+    expect(ariaInvalidBlock).toMatch(/border-color: var\(--tint-critical-text\);/);
+  });
+
+  it("the required-field error message color (--tint-critical-text, reused from .form-error) clears AA " +
+    "on the form's white surface — same rigor as every other color pairing this session", () => {
+    const ratio = contrastRatio(readToken(css, "tint-critical-text"), readToken(css, "surface"));
+    expect(ratio).toBeGreaterThanOrEqual(4.5);
+  });
+});

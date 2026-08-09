@@ -61,6 +61,26 @@ describe("NewRunForm (frontend-spec §5)", () => {
     expect(screen.getByLabelText("Target base URL")).toBeRequired();
   });
 
+  it("suppresses native validation bubbles (noValidate) — required stays for screen readers, the " +
+    "browser no longer intercepts submission or shows its own illegible bubble UI", () => {
+    const { container } = renderWithClient(<NewRunForm onCreated={vi.fn()} />);
+
+    expect(container.querySelector("form")).toHaveAttribute("novalidate");
+  });
+
+  it("empty required fields on submit: shows real inline error text (not hover-dependent), marks the " +
+    "fields aria-invalid, and focuses the first invalid field (Charter, before Target base URL)", async () => {
+    const user = userEvent.setup();
+    renderWithClient(<NewRunForm onCreated={vi.fn()} />);
+
+    await user.click(screen.getByRole("button", { name: "Run" }));
+
+    expect(await screen.findByText("Charter is required.")).toBeInTheDocument();
+    expect(screen.getByText("Target base URL is required.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Charter")).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByLabelText("Charter")).toHaveFocus();
+  });
+
   it("picking an example charter fills the textarea (onboarding-friction fix)", async () => {
     const user = userEvent.setup();
     renderWithClient(<NewRunForm onCreated={vi.fn()} />);

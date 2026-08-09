@@ -4,6 +4,10 @@ import { CycleSelect } from "../components/CycleSelect.js";
 import { FieldHint } from "../components/FieldHint.js";
 import { getLastUsedCycleId, setLastUsedCycleId } from "../lib/lastUsedCycle.js";
 import { useCreateRun } from "../lib/queries.js";
+import { findEmptyRequiredFields, focusFirstInvalidField } from "../lib/requiredFieldValidation.js";
+
+const CHARTER_REQUIRED_MESSAGE = "Charter is required.";
+const TARGET_BASE_URL_REQUIRED_MESSAGE = "Target base URL is required.";
 
 const EXAMPLE_CHARTERS: readonly string[] = [
   "test the locations flow",
@@ -17,10 +21,23 @@ export function NewRunForm({ onCreated }: { onCreated: (runId: string) => void }
   const [targetBaseUrl, setTargetBaseUrl] = useState("");
   const [cycleId, setCycleId] = useState(() => getLastUsedCycleId() ?? "");
   const [validationError, setValidationError] = useState<string | undefined>(undefined);
+  const [invalidFields, setInvalidFields] = useState<Set<string>>(new Set());
   const mutation = useCreateRun();
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
+    const requiredFields = [
+      { key: "charter", id: "charter", value: charter },
+      { key: "targetBaseUrl", id: "targetBaseUrl", value: targetBaseUrl },
+    ];
+    const emptyFields = findEmptyRequiredFields(requiredFields);
+    if (emptyFields.size > 0) {
+      setInvalidFields(emptyFields);
+      focusFirstInvalidField(requiredFields, emptyFields);
+      return;
+    }
+    setInvalidFields(new Set());
+
     const parsed = CreateRunInputSchema.safeParse({ charter, targetBaseUrl, cycleId: cycleId || undefined });
     if (!parsed.success) {
       setValidationError(parsed.error.issues[0]?.message ?? "Invalid input.");
@@ -34,7 +51,7 @@ export function NewRunForm({ onCreated }: { onCreated: (runId: string) => void }
   }
 
   return (
-    <form className="new-run-form" onSubmit={handleSubmit}>
+    <form className="new-run-form" onSubmit={handleSubmit} noValidate>
       <h2>New run</h2>
       <div className="field-label">
         <label htmlFor="charter">Charter</label>
@@ -55,7 +72,13 @@ export function NewRunForm({ onCreated }: { onCreated: (runId: string) => void }
         placeholder="test the locations flow"
         rows={3}
         required
+        aria-invalid={invalidFields.has("charter")}
       />
+      {invalidFields.has("charter") && (
+        <p className="form-error" role="alert">
+          {CHARTER_REQUIRED_MESSAGE}
+        </p>
+      )}
       <select
         aria-label="Insert an example charter"
         value=""
@@ -84,7 +107,13 @@ export function NewRunForm({ onCreated }: { onCreated: (runId: string) => void }
         onChange={(event) => setTargetBaseUrl(event.target.value)}
         placeholder="https://dev.rabbit.example"
         required
+        aria-invalid={invalidFields.has("targetBaseUrl")}
       />
+      {invalidFields.has("targetBaseUrl") && (
+        <p className="form-error" role="alert">
+          {TARGET_BASE_URL_REQUIRED_MESSAGE}
+        </p>
+      )}
       <CycleSelect id="cycleId" label="Cycle" value={cycleId} onChange={setCycleId} />
       <button type="submit" className="button button--primary" disabled={mutation.isPending}>
         {mutation.isPending ? "Starting…" : "Run"}

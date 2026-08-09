@@ -70,6 +70,26 @@ describe("NewExplorerRunForm (D8 dashboard trigger UI)", () => {
     expect(screen.getByLabelText("Target base URL")).toBeRequired();
   });
 
+  it("suppresses native validation bubbles (noValidate) — required stays for screen readers", () => {
+    const { container } = renderWithClient(<NewExplorerRunForm onCreated={vi.fn()} />);
+
+    expect(container.querySelector("form")).toHaveAttribute("novalidate");
+  });
+
+  it("empty required fields on submit: shows real inline error text for each, marks them aria-invalid, " +
+    "and focuses the first invalid field (Feature name, first in document order)", async () => {
+    const user = userEvent.setup();
+    renderWithClient(<NewExplorerRunForm onCreated={vi.fn()} />);
+
+    await user.click(screen.getByRole("button", { name: "Run explorer" }));
+
+    expect(await screen.findByText("Feature name is required.")).toBeInTheDocument();
+    expect(screen.getByText("Section description is required.")).toBeInTheDocument();
+    expect(screen.getByText("Target base URL is required.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Feature name")).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByLabelText("Feature name")).toHaveFocus();
+  });
+
   it("picking an example description fills the textarea (onboarding-friction fix)", async () => {
     const user = userEvent.setup();
     renderWithClient(<NewExplorerRunForm onCreated={vi.fn()} />);

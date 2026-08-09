@@ -274,7 +274,10 @@ button:focus-visible {
 
 .new-run-form textarea:user-invalid,
 .new-run-form input:user-invalid,
-.new-run-form select:user-invalid {
+.new-run-form select:user-invalid,
+.new-run-form textarea[aria-invalid="true"],
+.new-run-form input[aria-invalid="true"],
+.new-run-form select[aria-invalid="true"] {
   border-color: var(--tint-critical-text);
 }
 

@@ -140,6 +140,30 @@ describe("CycleList (run-cycles-spec.md §4 — cycle management + overview, one
     expect(screen.getByLabelText("Kind")).toBeRequired();
   });
 
+  it("the cycle-create form suppresses native validation bubbles (noValidate) — required stays for " +
+    "screen readers", async () => {
+    const user = userEvent.setup();
+    const { container } = renderWithClient(<CycleList />);
+    await screen.findByText("Release 3.22");
+
+    await user.click(screen.getByRole("button", { name: "+ New cycle" }));
+
+    expect(container.querySelector("form")).toHaveAttribute("novalidate");
+  });
+
+  it("empty Name on submit: shows real inline error text, marks the field aria-invalid, and focuses it", async () => {
+    const user = userEvent.setup();
+    renderWithClient(<CycleList />);
+    await screen.findByText("Release 3.22");
+
+    await user.click(screen.getByRole("button", { name: "+ New cycle" }));
+    await user.click(screen.getByRole("button", { name: "Create cycle" }));
+
+    expect(await screen.findByText("Name is required.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Name")).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByLabelText("Name")).toHaveFocus();
+  });
+
   it("creating a cycle shows the form, then hides it again on success", async () => {
     const user = userEvent.setup();
     renderWithClient(<CycleList />);

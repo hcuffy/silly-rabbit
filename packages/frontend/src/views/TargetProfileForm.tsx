@@ -1,6 +1,11 @@
-import { useState, type FormEvent } from "react";
-import { FieldHint } from "../components/FieldHint.js";
+import { Fragment, useState, type FormEvent } from "react";
+import { FieldLabel } from "../components/FieldLabel.js";
+import { findEmptyRequiredFields, focusFirstInvalidField } from "../lib/requiredFieldValidation.js";
 import { TargetProfileWriteInputSchema, type SafeTargetProfile, type TargetProfileWriteInput } from "../lib/targetProfileApiClient.js";
+
+const NAME_REQUIRED_MESSAGE = "Name is required.";
+const BASE_URL_REQUIRED_MESSAGE = "Base URL is required.";
+const ALLOWED_DOMAINS_REQUIRED_MESSAGE = "At least one allowed domain is required.";
 
 interface TargetProfileFormProperties {
   mode: "create" | "edit";
@@ -27,9 +32,23 @@ export function TargetProfileForm(
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [validationError, setValidationError] = useState<string | undefined>(undefined);
+  const [invalidFields, setInvalidFields] = useState<Set<string>>(new Set());
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
+    const requiredFields = [
+      { key: "name", id: "tp-name", value: name },
+      { key: "baseUrl", id: "tp-baseUrl", value: baseUrl },
+      { key: "allowedDomains", id: "tp-allowedDomains", value: allowedDomains },
+    ];
+    const emptyFields = findEmptyRequiredFields(requiredFields);
+    if (emptyFields.size > 0) {
+      setInvalidFields(emptyFields);
+      focusFirstInvalidField(requiredFields, emptyFields);
+      return;
+    }
+    setInvalidFields(new Set());
+
     const payload = {
       name,
       baseUrl,
@@ -54,181 +73,169 @@ export function TargetProfileForm(
     onSubmit(parsed.data);
   }
 
+  const optionalFields = [
+    {
+      id: "tp-loginUrl",
+      label: "Login URL",
+      hint: "The login page URL for this target, if it requires auto-login. Leave blank to skip login entirely for runs using this profile.",
+      value: loginUrl,
+      onChange: setLoginUrl,
+      placeholder: "https://release.rabbit.example/#/login",
+    },
+    {
+      id: "tp-email",
+      label: "Login email",
+      hint: "The login email/username value for this target. Write-only — never shown again after saving, including in Edit mode.",
+      type: "email" as const,
+      value: email,
+      onChange: setEmail,
+      placeholder: mode === "edit" ? "leave blank to keep current value" : "test@example.com",
+    },
+    {
+      id: "tp-password",
+      label: "Login password",
+      hint:
+        "The login password value for this target. Encrypted at rest, write-only — leave blank in " +
+        "Edit mode to keep the current password unchanged.",
+      type: "password" as const,
+      value: password,
+      onChange: setPassword,
+      placeholder: mode === "edit" ? "leave blank to keep current value" : "",
+    },
+    {
+      id: "tp-emailSelector",
+      label: "Email field selector",
+      hint: 'CSS selector for the login email/username input on the login page, e.g. [data-cy-id="login.email"].',
+      value: emailSelector,
+      onChange: setEmailSelector,
+      placeholder: '[data-cy-id="login.email"]',
+    },
+    {
+      id: "tp-passwordSelector",
+      label: "Password field selector",
+      hint: "CSS selector for the login password input on the login page.",
+      value: passwordSelector,
+      onChange: setPasswordSelector,
+      placeholder: '[data-cy-id="login.password"]',
+    },
+    {
+      id: "tp-submitSelector",
+      label: "Submit button selector",
+      hint: "CSS selector for the login form's submit button.",
+      value: submitSelector,
+      onChange: setSubmitSelector,
+      placeholder: '[data-cy-id="login.button"]',
+    },
+    {
+      id: "tp-nextSelector",
+      label: '"Next" button selector (2-step login)',
+      hint:
+        'CSS selector for an intermediate "Next" button, only needed for 2-step logins where email and ' +
+        'password are on separate screens. Leave blank for single-step logins.',
+      value: nextSelector,
+      onChange: setNextSelector,
+      placeholder: "optional",
+    },
+    {
+      id: "tp-timeoutMs",
+      label: "Login timeout (ms)",
+      hint: "Milliseconds to wait for each login step before timing out. Leave blank for the default (10000ms).",
+      type: "number" as const,
+      value: timeoutMs,
+      onChange: setTimeoutMs,
+      placeholder: "10000",
+    },
+    {
+      id: "tp-locationsPath",
+      label: "Locations path override",
+      hint:
+        'Overrides the default route the explorer\'s built-in "go to locations" charter step navigates to. ' +
+        "Leave blank unless this target's locations flow uses a non-default route.",
+      value: locationsPath,
+      onChange: setLocationsPath,
+      placeholder: "optional",
+    },
+  ];
+
   return (
-    <form className="new-run-form target-profile-form" onSubmit={handleSubmit}>
+    <form className="new-run-form target-profile-form" onSubmit={handleSubmit} noValidate>
       <h3>{mode === "create" ? "New target profile" : `Edit "${initial?.name}"`}</h3>
 
-      <div className="field-label">
-        <label htmlFor="tp-name">Name</label>
-        <span className="field-required" aria-hidden="true">
-          *
-        </span>
-        <FieldHint text='A display name to tell this profile apart from others, e.g. "Release" or "Dev".' />
-      </div>
+      <FieldLabel
+        htmlFor="tp-name"
+        label="Name"
+        required
+        hint='A display name to tell this profile apart from others, e.g. "Release" or "Dev".'
+      />
       <input
         id="tp-name"
         value={name}
         onChange={(event) => setName(event.target.value)}
         placeholder="Release"
         required
+        aria-invalid={invalidFields.has("name")}
       />
+      {invalidFields.has("name") && (
+        <p className="form-error" role="alert">
+          {NAME_REQUIRED_MESSAGE}
+        </p>
+      )}
 
-      <div className="field-label">
-        <label htmlFor="tp-baseUrl">Base URL</label>
-        <span className="field-required" aria-hidden="true">
-          *
-        </span>
-        <FieldHint text="The base URL of the target app (scheme + host, no path)." />
-      </div>
+      <FieldLabel
+        htmlFor="tp-baseUrl"
+        label="Base URL"
+        required
+        hint="The base URL of the target app (scheme + host, no path)."
+      />
       <input
         id="tp-baseUrl"
         value={baseUrl}
         onChange={(event) => setBaseUrl(event.target.value)}
         placeholder="https://release.rabbit.example"
         required
+        aria-invalid={invalidFields.has("baseUrl")}
       />
+      {invalidFields.has("baseUrl") && (
+        <p className="form-error" role="alert">
+          {BASE_URL_REQUIRED_MESSAGE}
+        </p>
+      )}
 
-      <div className="field-label">
-        <label htmlFor="tp-loginUrl">Login URL</label>
-        <FieldHint
-          text={
-            "The login page URL for this target, if it requires auto-login. Leave blank to skip login " +
-            "entirely for runs using this profile."
-          }
-        />
-      </div>
-      <input
-        id="tp-loginUrl"
-        value={loginUrl}
-        onChange={(event) => setLoginUrl(event.target.value)}
-        placeholder="https://release.rabbit.example/#/login"
+      {optionalFields.map((field) => (
+        <Fragment key={field.id}>
+          <FieldLabel htmlFor={field.id} label={field.label} hint={field.hint} />
+          <input
+            id={field.id}
+            type={field.type ?? "text"}
+            value={field.value}
+            onChange={(event) => field.onChange(event.target.value)}
+            placeholder={field.placeholder}
+          />
+        </Fragment>
+      ))}
+
+      <FieldLabel
+        htmlFor="tp-allowedDomains"
+        label="Allowed domains"
+        required
+        hint={
+          "Comma-separated list of hostnames a run against this profile is allowed to navigate to — " +
+          "this is a real safety boundary, not just a convenience list."
+        }
       />
-
-      <div className="field-label">
-        <label htmlFor="tp-email">Login email</label>
-        <FieldHint text="The login email/username value for this target. Write-only — never shown again after saving, including in Edit mode." />
-      </div>
-      <input
-        id="tp-email"
-        type="email"
-        value={email}
-        onChange={(event) => setEmail(event.target.value)}
-        placeholder={mode === "edit" ? "leave blank to keep current value" : "test@example.com"}
-      />
-
-      <div className="field-label">
-        <label htmlFor="tp-password">Login password</label>
-        <FieldHint
-          text={
-            "The login password value for this target. Encrypted at rest, write-only — leave blank in " +
-            "Edit mode to keep the current password unchanged."
-          }
-        />
-      </div>
-      <input
-        id="tp-password"
-        type="password"
-        value={password}
-        onChange={(event) => setPassword(event.target.value)}
-        placeholder={mode === "edit" ? "leave blank to keep current value" : ""}
-      />
-
-      <div className="field-label">
-        <label htmlFor="tp-emailSelector">Email field selector</label>
-        <FieldHint text='CSS selector for the login email/username input on the login page, e.g. [data-cy-id="login.email"].' />
-      </div>
-      <input
-        id="tp-emailSelector"
-        value={emailSelector}
-        onChange={(event) => setEmailSelector(event.target.value)}
-        placeholder='[data-cy-id="login.email"]'
-      />
-
-      <div className="field-label">
-        <label htmlFor="tp-passwordSelector">Password field selector</label>
-        <FieldHint text="CSS selector for the login password input on the login page." />
-      </div>
-      <input
-        id="tp-passwordSelector"
-        value={passwordSelector}
-        onChange={(event) => setPasswordSelector(event.target.value)}
-        placeholder='[data-cy-id="login.password"]'
-      />
-
-      <div className="field-label">
-        <label htmlFor="tp-submitSelector">Submit button selector</label>
-        <FieldHint text="CSS selector for the login form's submit button." />
-      </div>
-      <input
-        id="tp-submitSelector"
-        value={submitSelector}
-        onChange={(event) => setSubmitSelector(event.target.value)}
-        placeholder='[data-cy-id="login.button"]'
-      />
-
-      <div className="field-label">
-        <label htmlFor="tp-nextSelector">"Next" button selector (2-step login)</label>
-        <FieldHint
-          text={
-            'CSS selector for an intermediate "Next" button, only needed for 2-step logins where email and ' +
-            'password are on separate screens. Leave blank for single-step logins.'
-          }
-        />
-      </div>
-      <input
-        id="tp-nextSelector"
-        value={nextSelector}
-        onChange={(event) => setNextSelector(event.target.value)}
-        placeholder="optional"
-      />
-
-      <div className="field-label">
-        <label htmlFor="tp-timeoutMs">Login timeout (ms)</label>
-        <FieldHint text="Milliseconds to wait for each login step before timing out. Leave blank for the default (10000ms)." />
-      </div>
-      <input
-        id="tp-timeoutMs"
-        type="number"
-        value={timeoutMs}
-        onChange={(event) => setTimeoutMs(event.target.value)}
-        placeholder="10000"
-      />
-
-      <div className="field-label">
-        <label htmlFor="tp-locationsPath">Locations path override</label>
-        <FieldHint
-          text={
-            'Overrides the default route the explorer\'s built-in "go to locations" charter step navigates to. ' +
-            "Leave blank unless this target's locations flow uses a non-default route."
-          }
-        />
-      </div>
-      <input
-        id="tp-locationsPath"
-        value={locationsPath}
-        onChange={(event) => setLocationsPath(event.target.value)}
-        placeholder="optional"
-      />
-
-      <div className="field-label">
-        <label htmlFor="tp-allowedDomains">Allowed domains</label>
-        <span className="field-required" aria-hidden="true">
-          *
-        </span>
-        <FieldHint
-          text={
-            "Comma-separated list of hostnames a run against this profile is allowed to navigate to — " +
-            "this is a real safety boundary, not just a convenience list."
-          }
-        />
-      </div>
       <input
         id="tp-allowedDomains"
         value={allowedDomains}
         onChange={(event) => setAllowedDomains(event.target.value)}
         placeholder="release.rabbit.example"
         required
+        aria-invalid={invalidFields.has("allowedDomains")}
       />
+      {invalidFields.has("allowedDomains") && (
+        <p className="form-error" role="alert">
+          {ALLOWED_DOMAINS_REQUIRED_MESSAGE}
+        </p>
+      )}
 
       <div className="target-profile-form__actions">
         <button type="submit" className="button button--primary" disabled={isSubmitting}>

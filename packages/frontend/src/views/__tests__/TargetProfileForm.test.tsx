@@ -88,8 +88,17 @@ describe("TargetProfileForm (Settings page — target profile create/edit)", () 
     expect(screen.getByLabelText("Login email")).not.toBeRequired();
   });
 
-  it("does not call onSubmit when a required field is empty — native constraint validation blocks " +
-    "the submit before our JS handler runs, and marks the field invalid", async () => {
+  it("the form suppresses native validation bubbles (noValidate) — required attributes stay present " +
+    "for screen readers, but the browser no longer blocks submission or shows its own bubble UI", () => {
+    const { container } = render(<TargetProfileForm mode="create" isSubmitting={false} onSubmit={vi.fn()} />);
+
+    expect(container.querySelector("form")).toHaveAttribute("novalidate");
+    expect(screen.getByLabelText("Name")).toBeRequired();
+  });
+
+  it("does not call onSubmit when a required field is empty — our own JS handler (not native " +
+    "constraint validation, which noValidate suppresses) blocks it and marks the field invalid " +
+    "both visually (aria-invalid) and for the native validity API (still real, just not auto-reported)", async () => {
     const onSubmit = vi.fn();
     const user = userEvent.setup();
     render(<TargetProfileForm mode="create" isSubmitting={false} onSubmit={onSubmit} />);
@@ -98,6 +107,31 @@ describe("TargetProfileForm (Settings page — target profile create/edit)", () 
 
     expect(onSubmit).not.toHaveBeenCalled();
     expect(screen.getByLabelText("Name")).toBeInvalid();
+    expect(screen.getByLabelText("Name")).toHaveAttribute("aria-invalid", "true");
+  });
+
+  it("shows a real, immediately-visible inline error message for each empty required field on failed " +
+    "submit — not a hover-triggered popover, not just a border color", async () => {
+    const user = userEvent.setup();
+    render(<TargetProfileForm mode="create" isSubmitting={false} onSubmit={vi.fn()} />);
+
+    await user.click(screen.getByRole("button", { name: "Create profile" }));
+
+    expect(await screen.findByText("Name is required.")).toBeInTheDocument();
+    expect(screen.getByText("Base URL is required.")).toBeInTheDocument();
+    expect(screen.getByText("At least one allowed domain is required.")).toBeInTheDocument();
+    expect(screen.getByText("Name is required.").closest("p")).toHaveAttribute("role", "alert");
+  });
+
+  it("focuses the first invalid field (document order: Name, then Base URL, then Allowed domains) on " +
+    "failed submit — restoring the focus-management the browser's native bubble used to provide", async () => {
+    const user = userEvent.setup();
+    render(<TargetProfileForm mode="create" isSubmitting={false} onSubmit={vi.fn()} />);
+
+    await user.type(screen.getByLabelText("Name"), "Dev");
+    await user.click(screen.getByRole("button", { name: "Create profile" }));
+
+    expect(screen.getByLabelText("Base URL")).toHaveFocus();
   });
 
   it("still shows our own validation error for a zod-only constraint once required fields are filled " +
