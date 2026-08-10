@@ -16,6 +16,7 @@ export const NavMapEntrySchema = z.object({
   parentLabel: z.string().optional(),
   discoveredAt: z.date(),
   lastVerifiedAt: z.date().optional(),
+  lastRelabeledAt: z.date().optional(),
   isStale: z.boolean().default(false),
   pageStructure: NavMapPageStructureSchema.optional(),
 });

@@ -20,6 +20,7 @@ interface EntryDraft {
   label: string;
   normalizedUrl?: string;
   parentLabel?: string;
+  originUrl: string;
   discoveredAt: Date;
   pageStructure?: NavMapPageStructure;
 }
@@ -76,7 +77,7 @@ export async function crawlNavMap(page: Page, options: NavMapCrawlOptions = {}):
   const known = new Map<string, EntryDraft>();
   const queue: EntryDraft[] = [];
 
-  function registerCandidates(nodes: AriaNode[], parentLabel: string | undefined): void {
+  function registerCandidates(nodes: AriaNode[], parentLabel: string | undefined, originUrl: string): void {
     for (const node of nodes) {
       if (known.size >= maxEntries) return;
       const label = (node.name ?? "").trim();
@@ -84,17 +85,23 @@ export async function crawlNavMap(page: Page, options: NavMapCrawlOptions = {}):
       const key = entryKey(node.role, label);
       if (known.has(key)) continue;
 
-      const entry: EntryDraft = { role: node.role, label, parentLabel, discoveredAt: new Date() };
+      const entry: EntryDraft = { role: node.role, label, parentLabel, originUrl, discoveredAt: new Date() };
       known.set(key, entry);
       queue.push(entry);
     }
   }
 
-  registerCandidates(await collectVisibleCandidates(page), undefined);
+  registerCandidates(await collectVisibleCandidates(page), undefined, page.url());
 
   while (queue.length > 0) {
     const current = queue.shift();
     if (!current) break;
+
+    if (page.url() !== current.originUrl) {
+      await options.onBeforeNavigate?.(current.originUrl);
+      await page.goto(current.originUrl);
+      await page.waitForLoadState("networkidle");
+    }
 
     const visited = await visitEntry(page, current, options);
     if (!visited) continue;
@@ -102,7 +109,7 @@ export async function crawlNavMap(page: Page, options: NavMapCrawlOptions = {}):
     current.normalizedUrl = normalizeUrl(page.url());
     current.pageStructure = await capturePageStructure(page, current.label);
 
-    registerCandidates(await collectVisibleCandidates(page), current.label);
+    registerCandidates(await collectVisibleCandidates(page), current.label, page.url());
   }
 
   return [...known.values()].map((draft) =>

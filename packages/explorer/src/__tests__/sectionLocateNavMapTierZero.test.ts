@@ -1,8 +1,20 @@
-import type { AnthropicLike } from "@silly-rabbit/engine";
+import { deriveFingerprint, normalizeUrl, type AnthropicLike } from "@silly-rabbit/engine";
 import type { NavMap, NavMapEntry } from "@silly-rabbit/shared";
 import { chromium, type Browser, type Page } from "playwright";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { locateSection } from "../sectionLocate.js";
+
+function fakeSectionMatchClient(matchedLabel: string, confidence: number): () => AnthropicLike {
+  return (): AnthropicLike => ({
+    messages: {
+      create: () =>
+        Promise.resolve({
+          content: [{ type: "tool_use", name: "submit_section_match", input: { matchedLabel, confidence } }],
+          usage: { input_tokens: 50, output_tokens: 10 },
+        }),
+    },
+  });
+}
 
 function entry(overrides: Partial<NavMapEntry>): NavMapEntry {
   return { role: "link", label: "Home", discoveredAt: new Date(), isStale: false, ...overrides };
@@ -167,6 +179,97 @@ describe("locateSection tier-0 (app-mapping-spec.md §7) — real chromium", () 
       expect(result?.matchedLabel).toBe(`${iconGlyph} Nutzer`);
       expect(result?.matchSource).toBe("map");
       expect(result?.sectionUrl).toBe("https://allowed.example/section");
+    });
+  });
+
+  describe("locale-relabel corroboration (navmap-locale-spec.md §4) — verify-miss resolves to the same " +
+    "destination under a new label vs. a genuinely different destination", () => {
+    it("a locale switch (same href destination, different live label) self-heals via onNavMapEntryRelabeled " +
+      "— does NOT mark the entry stale, even though the stored label no longer verifies live", async () => {
+      page = await browser.newPage();
+      await page.route("https://allowed.example/**", (route) => route.fulfill({ contentType: "text/html", body: "OK" }));
+      await page.setContent(
+        `<html><body><a href="https://allowed.example/section">Locations</a></body></html>`,
+      );
+      const onNavMapEntryStale = vi.fn();
+      const onNavMapEntryRelabeled = vi.fn();
+      const staleEntry = entry({
+        role: "link",
+        label: "Standorte",
+        normalizedUrl: normalizeUrl("https://allowed.example/section"),
+      });
+
+      const result = await locateSection(page, "Standorte", {
+        navMap: navMap([staleEntry]),
+        llmClientFactory: vi.fn(fakeSectionMatchClient("Locations", 0.9)),
+        onNavMapEntryStale,
+        onNavMapEntryRelabeled,
+      });
+
+      expect(result?.matchedLabel).toBe("Locations");
+      expect(result?.matchSource).toBe("llm");
+      expect(onNavMapEntryRelabeled).toHaveBeenCalledWith(staleEntry, "Locations");
+      expect(onNavMapEntryStale).not.toHaveBeenCalled();
+    });
+
+    it("a genuinely different destination (real removal/regression, not a relabel) still marks the entry " +
+      "stale — resolving to *something* live is not enough, the destination itself must corroborate", async () => {
+      page = await browser.newPage();
+      await page.route("https://allowed.example/**", (route) => route.fulfill({ contentType: "text/html", body: "OK" }));
+      await page.setContent(
+        `<html><body><a href="https://allowed.example/new-different-section">Somewhere Else</a></body></html>`,
+      );
+      const onNavMapEntryStale = vi.fn();
+      const onNavMapEntryRelabeled = vi.fn();
+      const staleEntry = entry({
+        role: "link",
+        label: "Standorte",
+        normalizedUrl: normalizeUrl("https://allowed.example/old-section"),
+      });
+
+      const result = await locateSection(page, "Standorte", {
+        navMap: navMap([staleEntry]),
+        llmClientFactory: vi.fn(fakeSectionMatchClient("Somewhere Else", 0.9)),
+        onNavMapEntryStale,
+        onNavMapEntryRelabeled,
+      });
+
+      expect(result?.matchedLabel).toBe("Somewhere Else");
+      expect(onNavMapEntryStale).toHaveBeenCalledWith(staleEntry);
+      expect(onNavMapEntryRelabeled).not.toHaveBeenCalled();
+    });
+
+    it("click-only entry (no href, URL never changes) corroborates via structureFingerprint alone — the " +
+      "dual-signal path CONFIRM-2 asked for, proven with a real fingerprint captured from the live page, not " +
+      "a hand-typed hash", async () => {
+      page = await browser.newPage();
+      await page.setContent(`<html><body><ul><li>Locations</li></ul></body></html>`);
+      const { fingerprint } = deriveFingerprint(await page.ariaSnapshot({ boxes: true }));
+
+      const onNavMapEntryStale = vi.fn();
+      const onNavMapEntryRelabeled = vi.fn();
+      const staleEntry = entry({
+        role: "listitem",
+        label: "Standorte",
+        pageStructure: {
+          detectedLanguage: "de",
+          elements: [],
+          entityFields: [],
+          structureFingerprint: fingerprint,
+          researchedAt: new Date(),
+        },
+      });
+
+      const result = await locateSection(page, "Standorte", {
+        navMap: navMap([staleEntry]),
+        llmClientFactory: vi.fn(fakeSectionMatchClient("Locations", 0.9)),
+        onNavMapEntryStale,
+        onNavMapEntryRelabeled,
+      });
+
+      expect(result?.matchedLabel).toBe("Locations");
+      expect(onNavMapEntryRelabeled).toHaveBeenCalledWith(staleEntry, "Locations");
+      expect(onNavMapEntryStale).not.toHaveBeenCalled();
     });
   });
 });

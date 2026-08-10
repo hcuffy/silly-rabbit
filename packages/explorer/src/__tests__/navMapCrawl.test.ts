@@ -145,6 +145,38 @@ describe("crawlNavMap (app-mapping-spec.md §5) — real chromium, synthetic mul
     expect(entries.length).toBeLessThanOrEqual(3);
     await cappedPage.close();
   });
+
+  it(
+    "revisits a candidate's own discovery page before clicking it, so a sidebar item found on the landing " +
+      "page is still reachable after the crawl has already navigated away via an earlier-queued link (real-" +
+      "target bug: 0 of 23 listitem entries were ever visited on a live crawl, because visitEntry ran " +
+      "against whatever page the crawl had already navigated to, not the page the candidate was discovered on)",
+    async () => {
+      const routes: Record<string, string> = {
+        "/": html(
+          `<a href="/quick">Quick Action</a>` +
+            `<ul><li onclick="location.href='/sidebar-target'">Sidebar Item</li></ul>`,
+        ).body,
+        "/quick": html(`<h1>Quick page</h1>`).body,
+        "/sidebar-target": html(`<h1>Sidebar target</h1><input aria-label="Detail" />`).body,
+      };
+      const staleCandidatePage = await browser.newPage();
+      await staleCandidatePage.route(`${ORIGIN}/**`, (route) => {
+        const path = new URL(route.request().url()).pathname;
+        const body = routes[path];
+        return body ? route.fulfill({ contentType: "text/html", body }) : route.fulfill({ status: 404, body: "not found" });
+      });
+      await staleCandidatePage.goto(`${ORIGIN}/`);
+
+      const entries = await crawlNavMap(staleCandidatePage);
+      const sidebarItem = entries.find((entry) => entry.label === "Sidebar Item" && entry.role === "listitem");
+
+      expect(sidebarItem?.normalizedUrl).toContain("sidebar-target");
+      expect(sidebarItem?.pageStructure?.elements.some((element) => element.kind === "input")).toBe(true);
+
+      await staleCandidatePage.close();
+    },
+  );
 });
 
 describe("crawlNavMap — one level of nav nesting (§4.1), real chromium", () => {

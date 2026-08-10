@@ -178,6 +178,14 @@ async function executeExplorerRun(run: Run, input: StartExplorerRunInput, deps: 
         onNavMapEntryStale: navMapRepo
           ? (entry) => navMapRepo.updateEntryVerification(run.targetBaseUrl, entry.role, entry.label, { isStale: true })
           : undefined,
+        onNavMapEntryRelabeled: navMapRepo
+          ? (entry, newLabel) => navMapRepo.updateEntryVerification(run.targetBaseUrl, entry.role, entry.label, {
+              isStale: false,
+              label: newLabel,
+              lastVerifiedAt: new Date(),
+              lastRelabeledAt: new Date(),
+            })
+          : undefined,
       });
       if (!located) {
         throw new Error(`section "${input.sectionDescription}" not found in navigation`);

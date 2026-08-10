@@ -6,7 +6,9 @@ type NavMapDocument = Omit<NavMap, "id"> & { _id: string };
 
 export interface NavMapEntryVerificationPatch {
   isStale: boolean;
+  label?: string;
   lastVerifiedAt?: Date;
+  lastRelabeledAt?: Date;
   pageStructure?: NavMapPageStructure;
 }
 
@@ -63,7 +65,9 @@ export class NavMapRepo {
     patch: NavMapEntryVerificationPatch,
   ): Promise<void> {
     const setFields: Record<string, unknown> = { "entries.$[entry].isStale": patch.isStale };
+    if (patch.label) setFields["entries.$[entry].label"] = patch.label;
     if (patch.lastVerifiedAt) setFields["entries.$[entry].lastVerifiedAt"] = patch.lastVerifiedAt;
+    if (patch.lastRelabeledAt) setFields["entries.$[entry].lastRelabeledAt"] = patch.lastRelabeledAt;
     if (patch.pageStructure) setFields["entries.$[entry].pageStructure"] = toDocumentPageStructure(patch.pageStructure);
 
     await this.collection.updateOne(

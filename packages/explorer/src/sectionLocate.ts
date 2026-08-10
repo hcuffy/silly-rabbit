@@ -1,4 +1,11 @@
-import { findFirstNode, parseAriaSnapshot, type AnthropicLike, type AriaNode } from "@silly-rabbit/engine";
+import {
+  deriveFingerprint,
+  findFirstNode,
+  normalizeUrl,
+  parseAriaSnapshot,
+  type AnthropicLike,
+  type AriaNode,
+} from "@silly-rabbit/engine";
 import type { ActionDescriptor } from "@silly-rabbit/driver";
 import type { NavMap, NavMapEntry } from "@silly-rabbit/shared";
 import type { Page } from "playwright";
@@ -17,6 +24,7 @@ export interface SectionLocateOptions {
   navMap?: NavMap;
   onNavMapEntryVerified?: (entry: NavMapEntry) => Promise<void> | void;
   onNavMapEntryStale?: (entry: NavMapEntry) => Promise<void> | void;
+  onNavMapEntryRelabeled?: (entry: NavMapEntry, newLabel: string) => Promise<void> | void;
 }
 
 export interface SectionLocateResult {
@@ -94,6 +102,38 @@ async function verifyNavMapCandidate(page: Page, candidate: NavMapEntry): Promis
   return (await locator.count()) > 0;
 }
 
+async function corroboratesSameDestination(
+  page: Page,
+  candidate: NavMapEntry,
+  resolved: SectionLocateResult,
+): Promise<boolean> {
+  const checks: boolean[] = [];
+
+  if (candidate.normalizedUrl !== undefined) {
+    checks.push(candidate.normalizedUrl === normalizeUrl(resolved.sectionUrl));
+  }
+  if (candidate.pageStructure !== undefined) {
+    const rawSnapshot = await page.ariaSnapshot({ boxes: true });
+    const { fingerprint } = deriveFingerprint(rawSnapshot);
+    checks.push(fingerprint === candidate.pageStructure.structureFingerprint);
+  }
+
+  return checks.length > 0 && checks.every(Boolean);
+}
+
+async function recordStaleCandidateOutcome(
+  page: Page,
+  candidate: NavMapEntry,
+  resolved: SectionLocateResult | undefined,
+  options: SectionLocateOptions,
+): Promise<void> {
+  if (resolved && (await corroboratesSameDestination(page, candidate, resolved))) {
+    await options.onNavMapEntryRelabeled?.(candidate, resolved.matchedLabel);
+    return;
+  }
+  await options.onNavMapEntryStale?.(candidate);
+}
+
 interface ResolvedMatch {
   role: string;
   matchedLabel: string;
@@ -126,23 +166,12 @@ async function resolveMatch(page: Page, match: ResolvedMatch, options: SectionLo
   return { sectionUrl: page.url(), matchedLabel, matchSource, llmConfidence };
 }
 
-export async function locateSection(
+async function resolveViaLiveTiers(
   page: Page,
   sectionDescription: string,
-  options: SectionLocateOptions = {},
+  options: SectionLocateOptions,
 ): Promise<SectionLocateResult | undefined> {
   const { words, isFallback } = significantWords(sectionDescription);
-
-  if (options.navMap) {
-    const candidate = findNavMapCandidate(options.navMap, words, isFallback);
-    if (candidate) {
-      if (await verifyNavMapCandidate(page, candidate)) {
-        await options.onNavMapEntryVerified?.(candidate);
-        return resolveMatch(page, { role: candidate.role, matchedLabel: candidate.label, matchSource: "map" }, options);
-      }
-      await options.onNavMapEntryStale?.(candidate);
-    }
-  }
 
   const snapshot = await page.ariaSnapshot({ boxes: true });
   const tree = parseAriaSnapshot(snapshot);
@@ -184,4 +213,32 @@ export async function locateSection(
     { role: matchedCandidate.role, matchedLabel: realMatchedLabel, matchSource: "llm", llmConfidence: llmResult.confidence },
     options,
   );
+}
+
+export async function locateSection(
+  page: Page,
+  sectionDescription: string,
+  options: SectionLocateOptions = {},
+): Promise<SectionLocateResult | undefined> {
+  let staleCandidate: NavMapEntry | undefined;
+
+  if (options.navMap) {
+    const { words, isFallback } = significantWords(sectionDescription);
+    const candidate = findNavMapCandidate(options.navMap, words, isFallback);
+    if (candidate) {
+      if (await verifyNavMapCandidate(page, candidate)) {
+        await options.onNavMapEntryVerified?.(candidate);
+        return resolveMatch(page, { role: candidate.role, matchedLabel: candidate.label, matchSource: "map" }, options);
+      }
+      staleCandidate = candidate;
+    }
+  }
+
+  const result = await resolveViaLiveTiers(page, sectionDescription, options);
+
+  if (staleCandidate) {
+    await recordStaleCandidateOutcome(page, staleCandidate, result, options);
+  }
+
+  return result;
 }
