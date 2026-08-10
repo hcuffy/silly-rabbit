@@ -1,7 +1,8 @@
 import type { ActionDescriptor } from "@silly-rabbit/driver";
-import type { NavMap, NavMapEntry } from "@silly-rabbit/shared";
+import type { NavMap, NavMapEntry, NavMapPageStructure } from "@silly-rabbit/shared";
 import type { Page } from "playwright";
 import { capturePageStructure, visitEntry } from "./navMapCrawl.js";
+import { corroboratesSameDestination } from "./sectionLocate.js";
 
 export const DEFAULT_NAV_MAP_SWEEP_BATCH_SIZE = 5;
 
@@ -29,10 +30,38 @@ export function pickStalestNavMapEntries(
     .slice(0, batchSize);
 }
 
+async function tryCorroborateViaDestination(
+  page: Page,
+  entry: NavMapEntry,
+  options: NavMapSweepOptions,
+): Promise<NavMapPageStructure | undefined> {
+  if (!entry.normalizedUrl) return undefined;
+
+  await options.onBeforeNavigate?.(entry.normalizedUrl);
+  await page.goto(entry.normalizedUrl);
+  await page.waitForLoadState("networkidle");
+
+  const freshStructure = await capturePageStructure(page, entry.label);
+  const corroborated = await corroboratesSameDestination(page, entry, {
+    sectionUrl: entry.normalizedUrl,
+    matchedLabel: entry.label,
+    matchSource: "map",
+  });
+
+  return corroborated ? freshStructure : undefined;
+}
+
 async function sweepOneEntry(page: Page, entry: NavMapEntry, options: NavMapSweepOptions): Promise<NavMapEntry> {
   try {
     const resolved = await visitEntry(page, entry, options);
     if (!resolved) {
+      const corroboratedStructure = await tryCorroborateViaDestination(page, entry, options);
+      if (corroboratedStructure) {
+        console.log(
+          `navMap sweep: label mismatch corroborated as the same destination — "${entry.label}" (${entry.role}) not marked stale`,
+        );
+        return { ...entry, isStale: false, lastVerifiedAt: new Date(), lastRelabeledAt: new Date(), pageStructure: corroboratedStructure };
+      }
       console.log(`navMap sweep: nav-label drift — "${entry.label}" (${entry.role}) no longer resolves live`);
       return { ...entry, isStale: true };
     }

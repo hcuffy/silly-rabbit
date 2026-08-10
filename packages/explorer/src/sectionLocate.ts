@@ -102,7 +102,7 @@ async function verifyNavMapCandidate(page: Page, candidate: NavMapEntry): Promis
   return (await locator.count()) > 0;
 }
 
-async function corroboratesSameDestination(
+export async function corroboratesSameDestination(
   page: Page,
   candidate: NavMapEntry,
   resolved: SectionLocateResult,

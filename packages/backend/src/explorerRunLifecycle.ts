@@ -101,6 +101,7 @@ async function sweepAndPersistNavMap(input: NavMapSweepAfterRunInput): Promise<v
     await input.navMapRepo.updateEntryVerification(input.navMap.baseUrl, entry.role, entry.label, {
       isStale: entry.isStale,
       lastVerifiedAt: entry.lastVerifiedAt,
+      lastRelabeledAt: entry.lastRelabeledAt,
       pageStructure: entry.pageStructure,
     });
   }

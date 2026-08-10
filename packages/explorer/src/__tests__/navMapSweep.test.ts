@@ -1,3 +1,4 @@
+import { deriveFingerprint, normalizeUrl } from "@silly-rabbit/engine";
 import type { NavMap, NavMapEntry } from "@silly-rabbit/shared";
 import { chromium, type Browser, type Page } from "playwright";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
@@ -137,5 +138,109 @@ describe("sweepNavMapEntries (app-mapping-spec.md §6.2/§6.4) — real chromium
 
     expect(results).toHaveLength(3);
     expect(results.map((entry) => entry.label)).toEqual(["Entry 0", "Entry 1", "Entry 2"]);
+  });
+
+  describe("locale-relabel corroboration (navmap-locale-spec.md §4, same pattern as sectionLocate.ts's verify-miss " +
+    "path) — a literal-label mismatch is no longer immediately treated as drift", () => {
+    it("a locale switch (live label no longer matches, but the entry's own normalizedUrl still resolves to the " +
+      "same real, fingerprint-matching destination) self-heals — not marked stale", async () => {
+      page = await browser.newPage();
+      const routes: Record<string, { contentType: string; body: string }> = {
+        "/": html(`<a href="/section">Locations</a>`),
+        "/section": html(`<h1>Section</h1><input aria-label="Filter" />`),
+      };
+      await page.route(`${ORIGIN}/**`, (route) => {
+        const path = new URL(route.request().url()).pathname;
+        const body = routes[path];
+        return body ? route.fulfill(body) : route.fulfill({ status: 404, body: "not found" });
+      });
+
+      await page.goto(`${ORIGIN}/section`);
+      const { fingerprint } = deriveFingerprint(await page.ariaSnapshot({ boxes: true }));
+      await page.goto(`${ORIGIN}/`);
+
+      const staleEntry = makeEntry({
+        label: "Standorte",
+        role: "link",
+        lastVerifiedAt: new Date("2020-01-01"),
+        normalizedUrl: normalizeUrl(`${ORIGIN}/section`),
+        pageStructure: {
+          detectedLanguage: "de",
+          elements: [],
+          entityFields: [],
+          structureFingerprint: fingerprint,
+          researchedAt: new Date("2020-01-01"),
+        },
+      });
+
+      const results = await sweepNavMapEntries(page, makeNavMap([staleEntry]), { batchSize: 1 });
+
+      expect(results).toHaveLength(1);
+      const result = results[0]!;
+      expect(result.isStale).toBe(false);
+      expect(result.label).toBe("Standorte");
+      expect(result.lastRelabeledAt).toBeInstanceOf(Date);
+      expect(result.lastVerifiedAt?.getTime()).toBeGreaterThan(new Date("2020-01-01").getTime());
+    });
+
+    it("a genuinely different destination (the stored URL now resolves to different, non-matching content — a " +
+      "real removal/regression, not a relabel) still marks the entry stale, not relabeled", async () => {
+      page = await browser.newPage();
+      await page.route(`${ORIGIN}/**`, (route) => {
+        const path = new URL(route.request().url()).pathname;
+        if (path === "/") return route.fulfill(html(`<a href="/somewhere">Different Live Label</a>`));
+        return route.fulfill({ status: 404, body: "not found" });
+      });
+      await page.goto(`${ORIGIN}/`);
+
+      const staleEntry = makeEntry({
+        label: "Standorte",
+        role: "link",
+        lastVerifiedAt: new Date("2020-01-01"),
+        normalizedUrl: normalizeUrl(`${ORIGIN}/old-section`),
+        pageStructure: {
+          detectedLanguage: "de",
+          elements: [],
+          entityFields: [],
+          structureFingerprint: "0000000000000000000000000000000000000000000000000000000000000000",
+          researchedAt: new Date("2020-01-01"),
+        },
+      });
+
+      const results = await sweepNavMapEntries(page, makeNavMap([staleEntry]), { batchSize: 1 });
+
+      expect(results).toHaveLength(1);
+      const result = results[0]!;
+      expect(result.isStale).toBe(true);
+      expect(result.lastRelabeledAt).toBeUndefined();
+    });
+
+    it("an entry with no stored normalizedUrl at all cannot be corroborated (the sweep only ever revisits a " +
+      "known destination directly — unlike sectionLocate.ts it has no click-through re-resolution step to " +
+      "observe a live label from) and is correctly still marked stale, not relabeled", async () => {
+      page = await browser.newPage();
+      await page.route(`${ORIGIN}/**`, (route) => route.fulfill(html(`<p>nothing matches</p>`)));
+      await page.goto(`${ORIGIN}/`);
+
+      const staleEntry = makeEntry({
+        label: "Standorte",
+        role: "listitem",
+        lastVerifiedAt: new Date("2020-01-01"),
+        pageStructure: {
+          detectedLanguage: "de",
+          elements: [],
+          entityFields: [],
+          structureFingerprint: "1111111111111111111111111111111111111111111111111111111111111111",
+          researchedAt: new Date("2020-01-01"),
+        },
+      });
+
+      const results = await sweepNavMapEntries(page, makeNavMap([staleEntry]), { batchSize: 1 });
+
+      expect(results).toHaveLength(1);
+      const result = results[0]!;
+      expect(result.isStale).toBe(true);
+      expect(result.lastRelabeledAt).toBeUndefined();
+    });
   });
 });
