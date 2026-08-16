@@ -4,11 +4,15 @@ import { dirname } from "node:path";
 
 export async function resolveSessionSecret(environment: NodeJS.ProcessEnv, path: string): Promise<string> {
   const fromEnvironment = environment.SESSION_SECRET;
-  if (fromEnvironment) return fromEnvironment;
+  if (fromEnvironment) {
+    return fromEnvironment;
+  }
 
   try {
     const existing = (await readFile(path, "utf8")).trim();
-    if (existing) return existing;
+    if (existing) {
+      return existing;
+    }
   } catch {
     /* empty */
   }

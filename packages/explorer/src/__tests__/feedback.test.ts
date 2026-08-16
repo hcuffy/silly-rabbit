@@ -57,64 +57,65 @@ describe("recordFeedback (explorer-spec §10.2)", () => {
     expect(upsertedFindings[0]).toMatchObject({ id: "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d", status: "DISMISSED" });
   });
 
-  it("confirmed_issue creates a new Learning when none exists yet, keyed from the finding's run, " +
-    "and writes humanVerdict onto the Finding itself", async () => {
-    const { repo: learningRepo, upserted } = fakeLearningRepo(null);
-    const { repo: findingRepo, upserted: upsertedFindings } = fakeFindingRepo();
-    await recordFeedback(
-      { finding: makeFinding(), featureId: "locations", verdict: "confirmed_issue" },
-      learningRepo,
-      findingRepo,
-    );
+  it(
+    "confirmed_issue creates a new Learning when none exists yet, keyed from the finding's run, " + "and writes humanVerdict onto the Finding itself",
+    async () => {
+      const { repo: learningRepo, upserted } = fakeLearningRepo(null);
+      const { repo: findingRepo, upserted: upsertedFindings } = fakeFindingRepo();
+      await recordFeedback({ finding: makeFinding(), featureId: "locations", verdict: "confirmed_issue" }, learningRepo, findingRepo);
 
-    expect(upserted).toHaveLength(1);
-    expect(upserted[0]).toMatchObject({
-      featureId: "locations",
-      learningType: "confirmed_issue",
-      source: "run_verdict",
-      firstSeenRunId: "run-1",
-      lastConfirmedRunId: "run-1",
-      status: "active",
-      dedupKey: "dedup-1",
-    });
-    expect(upsertedFindings).toHaveLength(1);
-    expect(upsertedFindings[0]).toMatchObject({ id: "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d", humanVerdict: "confirmed_issue" });
-  });
+      expect(upserted).toHaveLength(1);
+      expect(upserted[0]).toMatchObject({
+        featureId: "locations",
+        learningType: "confirmed_issue",
+        source: "run_verdict",
+        firstSeenRunId: "run-1",
+        lastConfirmedRunId: "run-1",
+        status: "active",
+        dedupKey: "dedup-1",
+      });
+      expect(upsertedFindings).toHaveLength(1);
+      expect(upsertedFindings[0]).toMatchObject({ id: "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d", humanVerdict: "confirmed_issue" });
+    },
+  );
 
-  it("intended_behavior on an existing Learning bumps lastConfirmedRunId and status, keeps firstSeenRunId, " +
-    "and writes humanVerdict onto the Finding itself", async () => {
-    const existing: Learning = {
-      id: "1a2b3c4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
-      featureId: "locations",
-      learningType: "confirmed_issue",
-      description: "old description",
-      source: "run_verdict",
-      firstSeenRunId: "run-0",
-      lastConfirmedRunId: "run-0",
-      status: "stale",
-      dedupKey: "dedup-1",
-      createdAt: new Date("2026-01-01"),
-      updatedAt: new Date("2026-01-01"),
-    };
-    const { repo: learningRepo, upserted } = fakeLearningRepo(existing);
-    const { repo: findingRepo, upserted: upsertedFindings } = fakeFindingRepo();
-    await recordFeedback(
-      { finding: makeFinding({ runId: "run-2" }), featureId: "locations", verdict: "intended_behavior" },
-      learningRepo,
-      findingRepo,
-    );
+  it(
+    "intended_behavior on an existing Learning bumps lastConfirmedRunId and status, keeps firstSeenRunId, " +
+      "and writes humanVerdict onto the Finding itself",
+    async () => {
+      const existing: Learning = {
+        id: "1a2b3c4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+        featureId: "locations",
+        learningType: "confirmed_issue",
+        description: "old description",
+        source: "run_verdict",
+        firstSeenRunId: "run-0",
+        lastConfirmedRunId: "run-0",
+        status: "stale",
+        dedupKey: "dedup-1",
+        createdAt: new Date("2026-01-01"),
+        updatedAt: new Date("2026-01-01"),
+      };
+      const { repo: learningRepo, upserted } = fakeLearningRepo(existing);
+      const { repo: findingRepo, upserted: upsertedFindings } = fakeFindingRepo();
+      await recordFeedback(
+        { finding: makeFinding({ runId: "run-2" }), featureId: "locations", verdict: "intended_behavior" },
+        learningRepo,
+        findingRepo,
+      );
 
-    expect(upserted).toHaveLength(1);
-    expect(upserted[0]).toMatchObject({
-      id: "1a2b3c4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
-      learningType: "intended_behavior",
-      firstSeenRunId: "run-0",
-      lastConfirmedRunId: "run-2",
-      status: "active",
-    });
-    expect(upsertedFindings).toHaveLength(1);
-    expect(upsertedFindings[0]).toMatchObject({ humanVerdict: "intended_behavior" });
-  });
+      expect(upserted).toHaveLength(1);
+      expect(upserted[0]).toMatchObject({
+        id: "1a2b3c4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+        learningType: "intended_behavior",
+        firstSeenRunId: "run-0",
+        lastConfirmedRunId: "run-2",
+        status: "active",
+      });
+      expect(upsertedFindings).toHaveLength(1);
+      expect(upsertedFindings[0]).toMatchObject({ humanVerdict: "intended_behavior" });
+    },
+  );
 
   it("dismiss does NOT write humanVerdict — status: DISMISSED remains the only signal for that branch (unchanged by design)", async () => {
     const { repo: learningRepo } = fakeLearningRepo();

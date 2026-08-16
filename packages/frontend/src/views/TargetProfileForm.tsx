@@ -16,9 +16,7 @@ interface TargetProfileFormProperties {
   submitError?: string;
 }
 
-export function TargetProfileForm(
-  { mode, initial, onSubmit, onCancel, isSubmitting, submitError }: TargetProfileFormProperties,
-) {
+export function TargetProfileForm({ mode, initial, onSubmit, onCancel, isSubmitting, submitError }: TargetProfileFormProperties) {
   const [name, setName] = useState(initial?.name ?? "");
   const [baseUrl, setBaseUrl] = useState(initial?.baseUrl ?? "");
   const [loginUrl, setLoginUrl] = useState(initial?.loginUrl ?? "");
@@ -59,7 +57,10 @@ export function TargetProfileForm(
       nextSelector: nextSelector || undefined,
       timeoutMs: timeoutMs ? Number(timeoutMs) : undefined,
       locationsPath: locationsPath || undefined,
-      allowedDomains: allowedDomains.split(",").map((domain) => domain.trim()).filter((domain) => domain.length > 0),
+      allowedDomains: allowedDomains
+        .split(",")
+        .map((domain) => domain.trim())
+        .filter((domain) => domain.length > 0),
       ...(email ? { email } : {}),
       ...(password ? { password } : {}),
     };
@@ -131,7 +132,7 @@ export function TargetProfileForm(
       label: '"Next" button selector (2-step login)',
       hint:
         'CSS selector for an intermediate "Next" button, only needed for 2-step logins where email and ' +
-        'password are on separate screens. Leave blank for single-step logins.',
+        "password are on separate screens. Leave blank for single-step logins.",
       value: nextSelector,
       onChange: setNextSelector,
       placeholder: "optional",
@@ -161,12 +162,7 @@ export function TargetProfileForm(
     <form className="new-run-form target-profile-form" onSubmit={handleSubmit} noValidate>
       <h3>{mode === "create" ? "New target profile" : `Edit "${initial?.name}"`}</h3>
 
-      <FieldLabel
-        htmlFor="tp-name"
-        label="Name"
-        required
-        hint='A display name to tell this profile apart from others, e.g. "Release" or "Dev".'
-      />
+      <FieldLabel htmlFor="tp-name" label="Name" required hint='A display name to tell this profile apart from others, e.g. "Release" or "Dev".' />
       <input
         id="tp-name"
         value={name}
@@ -181,12 +177,7 @@ export function TargetProfileForm(
         </p>
       )}
 
-      <FieldLabel
-        htmlFor="tp-baseUrl"
-        label="Base URL"
-        required
-        hint="The base URL of the target app (scheme + host, no path)."
-      />
+      <FieldLabel htmlFor="tp-baseUrl" label="Base URL" required hint="The base URL of the target app (scheme + host, no path)." />
       <input
         id="tp-baseUrl"
         value={baseUrl}

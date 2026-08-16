@@ -12,11 +12,12 @@ export interface ScreenInfo {
   headingAnchor: string;
 }
 
-export async function attachReproSpecs(
-  findings: Finding[],
-  screens: ScreenInfo[],
-  reproSpecDirectory: string,
-): Promise<Finding[]> {
+export interface ScreenshotStorageOptions {
+  screenshotDirectory: string;
+  screenshotStorageCapBytes: number;
+}
+
+export async function attachReproSpecs(findings: Finding[], screens: ScreenInfo[], reproSpecDirectory: string): Promise<Finding[]> {
   const urlByScreenId = new Map(screens.map((screen) => [screen.screenId, screen.observation.url]));
   const result: Finding[] = [];
 
@@ -43,34 +44,24 @@ export async function attachReproSpecs(
 function buildScreenshotBufferMap(screens: ScreenInfo[]): Map<string, Buffer> {
   return new Map(
     screens
-      .filter((screen): screen is ScreenInfo & { observation: { screenshotBuffer: Buffer } } =>
-        Boolean(screen.observation.screenshotBuffer),
-      )
+      .filter((screen): screen is ScreenInfo & { observation: { screenshotBuffer: Buffer } } => Boolean(screen.observation.screenshotBuffer))
       .map((screen) => [screen.screenId, screen.observation.screenshotBuffer]),
   );
 }
 
-async function writeScreenshotFile(
-  screenshotDirectory: string,
-  fileName: string,
-  buffer: Buffer,
-  screenshotStorageCapBytes: number,
-): Promise<string> {
-  await mkdir(screenshotDirectory, { recursive: true });
-  const path = join(screenshotDirectory, fileName);
+async function writeScreenshotFile(fileName: string, buffer: Buffer, storage: ScreenshotStorageOptions): Promise<string> {
+  await mkdir(storage.screenshotDirectory, { recursive: true });
+  const path = join(storage.screenshotDirectory, fileName);
   await writeFile(path, buffer);
-  await enforceScreenshotStorageCap(screenshotDirectory, screenshotStorageCapBytes);
+  await enforceScreenshotStorageCap(storage.screenshotDirectory, storage.screenshotStorageCapBytes);
   return path;
 }
 
-export async function attachScreenshots(
-  findings: Finding[],
-  screens: ScreenInfo[],
-  screenshotDirectory: string,
-  screenshotStorageCapBytes: number,
-): Promise<Finding[]> {
+export async function attachScreenshots(findings: Finding[], screens: ScreenInfo[], storage: ScreenshotStorageOptions): Promise<Finding[]> {
   const bufferByScreenId = buildScreenshotBufferMap(screens);
-  if (bufferByScreenId.size === 0) return findings;
+  if (bufferByScreenId.size === 0) {
+    return findings;
+  }
 
   const result: Finding[] = [];
   for (const finding of findings) {
@@ -79,7 +70,7 @@ export async function attachScreenshots(
       result.push(finding);
       continue;
     }
-    const screenshotPath = await writeScreenshotFile(screenshotDirectory, `${finding.id}.png`, buffer, screenshotStorageCapBytes);
+    const screenshotPath = await writeScreenshotFile(`${finding.id}.png`, buffer, storage);
     result.push({ ...finding, screenshotPath });
   }
 
@@ -89,11 +80,12 @@ export async function attachScreenshots(
 export async function attachBaselineScreenshots(
   baselines: Baseline[],
   screens: ScreenInfo[],
-  screenshotDirectory: string,
-  screenshotStorageCapBytes: number,
+  storage: ScreenshotStorageOptions,
 ): Promise<Baseline[]> {
   const bufferByScreenId = buildScreenshotBufferMap(screens);
-  if (bufferByScreenId.size === 0) return baselines;
+  if (bufferByScreenId.size === 0) {
+    return baselines;
+  }
 
   const result: Baseline[] = [];
   for (const baseline of baselines) {
@@ -103,7 +95,7 @@ export async function attachBaselineScreenshots(
       continue;
     }
     const fileName = `baseline-${baseline.screenId}.png`;
-    const baselineScreenshotPath = await writeScreenshotFile(screenshotDirectory, fileName, buffer, screenshotStorageCapBytes);
+    const baselineScreenshotPath = await writeScreenshotFile(fileName, buffer, storage);
     result.push({ ...baseline, baselineScreenshotPath });
   }
 

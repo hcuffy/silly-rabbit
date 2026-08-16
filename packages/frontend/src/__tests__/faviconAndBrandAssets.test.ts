@@ -25,18 +25,12 @@ describe("frontend production build — favicon and public/ logo assets", () => 
   });
 
   it("emits 16px and 32px favicon <link rel=icon> tags in the built HTML", () => {
-    expect(builtIndexHtml).toMatch(
-      /<link rel="icon" type="image\/png" sizes="16x16" href="\/images\/silly-rabbit-favicon-16[^"]*\.png" ?\/?>/,
-    );
-    expect(builtIndexHtml).toMatch(
-      /<link rel="icon" type="image\/png" sizes="32x32" href="\/images\/silly-rabbit-favicon-32[^"]*\.png" ?\/?>/,
-    );
+    expect(builtIndexHtml).toMatch(/<link rel="icon" type="image\/png" sizes="16x16" href="\/images\/silly-rabbit-favicon-16[^"]*\.png" ?\/?>/);
+    expect(builtIndexHtml).toMatch(/<link rel="icon" type="image\/png" sizes="32x32" href="\/images\/silly-rabbit-favicon-32[^"]*\.png" ?\/?>/);
   });
 
   it("emits an apple-touch-icon link using the 180px appicon", () => {
-    expect(builtIndexHtml).toMatch(
-      /<link rel="apple-touch-icon" sizes="180x180" href="\/images\/silly-rabbit-appicon-180[^"]*\.png" ?\/?>/,
-    );
+    expect(builtIndexHtml).toMatch(/<link rel="apple-touch-icon" sizes="180x180" href="\/images\/silly-rabbit-appicon-180[^"]*\.png" ?\/?>/);
   });
 
   it("copies every public/images logo asset into the build output at its real Vite static-asset path", () => {

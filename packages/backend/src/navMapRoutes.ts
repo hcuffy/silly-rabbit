@@ -31,7 +31,9 @@ export function registerNavMapRoutes(app: FastifyInstance, deps: AppDeps & { nav
       const navMap = await buildNavMap({ baseUrl: targetBaseUrl }, resolvedDeps);
       return reply.status(200).send(navMap);
     } catch (error) {
-      if (error instanceof RunCapacityError) return reply.status(429).send({ error: error.message });
+      if (error instanceof RunCapacityError) {
+        return reply.status(429).send({ error: error.message });
+      }
       throw error;
     }
   });
@@ -43,7 +45,9 @@ export function registerNavMapRoutes(app: FastifyInstance, deps: AppDeps & { nav
     }
 
     const navMap = await deps.navMapRepo.getByBaseUrl(parsed.data.baseUrl);
-    if (!navMap) return reply.status(404).send({ error: "no nav map for this baseUrl" });
+    if (!navMap) {
+      return reply.status(404).send({ error: "no nav map for this baseUrl" });
+    }
     return navMap;
   });
 
@@ -54,7 +58,9 @@ export function registerNavMapRoutes(app: FastifyInstance, deps: AppDeps & { nav
     }
 
     const navMap = await deps.navMapRepo.getByBaseUrl(parsed.data.baseUrl);
-    if (!navMap) return reply.status(404).send({ error: "no nav map for this baseUrl" });
+    if (!navMap) {
+      return reply.status(404).send({ error: "no nav map for this baseUrl" });
+    }
 
     await deps.navMapRepo.delete(parsed.data.baseUrl);
     return reply.status(204).send();

@@ -39,9 +39,7 @@ export class SessionReplayRunRepo {
     return document ? fromDocument(document) : null;
   }
 
-  async list(
-    pagination: { limit: number; offset: number; cycleId?: string },
-  ): Promise<{ sessionReplayRuns: SessionReplayRun[]; total: number }> {
+  async list(pagination: { limit: number; offset: number; cycleId?: string }): Promise<{ sessionReplayRuns: SessionReplayRun[]; total: number }> {
     const filter = pagination.cycleId ? { cycleId: pagination.cycleId } : {};
     const [documents, total] = await Promise.all([
       this.collection.find(filter).sort({ startedAt: -1 }).skip(pagination.offset).limit(pagination.limit).toArray(),
@@ -73,7 +71,9 @@ export class SessionReplayRunRepo {
   }
 
   async deleteByIds(ids: string[]): Promise<void> {
-    if (ids.length === 0) return;
+    if (ids.length === 0) {
+      return;
+    }
     await this.collection.deleteMany({ _id: { $in: ids } });
   }
 

@@ -42,8 +42,7 @@ function makeResearch(): ResearchInventory {
   };
 }
 
-describe("GET /explorer/runs and GET /session-replay/runs (LIST-ALL audit fix) — mirror GET /runs's " +
-  "pagination shape exactly", () => {
+describe("GET /explorer/runs and GET /session-replay/runs (LIST-ALL audit fix) — mirror GET /runs's " + "pagination shape exactly", () => {
   let mongod: MongoMemoryServer;
   let connection: MongoConnection;
   let app: FastifyInstance;

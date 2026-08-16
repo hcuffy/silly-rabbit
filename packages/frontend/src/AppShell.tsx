@@ -27,8 +27,7 @@ export function AppShell() {
             type="button"
             className="app-shell__collapse-toggle"
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            onClick={() => setCollapsed((value) => !value)}
-          >
+            onClick={() => setCollapsed((value) => !value)}>
             {collapsed ? "»" : "«"}
           </button>
         </div>
@@ -40,11 +39,7 @@ export function AppShell() {
           <History size={NAV_ICON_SIZE} aria-hidden="true" />
           {!collapsed && "Run history"}
         </NavLink>
-        <NavLink
-          to="/session-recordings"
-          className="app-shell__link"
-          aria-label={collapsed ? "Session recordings" : undefined}
-        >
+        <NavLink to="/session-recordings" className="app-shell__link" aria-label={collapsed ? "Session recordings" : undefined}>
           <Video size={NAV_ICON_SIZE} aria-hidden="true" />
           {!collapsed && "Session recordings"}
         </NavLink>

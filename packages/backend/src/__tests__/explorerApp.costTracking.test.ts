@@ -56,8 +56,7 @@ function outcomeResponse(): AnthropicMessageResponse {
 function mockAnthropicClient(): AnthropicLike {
   return {
     messages: {
-      create: (parameters) =>
-        Promise.resolve(parameters.tool_choice?.name === "submit_test_plan" ? testPlanResponse() : outcomeResponse()),
+      create: (parameters) => Promise.resolve(parameters.tool_choice?.name === "submit_test_plan" ? testPlanResponse() : outcomeResponse()),
     },
   };
 }
@@ -79,7 +78,9 @@ async function waitUntilTerminal(
       headers: { cookie: sessionCookie },
     });
     const body = response.json<{ status: string; llmCallsUsed: number; costUsd: number }>();
-    if (body.status === "COMPLETED" || body.status === "FAILED") return body;
+    if (body.status === "COMPLETED" || body.status === "FAILED") {
+      return body;
+    }
     await new Promise((resolve) => setTimeout(resolve, 50));
   }
   throw new Error(`run ${runId} did not reach a terminal state in time`);
@@ -155,30 +156,34 @@ describe("Cost tracking — Run.llmCallsUsed / costUsd actually wired for D8 (pr
     await mongod.stop();
   });
 
-  it("BEFORE: a fresh Run starts at llmCallsUsed:0, costUsd:0 — AFTER: a completed run whose test-plan and " +
-    "happy-path check both made real (mocked) Anthropic calls shows nonzero values matching the real call count", async () => {
-    const postResponse = await injectAuthed({
-      method: "POST",
-      url: "/explorer/runs",
-      payload: { featureId: "locations", sectionDescription: "Go To Section", targetBaseUrl: `${BASE_URL}/` },
-    });
-    expect(postResponse.statusCode).toBe(202);
-    const { runId } = postResponse.json<ExplorerRunResponseBody>();
+  it(
+    "BEFORE: a fresh Run starts at llmCallsUsed:0, costUsd:0 — AFTER: a completed run whose test-plan and " +
+      "happy-path check both made real (mocked) Anthropic calls shows nonzero values matching the real call count",
+    async () => {
+      const postResponse = await injectAuthed({
+        method: "POST",
+        url: "/explorer/runs",
+        payload: { featureId: "locations", sectionDescription: "Go To Section", targetBaseUrl: `${BASE_URL}/` },
+      });
+      expect(postResponse.statusCode).toBe(202);
+      const { runId } = postResponse.json<ExplorerRunResponseBody>();
 
-    const beforeResponse = await injectAuthed({ method: "GET", url: `/explorer/runs/${runId}` });
-    const before = beforeResponse.json<{ llmCallsUsed: number; costUsd: number }>();
-    expect(before.llmCallsUsed).toBe(0);
-    expect(before.costUsd).toBe(0);
+      const beforeResponse = await injectAuthed({ method: "GET", url: `/explorer/runs/${runId}` });
+      const before = beforeResponse.json<{ llmCallsUsed: number; costUsd: number }>();
+      expect(before.llmCallsUsed).toBe(0);
+      expect(before.costUsd).toBe(0);
 
-    const after = await waitUntilTerminal(app, runId, sessionCookie);
-    expect(after.status).toBe("COMPLETED");
+      const after = await waitUntilTerminal(app, runId, sessionCookie);
+      expect(after.status).toBe("COMPLETED");
 
-    expect(after.llmCallsUsed).toBe(2);
-    expect(after.costUsd).toBeGreaterThan(0);
+      expect(after.llmCallsUsed).toBe(2);
+      expect(after.costUsd).toBeGreaterThan(0);
 
-    const expectedCost =
-      (200 * 3 + 100 * 15) / 1_000_000 + // test-plan call: 200 input / 100 output tokens, Sonnet pricing
-      (150 * 3 + 30 * 15) / 1_000_000; // outcome-judge call: 150 input / 30 output tokens, Sonnet pricing
-    expect(after.costUsd).toBeCloseTo(expectedCost, 10);
-  }, 15_000);
+      const expectedCost =
+        (200 * 3 + 100 * 15) / 1_000_000 + // test-plan call: 200 input / 100 output tokens, Sonnet pricing
+        (150 * 3 + 30 * 15) / 1_000_000; // outcome-judge call: 150 input / 30 output tokens, Sonnet pricing
+      expect(after.costUsd).toBeCloseTo(expectedCost, 10);
+    },
+    15_000,
+  );
 });

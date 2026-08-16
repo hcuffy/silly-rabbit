@@ -16,10 +16,6 @@ export async function resolveCycleByNameOrId(db: Db, nameOrId: string): Promise<
 
 export async function incrementAndGetRunNumber(db: Db, cycleId: string): Promise<number | undefined> {
   const collection = db.collection<CycleDocument>("cycles");
-  const result = await collection.findOneAndUpdate(
-    { _id: cycleId },
-    { $inc: { runCounter: 1 } },
-    { returnDocument: "after" },
-  );
+  const result = await collection.findOneAndUpdate({ _id: cycleId }, { $inc: { runCounter: 1 } }, { returnDocument: "after" });
   return result?.runCounter;
 }

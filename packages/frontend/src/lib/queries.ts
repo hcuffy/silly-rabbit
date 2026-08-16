@@ -60,15 +60,7 @@ export function isTerminalStatus(status: Run["status"] | undefined): boolean {
   return status === "COMPLETED" || status === "FAILED" || status === "CANCELLED";
 }
 
-export function useRunsList({
-  limit,
-  offset,
-  cycleId,
-}: {
-  limit: number;
-  offset: number;
-  cycleId?: string;
-}): UseQueryResult<RunsPage> {
+export function useRunsList({ limit, offset, cycleId }: { limit: number; offset: number; cycleId?: string }): UseQueryResult<RunsPage> {
   return useQuery({
     queryKey: ["runs", limit, offset, cycleId],
     queryFn: () => listRuns({ limit, offset, cycleId }),

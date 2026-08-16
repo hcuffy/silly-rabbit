@@ -21,11 +21,14 @@ describe("lastUsedCycle (run-cycles-spec.md §5.1 CONFIRM-1, locked) — browser
     expect(getLastUsedCycleId()).toBe("22222222-2222-4222-8222-222222222222");
   });
 
-  it("is stored in window.localStorage directly, not some other client-side mechanism — real assertion " +
-    "against the storage itself, not just the helper's own round-trip", () => {
-    setLastUsedCycleId("33333333-3333-4333-8333-333333333333");
-    const rawKeys = Object.keys(window.localStorage);
-    const matchingKey = rawKeys.find((key) => window.localStorage.getItem(key) === "33333333-3333-4333-8333-333333333333");
-    expect(matchingKey).toBeDefined();
-  });
+  it(
+    "is stored in window.localStorage directly, not some other client-side mechanism — real assertion " +
+      "against the storage itself, not just the helper's own round-trip",
+    () => {
+      setLastUsedCycleId("33333333-3333-4333-8333-333333333333");
+      const rawKeys = Object.keys(window.localStorage);
+      const matchingKey = rawKeys.find((key) => window.localStorage.getItem(key) === "33333333-3333-4333-8333-333333333333");
+      expect(matchingKey).toBeDefined();
+    },
+  );
 });

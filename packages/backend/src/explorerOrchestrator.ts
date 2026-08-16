@@ -185,7 +185,9 @@ export async function runExplorerTestRun(input: RunExplorerTestRunInput, deps: E
   });
 
   const testRun = await deps.testRunRepo.get(testRunId);
-  if (!testRun) throw new Error(`testRun ${testRunId} vanished after being persisted — this should be unreachable`);
+  if (!testRun) {
+    throw new Error(`testRun ${testRunId} vanished after being persisted — this should be unreachable`);
+  }
 
   await refreshLearningConfirmations(testRun, activeLearnings, deps.learningRepo);
 

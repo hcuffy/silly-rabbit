@@ -25,35 +25,45 @@ const DEFAULT_SESSION_CAPTURE_DIR = "./session-captures";
 const DEFAULT_SESSION_CAPTURE_STORAGE_CAP_MB = 500;
 const BYTES_PER_MB = 1024 * 1024;
 
+interface SessionCaptureStorageOptions {
+  captureDirectory: string;
+  captureStorageCapBytes: number;
+}
+
 async function persistNetworkCaptures(
   sessionId: string,
   rawCaptures: RawNetworkCapture[],
-  captureDirectory: string,
-  captureStorageCapBytes: number,
+  storage: SessionCaptureStorageOptions,
 ): Promise<NetworkCapture[]> {
-  if (rawCaptures.length === 0) return [];
+  if (rawCaptures.length === 0) {
+    return [];
+  }
 
-  const sessionDirectory = join(captureDirectory, sessionId);
+  const sessionDirectory = join(storage.captureDirectory, sessionId);
   await mkdir(sessionDirectory, { recursive: true });
 
   const persisted: NetworkCapture[] = [];
   for (const [index, raw] of rawCaptures.entries()) {
     const bodyPath = join(sessionDirectory, `${index}.json`);
     await writeFile(bodyPath, raw.body);
-    await enforceSessionCaptureStorageCap(captureDirectory, captureStorageCapBytes);
+    await enforceSessionCaptureStorageCap(storage.captureDirectory, storage.captureStorageCapBytes);
     persisted.push({ url: raw.url, method: raw.method, status: raw.status, bodyPath, timestampOffsetMs: raw.timestampOffsetMs });
   }
   return persisted;
 }
 
 export function logDestructiveAttempt(step: SessionRecordingStep): void {
-  if (step.action !== "click" || step.selectorStrategy !== "role" || !step.role || !step.accessibleName) return;
+  if (step.action !== "click" || step.selectorStrategy !== "role" || !step.role || !step.accessibleName) {
+    return;
+  }
 
   const action: ActionDescriptor = { role: step.role, accessibleName: step.accessibleName };
   try {
     assertNotDestructive(action, DEFAULT_DESTRUCTIVE_PATTERNS);
   } catch (error) {
-    if (!(error instanceof SafetyViolation)) throw error;
+    if (!(error instanceof SafetyViolation)) {
+      throw error;
+    }
     console.warn(`[record-session] DESTRUCTIVE ACTION CLICKED (not blocked — recording is passive-logger only): ${error.message}`);
   }
 }
@@ -86,14 +96,13 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
 
     const steps = capture.getSteps();
     const rawNetworkCaptures = capture.getNetworkCaptures();
-    console.log(
-      `[record-session] recording ended — ${steps.length} step(s), ${rawNetworkCaptures.length} network response(s) captured.`,
-    );
+    console.log(`[record-session] recording ended — ${steps.length} step(s), ${rawNetworkCaptures.length} network response(s) captured.`);
 
-    const captureDirectory = process.env.SESSION_CAPTURE_DIR ?? DEFAULT_SESSION_CAPTURE_DIR;
-    const captureStorageCapBytes =
-      Number(process.env.SESSION_CAPTURE_STORAGE_CAP_MB ?? DEFAULT_SESSION_CAPTURE_STORAGE_CAP_MB) * BYTES_PER_MB;
-    const networkCaptures = await persistNetworkCaptures(sessionId, rawNetworkCaptures, captureDirectory, captureStorageCapBytes);
+    const captureStorage: SessionCaptureStorageOptions = {
+      captureDirectory: process.env.SESSION_CAPTURE_DIR ?? DEFAULT_SESSION_CAPTURE_DIR,
+      captureStorageCapBytes: Number(process.env.SESSION_CAPTURE_STORAGE_CAP_MB ?? DEFAULT_SESSION_CAPTURE_STORAGE_CAP_MB) * BYTES_PER_MB,
+    };
+    const networkCaptures = await persistNetworkCaptures(sessionId, rawNetworkCaptures, captureStorage);
 
     const mongoConnection = await connectMongo(process.env.MONGO_URI ?? DEFAULT_MONGO_URI);
     try {
@@ -104,7 +113,9 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
       await closeMongo(mongoConnection);
     }
   } finally {
-    if (browser.isConnected()) await browser.close();
+    if (browser.isConnected()) {
+      await browser.close();
+    }
   }
 }
 

@@ -64,7 +64,9 @@ const MODEL_PRICING: Record<string, { inputPerMTok: number; outputPerMTok: numbe
 
 export function computeCostUsd(model: string, usage: { input_tokens: number; output_tokens: number }): number {
   const pricing = MODEL_PRICING[model];
-  if (!pricing) return 0;
+  if (!pricing) {
+    return 0;
+  }
   return (usage.input_tokens * pricing.inputPerMTok + usage.output_tokens * pricing.outputPerMTok) / 1_000_000;
 }
 
@@ -78,8 +80,7 @@ const VerdictInputSchema = z.object({
 function buildTool(): { name: string; description: string; input_schema: ToolInputSchema } {
   return {
     name: VERDICT_TOOL_NAME,
-    description:
-      "Submit a structured verdict for whether a detected UI state divergence is an intended change or a regression.",
+    description: "Submit a structured verdict for whether a detected UI state divergence is an intended change or a regression.",
     input_schema: {
       type: "object",
       properties: {
@@ -141,7 +142,7 @@ async function callModel(input: JudgeInput, client: AnthropicLike, model: string
 function describeJudgeFailure(result: CallResult): string {
   return result.infraError
     ? `Judge unavailable — showing NEEDS_HUMAN without a reasoned verdict. Set ANTHROPIC_API_KEY to ` +
-      `enable full judging (detail: ${result.infraError}).`
+        `enable full judging (detail: ${result.infraError}).`
     : "Judge returned no parseable verdict.";
 }
 

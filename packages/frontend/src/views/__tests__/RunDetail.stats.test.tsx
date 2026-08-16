@@ -148,9 +148,7 @@ describe("RunDetail — new-vs-suppressed + judge-accuracy stats (dashboard-anal
 
     renderWithClient(<RunDetail runId={RUN_ID} />);
 
-    expect(
-      await screen.findByText("Judge accuracy (D8 findings with feedback only): 1 agree · 1 disagree"),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Judge accuracy (D8 findings with feedback only): 1 agree · 1 disagree")).toBeInTheDocument();
   });
 
   it("shows no judge-accuracy row when no D8 finding has received feedback yet", async () => {
@@ -216,9 +214,7 @@ describe("RunDetail — all-time target stats (dashboard-analytics-spec Phase 2)
 
     renderWithClient(<RunDetail runId={RUN_ID} />);
 
-    expect(
-      await screen.findByText("Judge accuracy all-time (D8 findings with feedback only): 3 agree · 1 disagree"),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Judge accuracy all-time (D8 findings with feedback only): 3 agree · 1 disagree")).toBeInTheDocument();
   });
 
   it("hides the all-time judge-accuracy line when nothing has been scored yet", async () => {

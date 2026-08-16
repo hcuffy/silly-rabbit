@@ -38,11 +38,7 @@ describe("formatDayGroupLabel", () => {
 
 describe("groupRunsByDay", () => {
   it("groups consecutive same-day runs into one bucket, in input order", () => {
-    const runs = [
-      makeRun(new Date(2026, 6, 26, 9, 0)),
-      makeRun(new Date(2026, 6, 26, 8, 0)),
-      makeRun(new Date(2026, 6, 25, 20, 0)),
-    ];
+    const runs = [makeRun(new Date(2026, 6, 26, 9, 0)), makeRun(new Date(2026, 6, 26, 8, 0)), makeRun(new Date(2026, 6, 25, 20, 0))];
     const groups = groupRunsByDay(runs, NOW);
 
     expect(groups).toHaveLength(2);

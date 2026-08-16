@@ -18,11 +18,15 @@ const IV_BYTES = 12;
  */
 export async function resolveCredentialEncryptionKey(environment: NodeJS.ProcessEnv, path: string): Promise<string> {
   const fromEnvironment = environment.CREDENTIAL_ENCRYPTION_KEY;
-  if (fromEnvironment) return fromEnvironment;
+  if (fromEnvironment) {
+    return fromEnvironment;
+  }
 
   try {
     const existing = (await readFile(path, "utf8")).trim();
-    if (existing) return existing;
+    if (existing) {
+      return existing;
+    }
   } catch {
     /* empty */
   }
@@ -45,7 +49,7 @@ export function encryptCredential(plaintext: string, keyHex: string): string {
 export function decryptCredential(encrypted: string, keyHex: string): string {
   const [ivHex, authTagHex, ciphertextHex] = encrypted.split(":");
   if (!ivHex || !authTagHex || !ciphertextHex) {
-    throw new Error("decryptCredential: malformed encrypted value, expected \"iv:authTag:ciphertext\"");
+    throw new Error('decryptCredential: malformed encrypted value, expected "iv:authTag:ciphertext"');
   }
 
   const key = Buffer.from(keyHex, "hex");

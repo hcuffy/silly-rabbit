@@ -24,7 +24,13 @@ import { TestRunRepo } from "../repos/testRunRepo.js";
 const NAV_MAP_ORIGIN = "https://mcp-nav-map.example.com";
 
 function throwingJudgeClient(): AnthropicLike {
-  return { messages: { create: () => { throw new Error("judge should not be called by a NavMap crawl"); } } };
+  return {
+    messages: {
+      create: () => {
+        throw new Error("judge should not be called by a NavMap crawl");
+      },
+    },
+  };
 }
 
 function textOf(result: { content: Array<{ type: string; text?: string }> }): unknown {

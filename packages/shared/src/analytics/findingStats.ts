@@ -9,8 +9,11 @@ export function computeFindingStats(findings: Finding[]): FindingStats {
   let newCount = 0;
   let suppressedCount = 0;
   for (const finding of findings) {
-    if (finding.status === "NEW") newCount++;
-    else if (finding.status === "RECURRING") suppressedCount++;
+    if (finding.status === "NEW") {
+      newCount++;
+    } else if (finding.status === "RECURRING") {
+      suppressedCount++;
+    }
   }
   return { newCount, suppressedCount };
 }

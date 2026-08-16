@@ -41,9 +41,7 @@ describe("computeJudgeAccuracy", () => {
   });
 
   it("excludes NEEDS_HUMAN verdicts (AI deferred, not a confident verdict to score)", () => {
-    const stats = computeJudgeAccuracy([
-      makeFinding({ verdict: "NEEDS_HUMAN", humanVerdict: "confirmed_issue" }),
-    ]);
+    const stats = computeJudgeAccuracy([makeFinding({ verdict: "NEEDS_HUMAN", humanVerdict: "confirmed_issue" })]);
     expect(stats).toEqual({ agree: 0, disagree: 0 });
   });
 

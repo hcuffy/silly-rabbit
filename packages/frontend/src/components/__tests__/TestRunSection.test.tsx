@@ -79,7 +79,10 @@ describe("TestRunSection (D8 dashboard — research collapsed, plan/outcomes vis
   });
 
   it("renders the research summary inside a collapsed <details>", () => {
-    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(jsonResponse([]))));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => Promise.resolve(jsonResponse([]))),
+    );
     renderWithClient(<TestRunSection testRun={makeTestRun()} />);
 
     const details = screen.getByText("Research: Locations").closest("details");
@@ -88,7 +91,10 @@ describe("TestRunSection (D8 dashboard — research collapsed, plan/outcomes vis
   });
 
   it("renders the test plan (assumption + happy-path + boundary check) without needing expansion", () => {
-    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(jsonResponse([]))));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => Promise.resolve(jsonResponse([]))),
+    );
     renderWithClient(<TestRunSection testRun={makeTestRun()} />);
 
     expect(screen.getAllByText("the name field is required").length).toBeGreaterThan(0);
@@ -97,7 +103,10 @@ describe("TestRunSection (D8 dashboard — research collapsed, plan/outcomes vis
   });
 
   it("renders check-outcome counts and per-hypothesis results without needing expansion", () => {
-    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(jsonResponse([]))));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => Promise.resolve(jsonResponse([]))),
+    );
     renderWithClient(<TestRunSection testRun={makeTestRun()} />);
 
     expect(screen.getByText(/Passed: 1/)).toBeInTheDocument();
@@ -108,7 +117,10 @@ describe("TestRunSection (D8 dashboard — research collapsed, plan/outcomes vis
 
   describe("feature doc section (feature-docs-spec §5)", () => {
     it("shows 'no feature doc generated yet' when history is empty", async () => {
-      vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(jsonResponse([]))));
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(() => Promise.resolve(jsonResponse([]))),
+      );
       renderWithClient(<TestRunSection testRun={makeTestRun()} />);
 
       expect(await screen.findByText("No feature doc generated yet.")).toBeInTheDocument();
@@ -116,7 +128,10 @@ describe("TestRunSection (D8 dashboard — research collapsed, plan/outcomes vis
 
     it("renders the latest doc's content and metadata when history exists", async () => {
       const featureDocument = makeFeatureDocument();
-      vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(jsonResponse([featureDocument]))));
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(() => Promise.resolve(jsonResponse([featureDocument]))),
+      );
       renderWithClient(<TestRunSection testRun={makeTestRun()} />);
 
       expect(await screen.findByText(/This feature lists locations/)).toBeInTheDocument();
@@ -126,7 +141,10 @@ describe("TestRunSection (D8 dashboard — research collapsed, plan/outcomes vis
     it("shows a history list only when more than one generation exists", async () => {
       const older = makeFeatureDocument({ generatedAt: new Date("2026-01-01T00:00:00Z") });
       const newer = makeFeatureDocument({ generatedAt: new Date("2026-01-02T00:00:00Z") });
-      vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(jsonResponse([newer, older]))));
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(() => Promise.resolve(jsonResponse([newer, older]))),
+      );
       renderWithClient(<TestRunSection testRun={makeTestRun()} />);
 
       expect(await screen.findByText("History (2)")).toBeInTheDocument();
@@ -158,7 +176,9 @@ describe("TestRunSection (D8 dashboard — research collapsed, plan/outcomes vis
     it("shows the mutation's error message when generation fails", async () => {
       const user = userEvent.setup();
       const fetchMock = vi.fn((_url: string, init?: RequestInit) => {
-        if (init?.method === "POST") return Promise.resolve(jsonResponse({ error: "wait before regenerating" }, 429));
+        if (init?.method === "POST") {
+          return Promise.resolve(jsonResponse({ error: "wait before regenerating" }, 429));
+        }
         return Promise.resolve(jsonResponse([]));
       });
       vi.stubGlobal("fetch", fetchMock);

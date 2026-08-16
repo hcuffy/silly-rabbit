@@ -8,8 +8,12 @@ import { useSessionReplayRunsList } from "../lib/queries.js";
 const PAGE_SIZE = 25;
 
 function handleRowKeyDown(event: KeyboardEvent<HTMLTableRowElement>, onSelect: () => void): void {
-  if (event.target !== event.currentTarget) return;
-  if (event.key !== "Enter" && event.key !== " ") return;
+  if (event.target !== event.currentTarget) {
+    return;
+  }
+  if (event.key !== "Enter" && event.key !== " ") {
+    return;
+  }
   event.preventDefault();
   onSelect();
 }
@@ -21,14 +25,19 @@ export function SessionReplayRunHistory() {
   const cycleId = searchParameters.get("cycleId") ?? undefined;
   const { data, isPending, isError, error } = useSessionReplayRunsList({ limit: PAGE_SIZE, offset, cycleId });
 
-  if (isPending) return <p>Loading session-replay run history…</p>;
-  if (isError)
+  if (isPending) {
+    return <p>Loading session-replay run history…</p>;
+  }
+  if (isError) {
     return (
       <p className="form-error" role="alert">
         Failed to load session-replay runs: {error.message}
       </p>
     );
-  if (data.total === 0) return <p>No session-replay runs yet.</p>;
+  }
+  if (data.total === 0) {
+    return <p>No session-replay runs yet.</p>;
+  }
 
   const dayGroups = groupRunsByDay(data.sessionReplayRuns);
   const pageStart = offset + 1;
@@ -71,23 +80,13 @@ export function SessionReplayRunHistory() {
         ))}
       </table>
       <div className="run-history__pagination">
-        <button
-          type="button"
-          className="button button--secondary"
-          onClick={() => setOffset(Math.max(offset - PAGE_SIZE, 0))}
-          disabled={offset === 0}
-        >
+        <button type="button" className="button button--secondary" onClick={() => setOffset(Math.max(offset - PAGE_SIZE, 0))} disabled={offset === 0}>
           Previous
         </button>
         <span>
           {pageStart}–{pageEnd} of {data.total}
         </span>
-        <button
-          type="button"
-          className="button button--secondary"
-          onClick={() => setOffset(offset + PAGE_SIZE)}
-          disabled={pageEnd >= data.total}
-        >
+        <button type="button" className="button button--secondary" onClick={() => setOffset(offset + PAGE_SIZE)} disabled={pageEnd >= data.total}>
           Next
         </button>
       </div>

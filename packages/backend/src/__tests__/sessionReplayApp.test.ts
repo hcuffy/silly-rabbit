@@ -41,7 +41,9 @@ async function waitUntilTerminal(app: FastifyInstance, runId: string, sessionCoo
       headers: { cookie: sessionCookie },
     });
     const body = response.json<SessionReplayRun>();
-    if (body.status === "COMPLETED" || body.status === "FAILED") return body;
+    if (body.status === "COMPLETED" || body.status === "FAILED") {
+      return body;
+    }
     await new Promise((resolve) => setTimeout(resolve, 50));
   }
   throw new Error(`session-replay run ${runId} did not reach a terminal state in time`);
@@ -140,33 +142,37 @@ describe("Fastify app — session-replay routes (dashboard-integration slice 1, 
     expect(response.statusCode).toBe(404);
   });
 
-  it("triggers a real replay against the mock target, reaches COMPLETED, and GET returns the run plus " +
-    "its findings in the shape the (future) frontend will need", async () => {
-    const sessionRecording = makeSessionRecording();
-    await sessionRecordingRepo.create(sessionRecording);
+  it(
+    "triggers a real replay against the mock target, reaches COMPLETED, and GET returns the run plus " +
+      "its findings in the shape the (future) frontend will need",
+    async () => {
+      const sessionRecording = makeSessionRecording();
+      await sessionRecordingRepo.create(sessionRecording);
 
-    const postResponse = await injectAuthed({
-      method: "POST",
-      url: "/session-replay/runs",
-      payload: { sessionId: sessionRecording.sessionId, replayMode: "live" },
-    });
-    expect(postResponse.statusCode).toBe(202);
-    const { runId, status } = postResponse.json<TriggerResponseBody>();
-    expect(["PENDING", "RUNNING"]).toContain(status);
+      const postResponse = await injectAuthed({
+        method: "POST",
+        url: "/session-replay/runs",
+        payload: { sessionId: sessionRecording.sessionId, replayMode: "live" },
+      });
+      expect(postResponse.statusCode).toBe(202);
+      const { runId, status } = postResponse.json<TriggerResponseBody>();
+      expect(["PENDING", "RUNNING"]).toContain(status);
 
-    const final = await waitUntilTerminal(app, runId, sessionCookie);
-    expect(final.status).toBe("COMPLETED");
-    expect(final.replayMode).toBe("live");
-    expect(final.sessionId).toBe(sessionRecording.sessionId);
-    expect(final.summary.stepsExecuted).toBe(2);
-    expect(final.completedAt).toBeTruthy();
+      const final = await waitUntilTerminal(app, runId, sessionCookie);
+      expect(final.status).toBe("COMPLETED");
+      expect(final.replayMode).toBe("live");
+      expect(final.sessionId).toBe(sessionRecording.sessionId);
+      expect(final.summary.stepsExecuted).toBe(2);
+      expect(final.completedAt).toBeTruthy();
 
-    const getResponse = await injectAuthed({ method: "GET", url: `/session-replay/runs/${runId}` });
-    const body = getResponse.json<SessionReplayRun & { findings: unknown[]; steps: unknown[] }>();
-    expect(body.id).toBe(runId);
-    expect(Array.isArray(body.findings)).toBe(true);
-    expect(body.steps).toEqual(sessionRecording.steps);
-  }, 15_000);
+      const getResponse = await injectAuthed({ method: "GET", url: `/session-replay/runs/${runId}` });
+      const body = getResponse.json<SessionReplayRun & { findings: unknown[]; steps: unknown[] }>();
+      expect(body.id).toBe(runId);
+      expect(Array.isArray(body.findings)).toBe(true);
+      expect(body.steps).toEqual(sessionRecording.steps);
+    },
+    15_000,
+  );
 
   it("GET /session-recordings lists recordings, newest first", async () => {
     const recording = makeSessionRecording();

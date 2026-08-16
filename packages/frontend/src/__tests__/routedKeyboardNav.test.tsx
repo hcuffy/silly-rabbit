@@ -55,7 +55,9 @@ describe("Triage shortcuts survive the react-router migration — reached via re
     vi.stubGlobal(
       "fetch",
       vi.fn((url: string, init?: RequestInit) => {
-        if (url.includes("/auth/session")) return Promise.resolve(new Response(null, { status: 200 }));
+        if (url.includes("/auth/session")) {
+          return Promise.resolve(new Response(null, { status: 200 }));
+        }
         if (url.includes("/findings/stats")) {
           return Promise.resolve(jsonResponse({ newCount: 0, suppressedCount: 0, agree: 0, disagree: 0 }));
         }
@@ -65,7 +67,9 @@ describe("Triage shortcuts survive the react-router migration — reached via re
           feedbackCalls.push({ findingId: match?.[1] ?? "unknown", verdict });
           return Promise.resolve(new Response(null, { status: 204 }));
         }
-        if (url.includes("/explorer/runs/")) return Promise.resolve(jsonResponse(makeRunDetail()));
+        if (url.includes("/explorer/runs/")) {
+          return Promise.resolve(jsonResponse(makeRunDetail()));
+        }
         if (url.endsWith("/runs") || url.includes("/runs?")) {
           return Promise.resolve(jsonResponse({ runs: [makeRunListEntry()], total: 1 }));
         }

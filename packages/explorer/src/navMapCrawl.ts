@@ -48,18 +48,16 @@ export async function capturePageStructure(page: Page, featureIdSeed: string): P
   };
 }
 
-export async function visitEntry(
-  page: Page,
-  entry: { role: string; label: string },
-  options: NavMapCrawlOptions,
-): Promise<boolean> {
+export async function visitEntry(page: Page, entry: { role: string; label: string }, options: NavMapCrawlOptions): Promise<boolean> {
   const locatorText = normalizeLabelForLlmMatchComparison(entry.label);
   const locator = page
     .getByRole(entry.role as PlaywrightRole)
     .filter({ hasText: new RegExp(escapeRegExp(locatorText), "i") })
     .first();
 
-  if ((await locator.count()) === 0) return false;
+  if ((await locator.count()) === 0) {
+    return false;
+  }
 
   const href = await locator.getAttribute("href");
   if (href) {
@@ -79,11 +77,17 @@ export async function crawlNavMap(page: Page, options: NavMapCrawlOptions = {}):
 
   function registerCandidates(nodes: AriaNode[], parentLabel: string | undefined, originUrl: string): void {
     for (const node of nodes) {
-      if (known.size >= maxEntries) return;
+      if (known.size >= maxEntries) {
+        return;
+      }
       const label = (node.name ?? "").trim();
-      if (!label) continue;
+      if (!label) {
+        continue;
+      }
       const key = entryKey(node.role, label);
-      if (known.has(key)) continue;
+      if (known.has(key)) {
+        continue;
+      }
 
       const entry: EntryDraft = { role: node.role, label, parentLabel, originUrl, discoveredAt: new Date() };
       known.set(key, entry);
@@ -95,7 +99,9 @@ export async function crawlNavMap(page: Page, options: NavMapCrawlOptions = {}):
 
   while (queue.length > 0) {
     const current = queue.shift();
-    if (!current) break;
+    if (!current) {
+      break;
+    }
 
     if (page.url() !== current.originUrl) {
       await options.onBeforeNavigate?.(current.originUrl);
@@ -104,7 +110,9 @@ export async function crawlNavMap(page: Page, options: NavMapCrawlOptions = {}):
     }
 
     const visited = await visitEntry(page, current, options);
-    if (!visited) continue;
+    if (!visited) {
+      continue;
+    }
 
     current.normalizedUrl = normalizeUrl(page.url());
     current.pageStructure = await capturePageStructure(page, current.label);

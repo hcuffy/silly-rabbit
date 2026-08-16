@@ -19,8 +19,12 @@ function runLabel(run: Run, flatRunNumber: number | undefined, cycleNameById: Ma
 const PAGE_SIZE = 25;
 
 function handleRowKeyDown(event: KeyboardEvent<HTMLTableRowElement>, onSelect: () => void): void {
-  if (event.target !== event.currentTarget) return;
-  if (event.key !== "Enter" && event.key !== " ") return;
+  if (event.target !== event.currentTarget) {
+    return;
+  }
+  if (event.key !== "Enter" && event.key !== " ") {
+    return;
+  }
   event.preventDefault();
   onSelect();
 }
@@ -34,14 +38,19 @@ export function RunHistory() {
   const { data: cycles } = useCyclesList();
   const cycleNameById = new Map((cycles ?? []).map((cycle) => [cycle.id, cycle.name]));
 
-  if (isPending) return <p>Loading run history…</p>;
-  if (isError)
+  if (isPending) {
+    return <p>Loading run history…</p>;
+  }
+  if (isError) {
     return (
       <p className="form-error" role="alert">
         Failed to load runs: {error.message}
       </p>
     );
-  if (data.total === 0) return <p>No runs yet — start one above.</p>;
+  }
+  if (data.total === 0) {
+    return <p>No runs yet — start one above.</p>;
+  }
 
   const dayGroups = groupRunsByDay(data.runs);
   const pageStart = offset + 1;
@@ -73,12 +82,7 @@ export function RunHistory() {
               const runNumber = runNumberById.get(run.id);
               const goToDetail = () => void navigate(`/runs/${run.id}`, { state: { runNumber } });
               return (
-                <tr
-                  key={run.id}
-                  onClick={goToDetail}
-                  onKeyDown={(event) => handleRowKeyDown(event, goToDetail)}
-                  tabIndex={0}
-                >
+                <tr key={run.id} onClick={goToDetail} onKeyDown={(event) => handleRowKeyDown(event, goToDetail)} tabIndex={0}>
                   <td className="run-history__number">{runNumber}</td>
                   <td>
                     <div className="run-history__run-label">{runLabel(run, runNumber, cycleNameById)}</div>
@@ -100,23 +104,13 @@ export function RunHistory() {
         ))}
       </table>
       <div className="run-history__pagination">
-        <button
-          type="button"
-          className="button button--secondary"
-          onClick={() => setOffset(Math.max(offset - PAGE_SIZE, 0))}
-          disabled={offset === 0}
-        >
+        <button type="button" className="button button--secondary" onClick={() => setOffset(Math.max(offset - PAGE_SIZE, 0))} disabled={offset === 0}>
           Previous
         </button>
         <span>
           {pageStart}–{pageEnd} of {data.total}
         </span>
-        <button
-          type="button"
-          className="button button--secondary"
-          onClick={() => setOffset(offset + PAGE_SIZE)}
-          disabled={pageEnd >= data.total}
-        >
+        <button type="button" className="button button--secondary" onClick={() => setOffset(offset + PAGE_SIZE)} disabled={pageEnd >= data.total}>
           Next
         </button>
       </div>

@@ -69,11 +69,10 @@ export function assertNotProductionUrl(url: string, productionUrlPatterns: reado
   }
 }
 
-export function assertNotDestructive(
-  action: ActionDescriptor,
-  destructivePatterns: readonly string[] = DEFAULT_DESTRUCTIVE_PATTERNS,
-): void {
-  if (!ACTIONABLE_ROLES.has(action.role)) return;
+export function assertNotDestructive(action: ActionDescriptor, destructivePatterns: readonly string[] = DEFAULT_DESTRUCTIVE_PATTERNS): void {
+  if (!ACTIONABLE_ROLES.has(action.role)) {
+    return;
+  }
 
   const matched = destructivePatterns.find((phrase) => toWordBoundaryPattern(phrase).test(action.accessibleName));
   if (matched) {

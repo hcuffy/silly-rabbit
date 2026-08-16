@@ -140,16 +140,19 @@ describe("MCP get_finding — screenshot image content blocks (roadmap item 24, 
     expect(blocks[0]?.type).toBe("text");
   });
 
-  it("falls back to text-only, no error, when screenshotPath is set but the file no longer exists on " +
-    "disk (a real, reachable state — enforceScreenshotStorageCap purges files without clearing the " +
-    "Finding's path field)", async () => {
-    const finding = makeFinding({ screenshotPath: join(screenshotDirectory, `purged-${randomUUID()}.png`) });
-    await findingRepo.upsert(finding);
+  it(
+    "falls back to text-only, no error, when screenshotPath is set but the file no longer exists on " +
+      "disk (a real, reachable state — enforceScreenshotStorageCap purges files without clearing the " +
+      "Finding's path field)",
+    async () => {
+      const finding = makeFinding({ screenshotPath: join(screenshotDirectory, `purged-${randomUUID()}.png`) });
+      await findingRepo.upsert(finding);
 
-    const result = await client.callTool({ name: "get_finding", arguments: { findingId: finding.id } });
-    expect(result.isError).toBeFalsy();
-    const blocks = result.content as Array<{ type: string }>;
-    expect(blocks).toHaveLength(1);
-    expect(blocks[0]?.type).toBe("text");
-  });
+      const result = await client.callTool({ name: "get_finding", arguments: { findingId: finding.id } });
+      expect(result.isError).toBeFalsy();
+      const blocks = result.content as Array<{ type: string }>;
+      expect(blocks).toHaveLength(1);
+      expect(blocks[0]?.type).toBe("text");
+    },
+  );
 });

@@ -11,19 +11,26 @@ export function SessionRecordingsList() {
   const triggerMutation = useTriggerSessionReplayRun();
   const [cycleIdBySessionId, setCycleIdBySessionId] = useState<Record<string, string>>({});
 
-  if (isPending) return <p>Loading session recordings…</p>;
-  if (isError)
+  if (isPending) {
+    return <p>Loading session recordings…</p>;
+  }
+  if (isError) {
     return (
       <p className="form-error" role="alert">
         Failed to load session recordings: {error.message}
       </p>
     );
-  if (data.length === 0) return <p>No recorded sessions yet.</p>;
+  }
+  if (data.length === 0) {
+    return <p>No recorded sessions yet.</p>;
+  }
 
   const onReplay = async (sessionId: string): Promise<void> => {
     const cycleId = cycleIdBySessionId[sessionId] || getLastUsedCycleId() || undefined;
     const result = await triggerMutation.mutateAsync({ sessionId, cycleId });
-    if (cycleId) setLastUsedCycleId(cycleId);
+    if (cycleId) {
+      setLastUsedCycleId(cycleId);
+    }
     void navigate(`/session-replay/${result.runId}`);
   };
 
@@ -50,9 +57,7 @@ export function SessionRecordingsList() {
                 label={`Cycle for replay of session ${recording.sessionId.slice(0, 8)}`}
                 hideLabel
                 value={cycleIdBySessionId[recording.sessionId] ?? getLastUsedCycleId() ?? ""}
-                onChange={(cycleId) =>
-                  setCycleIdBySessionId((current) => ({ ...current, [recording.sessionId]: cycleId }))
-                }
+                onChange={(cycleId) => setCycleIdBySessionId((current) => ({ ...current, [recording.sessionId]: cycleId }))}
               />
             </td>
             <td>

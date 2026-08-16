@@ -53,7 +53,7 @@ entrypoint (`cli.ts`, `server.ts`, `mcpServer.ts`, `recordSession.ts`) found:
   exists in the whole codebase, and it's the dashboard frontend calling its own backend.
 - Playwright's own bundled code was checked directly (source, not docs) given its
   tooling has a track record worth verifying rather than assuming — the only
-  "telemetry" string found is Playwright *disabling* Firefox's own built-in telemetry
+  "telemetry" string found is Playwright _disabling_ Firefox's own built-in telemetry
   via launch preferences, not Playwright reporting anything of its own.
 - The Anthropic SDK's own "telemetry" references are `x-stainless-helper` identification
   headers attached to the same, already-disclosed API call — not a separate channel to

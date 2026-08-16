@@ -73,7 +73,9 @@ export async function matchSectionWithLlm(
   candidates: SectionCandidate[],
   options: SectionLlmMatchOptions,
 ): Promise<SectionLlmMatchResult> {
-  if (candidates.length === 0) return { confidence: 0 };
+  if (candidates.length === 0) {
+    return { confidence: 0 };
+  }
 
   const model = options.model ?? DEFAULT_SONNET_MODEL;
   const candidateLabels = candidates.map((candidate) => candidate.label);
@@ -89,16 +91,20 @@ export async function matchSectionWithLlm(
 
     const toolUse = response.content.find((block) => block.type === "tool_use" && block.name === MATCH_TOOL_NAME);
     const parsed = toolUse ? MatchInputSchema.safeParse(toolUse.input) : undefined;
-    if (!parsed?.success) return { confidence: 0 };
+    if (!parsed?.success) {
+      return { confidence: 0 };
+    }
 
     const { matchedLabel, confidence } = parsed.data;
-    if (matchedLabel === NO_MATCH_LABEL) return { confidence };
+    if (matchedLabel === NO_MATCH_LABEL) {
+      return { confidence };
+    }
 
     const normalizedMatch = normalizeLabelForLlmMatchComparison(matchedLabel);
-    const isRealCandidate = candidateLabels.some(
-      (label) => normalizeLabelForLlmMatchComparison(label) === normalizedMatch,
-    );
-    if (!isRealCandidate) return { confidence };
+    const isRealCandidate = candidateLabels.some((label) => normalizeLabelForLlmMatchComparison(label) === normalizedMatch);
+    if (!isRealCandidate) {
+      return { confidence };
+    }
     return { matchedLabel, confidence };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

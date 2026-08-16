@@ -92,11 +92,17 @@ export async function runSessionReplay(input: RunSessionReplayInput, deps: Sessi
       result = { status: "error", findings: [buildStepFailureFinding(stepInput, `execution error: ${message}`)] };
     }
 
-    if (result.status === "executed") stepsExecuted++;
-    else if (result.status === "drift") stepsDrifted++;
-    else stepsErrored++;
+    if (result.status === "executed") {
+      stepsExecuted++;
+    } else if (result.status === "drift") {
+      stepsDrifted++;
+    } else {
+      stepsErrored++;
+    }
 
-    if (result.newBaseline) await deps.baselineRepo.upsert(result.newBaseline);
+    if (result.newBaseline) {
+      await deps.baselineRepo.upsert(result.newBaseline);
+    }
     for (const finding of result.findings) {
       const findingWithReplayMode: Finding = { ...finding, replayMode };
       await deps.findingRepo.upsert(findingWithReplayMode);
@@ -105,10 +111,14 @@ export async function runSessionReplay(input: RunSessionReplayInput, deps: Sessi
 
     await deps.sessionReplayRunRepo.update(runId, { summary: { stepsExecuted, stepsDrifted, stepsErrored } });
 
-    if (await isCancelled()) return { stepsExecuted, stepsDrifted, stepsErrored, findings };
+    if (await isCancelled()) {
+      return { stepsExecuted, stepsDrifted, stepsErrored, findings };
+    }
   }
 
-  if (await isCancelled()) return { stepsExecuted, stepsDrifted, stepsErrored, findings };
+  if (await isCancelled()) {
+    return { stepsExecuted, stepsDrifted, stepsErrored, findings };
+  }
   await deps.sessionReplayRunRepo.update(runId, { status: "COMPLETED", completedAt: new Date() });
 
   return { stepsExecuted, stepsDrifted, stepsErrored, findings };

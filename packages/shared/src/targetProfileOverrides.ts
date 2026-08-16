@@ -21,7 +21,9 @@ export interface TargetProfileOverrides {
 
 function buildLoginCreds(profile: TargetProfile): TargetProfileLoginCreds | undefined {
   const { loginUrl, email, password, emailSelector, passwordSelector, submitSelector } = profile;
-  if (!loginUrl || !email || !password || !emailSelector || !passwordSelector || !submitSelector) return undefined;
+  if (!loginUrl || !email || !password || !emailSelector || !passwordSelector || !submitSelector) {
+    return undefined;
+  }
 
   return {
     loginUrl,

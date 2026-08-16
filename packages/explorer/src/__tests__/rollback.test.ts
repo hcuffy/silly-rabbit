@@ -61,8 +61,8 @@ describe("rollback (explorer-spec §8.6/§8.7, real chromium)", () => {
     await page.setContent(TABLE_PAGE);
     const result = await rollback(page, { kind: "marker", marker: "silly-rabbit-test-a1b2c3d4" });
     expect(result).toEqual({ status: "OK" });
-    expect(await (page.getByText("Acme HQ")).count()).toBe(0);
-    expect(await (page.getByText("Existing Warehouse")).count()).toBe(1);
+    expect(await page.getByText("Acme HQ").count()).toBe(0);
+    expect(await page.getByText("Existing Warehouse").count()).toBe(1);
   });
 
   it("exactly one candidate via fieldMatch fallback locator (no marker field available)", async () => {
@@ -73,7 +73,7 @@ describe("rollback (explorer-spec §8.6/§8.7, real chromium)", () => {
       window: { from: new Date(0), to: new Date() },
     });
     expect(result).toEqual({ status: "OK" });
-    expect(await (page.getByText("Existing Warehouse")).count()).toBe(0);
+    expect(await page.getByText("Existing Warehouse").count()).toBe(0);
   });
 
   it("delete click fires but row survives verification → FAILED 'delete did not take effect'", async () => {

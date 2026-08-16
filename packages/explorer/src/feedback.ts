@@ -57,10 +57,7 @@ export interface InjectLearningInput {
 
 const USER_INJECTED_SENTINEL_RUN_ID = "user-injected";
 
-export async function injectLearning(
-  input: InjectLearningInput,
-  learningRepo: Pick<LearningRepoLike, "upsert">,
-): Promise<Learning> {
+export async function injectLearning(input: InjectLearningInput, learningRepo: Pick<LearningRepoLike, "upsert">): Promise<Learning> {
   const now = new Date();
   const learning = LearningSchema.parse({
     id: randomUUID(),

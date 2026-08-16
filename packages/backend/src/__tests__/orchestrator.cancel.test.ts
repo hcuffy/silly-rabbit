@@ -32,7 +32,9 @@ function throwingJudgeClient(): AnthropicLike {
 async function waitForStatus(runRepo: RunRepo, runId: string, status: string): Promise<void> {
   for (let attempt = 0; attempt < 200; attempt++) {
     const run = await runRepo.get(runId);
-    if (run?.status === status) return;
+    if (run?.status === status) {
+      return;
+    }
     await new Promise((resolve) => setTimeout(resolve, 25));
   }
   throw new Error(`run ${runId} never reached status ${status}`);
@@ -67,42 +69,60 @@ describe("orchestrator — cancelRun (delete-cancel-spec.md §4, phase 1), real 
     await mongod.stop();
   });
 
-  it("cancelling a run whose target never responds actually closes the real chromium instance — the " +
-    "run reaches CANCELLED instead of hanging forever, proving a real close happened, not just a " +
-    "status flip (a hung route with no cancel would never resolve and this test would time out)", async () => {
-    const run = await startRun(
-      { charter: "test the locations flow", targetBaseUrl: MOCK_BASE_URL },
-      { ...deps, installRoutes: async (context) => { await context.route("**/*", () => new Promise(() => {})); } },
-    );
+  it(
+    "cancelling a run whose target never responds actually closes the real chromium instance — the " +
+      "run reaches CANCELLED instead of hanging forever, proving a real close happened, not just a " +
+      "status flip (a hung route with no cancel would never resolve and this test would time out)",
+    async () => {
+      const run = await startRun(
+        { charter: "test the locations flow", targetBaseUrl: MOCK_BASE_URL },
+        {
+          ...deps,
+          installRoutes: async (context) => {
+            await context.route("**/*", () => new Promise(() => {}));
+          },
+        },
+      );
 
-    await waitForStatus(deps.runRepo, run.id, "RUNNING");
-    await new Promise((resolve) => setTimeout(resolve, 400)); // let chromium.launch() + the hung navigation actually start
+      await waitForStatus(deps.runRepo, run.id, "RUNNING");
+      await new Promise((resolve) => setTimeout(resolve, 400)); // let chromium.launch() + the hung navigation actually start
 
-    const cancelled = await cancelRun(run.id, deps);
-    expect(cancelled).toBe(true);
+      const cancelled = await cancelRun(run.id, deps);
+      expect(cancelled).toBe(true);
 
-    await waitForStatus(deps.runRepo, run.id, "CANCELLED");
-    const final = await deps.runRepo.get(run.id);
-    expect(final?.finishedAt).toBeInstanceOf(Date);
-  }, 20_000);
+      await waitForStatus(deps.runRepo, run.id, "CANCELLED");
+      const final = await deps.runRepo.get(run.id);
+      expect(final?.finishedAt).toBeInstanceOf(Date);
+    },
+    20_000,
+  );
 
-  it("cancelling immediately after trigger reaches CANCELLED without ever completing real work — best " +
-    "effort on the exact PENDING/RUNNING boundary (which resolves in microseconds and can't be pinned " +
-    "deterministically from outside), but the observable outcome is deterministic: no findings, " +
-    "stepsUsed stays 0", async () => {
-    const run = await startRun(
-      { charter: "test the locations flow", targetBaseUrl: MOCK_BASE_URL },
-      { ...deps, installRoutes: async (context) => { await context.route("**/*", () => new Promise(() => {})); } },
-    );
+  it(
+    "cancelling immediately after trigger reaches CANCELLED without ever completing real work — best " +
+      "effort on the exact PENDING/RUNNING boundary (which resolves in microseconds and can't be pinned " +
+      "deterministically from outside), but the observable outcome is deterministic: no findings, " +
+      "stepsUsed stays 0",
+    async () => {
+      const run = await startRun(
+        { charter: "test the locations flow", targetBaseUrl: MOCK_BASE_URL },
+        {
+          ...deps,
+          installRoutes: async (context) => {
+            await context.route("**/*", () => new Promise(() => {}));
+          },
+        },
+      );
 
-    const cancelled = await cancelRun(run.id, deps);
-    expect(cancelled).toBe(true);
+      const cancelled = await cancelRun(run.id, deps);
+      expect(cancelled).toBe(true);
 
-    await waitForStatus(deps.runRepo, run.id, "CANCELLED");
-    const final = await deps.runRepo.get(run.id);
-    expect(final?.stepsUsed).toBe(0);
-    expect(await deps.findingRepo.listByRun(run.id)).toHaveLength(0);
-  }, 20_000);
+      await waitForStatus(deps.runRepo, run.id, "CANCELLED");
+      const final = await deps.runRepo.get(run.id);
+      expect(final?.stepsUsed).toBe(0);
+      expect(await deps.findingRepo.listByRun(run.id)).toHaveLength(0);
+    },
+    20_000,
+  );
 
   it("cancelRun returns false and does not disturb an already-COMPLETED run", async () => {
     const run = await startRun(

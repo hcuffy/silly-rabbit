@@ -20,7 +20,9 @@ describe("NewRunForm (frontend-spec §5)", () => {
 
   it("submits the form, POSTs /runs, and calls onCreated with the new run id", async () => {
     const fetchMock = vi.fn((url: string, init?: RequestInit) => {
-      if (init?.method === "POST") return Promise.resolve(jsonResponse({ runId: "run-123", status: "PENDING" }, 202));
+      if (init?.method === "POST") {
+        return Promise.resolve(jsonResponse({ runId: "run-123", status: "PENDING" }, 202));
+      }
       return Promise.resolve(jsonResponse([]));
     });
     vi.stubGlobal("fetch", fetchMock);
@@ -61,35 +63,38 @@ describe("NewRunForm (frontend-spec §5)", () => {
     expect(screen.getByLabelText("Target base URL")).toBeRequired();
   });
 
-  it("suppresses native validation bubbles (noValidate) — required stays for screen readers, the " +
-    "browser no longer intercepts submission or shows its own illegible bubble UI", () => {
-    const { container } = renderWithClient(<NewRunForm onCreated={vi.fn()} />);
+  it(
+    "suppresses native validation bubbles (noValidate) — required stays for screen readers, the " +
+      "browser no longer intercepts submission or shows its own illegible bubble UI",
+    () => {
+      const { container } = renderWithClient(<NewRunForm onCreated={vi.fn()} />);
 
-    expect(container.querySelector("form")).toHaveAttribute("novalidate");
-  });
+      expect(container.querySelector("form")).toHaveAttribute("novalidate");
+    },
+  );
 
-  it("empty required fields on submit: shows real inline error text (not hover-dependent), marks the " +
-    "fields aria-invalid, and focuses the first invalid field (Charter, before Target base URL)", async () => {
-    const user = userEvent.setup();
-    renderWithClient(<NewRunForm onCreated={vi.fn()} />);
+  it(
+    "empty required fields on submit: shows real inline error text (not hover-dependent), marks the " +
+      "fields aria-invalid, and focuses the first invalid field (Charter, before Target base URL)",
+    async () => {
+      const user = userEvent.setup();
+      renderWithClient(<NewRunForm onCreated={vi.fn()} />);
 
-    await user.click(screen.getByRole("button", { name: "Run" }));
+      await user.click(screen.getByRole("button", { name: "Run" }));
 
-    expect(await screen.findByText("Charter is required.")).toBeInTheDocument();
-    expect(screen.getByText("Target base URL is required.")).toBeInTheDocument();
-    expect(screen.getByLabelText("Charter")).toHaveAttribute("aria-invalid", "true");
-    expect(screen.getByLabelText("Charter")).toHaveFocus();
-  });
+      expect(await screen.findByText("Charter is required.")).toBeInTheDocument();
+      expect(screen.getByText("Target base URL is required.")).toBeInTheDocument();
+      expect(screen.getByLabelText("Charter")).toHaveAttribute("aria-invalid", "true");
+      expect(screen.getByLabelText("Charter")).toHaveFocus();
+    },
+  );
 
   it("picking an example charter fills the textarea (onboarding-friction fix)", async () => {
     const user = userEvent.setup();
     renderWithClient(<NewRunForm onCreated={vi.fn()} />);
 
     const picker = screen.getByLabelText("Insert an example charter");
-    await user.selectOptions(
-      picker,
-      "Add a new item to the cart, proceed to checkout, and confirm the order summary shows the correct total.",
-    );
+    await user.selectOptions(picker, "Add a new item to the cart, proceed to checkout, and confirm the order summary shows the correct total.");
 
     expect(screen.getByLabelText("Charter")).toHaveValue(
       "Add a new item to the cart, proceed to checkout, and confirm the order summary shows the correct total.",
@@ -105,42 +110,48 @@ describe("NewRunForm — cycle-select pre-fill (run-cycles-spec.md §5.1 CONFIRM
     window.localStorage.clear();
   });
 
-  it("pre-fills the cycle <select> from the browser's last-used cycle, but leaves it fully changeable — " +
-    "not a silent default, an explicit pre-filled choice", async () => {
-    window.localStorage.setItem("silly-rabbit:last-used-cycle-id", CYCLE_ID);
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(() =>
-        Promise.resolve(
-          jsonResponse([
-            {
-              id: CYCLE_ID,
-              name: "Release 3.22",
-              kind: "release",
-              status: "active",
-              isDefault: false,
-              runCounter: 1,
-              sessionReplayRunCounter: 0,
-              createdAt: "2026-01-01T00:00:00.000Z",
-            },
-          ]),
+  it(
+    "pre-fills the cycle <select> from the browser's last-used cycle, but leaves it fully changeable — " +
+      "not a silent default, an explicit pre-filled choice",
+    async () => {
+      window.localStorage.setItem("silly-rabbit:last-used-cycle-id", CYCLE_ID);
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(() =>
+          Promise.resolve(
+            jsonResponse([
+              {
+                id: CYCLE_ID,
+                name: "Release 3.22",
+                kind: "release",
+                status: "active",
+                isDefault: false,
+                runCounter: 1,
+                sessionReplayRunCounter: 0,
+                createdAt: "2026-01-01T00:00:00.000Z",
+              },
+            ]),
+          ),
         ),
-      ),
-    );
+      );
 
-    renderWithClient(<NewRunForm onCreated={vi.fn()} />);
+      renderWithClient(<NewRunForm onCreated={vi.fn()} />);
 
-    await screen.findByRole("option", { name: "Release 3.22" });
-    const select: HTMLSelectElement = screen.getByLabelText("Cycle");
-    expect(select.value).toBe(CYCLE_ID);
+      await screen.findByRole("option", { name: "Release 3.22" });
+      const select: HTMLSelectElement = screen.getByLabelText("Cycle");
+      expect(select.value).toBe(CYCLE_ID);
 
-    const user = userEvent.setup();
-    await user.selectOptions(select, "");
-    expect(select.value).toBe("");
-  });
+      const user = userEvent.setup();
+      await user.selectOptions(select, "");
+      expect(select.value).toBe("");
+    },
+  );
 
   it("with no last-used cycle recorded (fresh browser), the select starts unselected", async () => {
-    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(jsonResponse([]))));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => Promise.resolve(jsonResponse([]))),
+    );
 
     renderWithClient(<NewRunForm onCreated={vi.fn()} />);
 

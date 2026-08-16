@@ -31,13 +31,15 @@ describe("resolveCredentialEncryptionKey (same auto-generation pattern as SESSIO
     expect(await readFile(keyPath, "utf8")).toBe(key);
   });
 
-  it("survives a simulated restart: a second process-like call with no env var reads back the SAME " +
-    "persisted key instead of generating a new one", async () => {
-    const firstBoot = await resolveCredentialEncryptionKey({}, keyPath);
-    const secondBoot = await resolveCredentialEncryptionKey({}, keyPath); // simulates a fresh process, same file
+  it(
+    "survives a simulated restart: a second process-like call with no env var reads back the SAME " + "persisted key instead of generating a new one",
+    async () => {
+      const firstBoot = await resolveCredentialEncryptionKey({}, keyPath);
+      const secondBoot = await resolveCredentialEncryptionKey({}, keyPath); // simulates a fresh process, same file
 
-    expect(secondBoot).toBe(firstBoot);
-  });
+      expect(secondBoot).toBe(firstBoot);
+    },
+  );
 
   it("creates the parent directory if it doesn't exist yet (fresh .silly-rabbit/-style setup)", async () => {
     const nestedPath = join(directory, "nested", "does", "not", "exist", "credential-encryption-key");

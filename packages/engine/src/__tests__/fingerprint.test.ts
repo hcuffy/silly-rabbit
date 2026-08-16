@@ -53,9 +53,7 @@ describe("deriveFingerprint — stability golden fixtures (engine-spec §6, §4 
 
   it("drops transient roles (alert/status/progressbar) and their subtree", () => {
     const withoutTransient = deriveFingerprint('- heading "Locations" [level=1]');
-    const withTransient = deriveFingerprint(
-      '- heading "Locations" [level=1]\n- status "Loading":\n  - text "Please wait"',
-    );
+    const withTransient = deriveFingerprint('- heading "Locations" [level=1]\n- status "Loading":\n  - text "Please wait"');
     expect(withoutTransient.fingerprint).toBe(withTransient.fingerprint);
   });
 

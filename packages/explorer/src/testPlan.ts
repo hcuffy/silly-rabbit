@@ -1,10 +1,5 @@
 import { DEFAULT_SONNET_MODEL, type AnthropicLike, type AnthropicMessageResponse } from "@silly-rabbit/engine";
-import {
-  FeatureHypothesisSchema,
-  type FeatureHypothesis,
-  type Learning,
-  type ResearchInventory,
-} from "@silly-rabbit/shared";
+import { FeatureHypothesisSchema, type FeatureHypothesis, type Learning, type ResearchInventory } from "@silly-rabbit/shared";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import type { ToolInputSchema } from "./anthropicToolSchema.js";
@@ -84,7 +79,9 @@ function buildTool(): { name: string; description: string; input_schema: ToolInp
 }
 
 function renderActiveLearningsSummary(activeLearnings: Learning[]): string {
-  if (activeLearnings.length === 0) return "No active learnings for this feature yet.";
+  if (activeLearnings.length === 0) {
+    return "No active learnings for this feature yet.";
+  }
   return activeLearnings.map((learning) => `- [${learning.learningType}] ${learning.description}`).join("\n");
 }
 
@@ -140,7 +137,9 @@ export async function buildTestPlan(
 
   const toolUse = response.content.find((block) => block.type === "tool_use" && block.name === TEST_PLAN_TOOL_NAME);
   const parsed = toolUse ? TestPlanToolInputSchema.safeParse(toolUse.input) : undefined;
-  if (!parsed?.success) return [];
+  if (!parsed?.success) {
+    return [];
+  }
 
   return parsed.data.hypotheses.slice(0, maxHypotheses).map((card) =>
     FeatureHypothesisSchema.parse({

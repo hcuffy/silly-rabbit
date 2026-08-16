@@ -30,16 +30,24 @@ const explorerCancellationRegistry = new Map<string, CancellationEntry>();
 
 export async function cancelExplorerRun(runId: string, deps: ExplorerRunLifecycleDeps): Promise<boolean> {
   const cancelled = await deps.runRepo.cancel(runId);
-  if (!cancelled) return false;
+  if (!cancelled) {
+    return false;
+  }
 
   const testRun = await deps.testRunRepo.getByRunId(runId);
-  if (testRun) await deps.testRunRepo.cancel(testRun.id);
+  if (testRun) {
+    await deps.testRunRepo.cancel(testRun.id);
+  }
 
   const entry = explorerCancellationRegistry.get(runId);
   if (entry) {
     entry.cancelRequested = true;
-    if (entry.browser) await entry.browser.close();
-    if (entry.jobSettled) await entry.jobSettled.catch(() => {});
+    if (entry.browser) {
+      await entry.browser.close();
+    }
+    if (entry.jobSettled) {
+      await entry.jobSettled.catch(() => {});
+    }
   }
   return true;
 }
@@ -74,7 +82,9 @@ export async function startExplorerRun(input: StartExplorerRunInput, deps: Explo
     // executeExplorerRun's own first line already registered its CancellationEntry synchronously —
     // safe to attach the job promise to it right here, no race (same reasoning as orchestrator.ts).
     const registryEntry = explorerCancellationRegistry.get(run.id);
-    if (registryEntry) registryEntry.jobSettled = job;
+    if (registryEntry) {
+      registryEntry.jobSettled = job;
+    }
 
     return run;
   } finally {
@@ -132,7 +142,9 @@ async function executeExplorerRun(run: Run, input: StartExplorerRunInput, deps: 
       assertNotProductionUrl(deps.loginCreds.loginUrl, deps.productionUrlPatterns);
     }
 
-    if (registryEntry.cancelRequested) return; // cancelled while PENDING — CANCELLED already written by cancelExplorerRun()
+    if (registryEntry.cancelRequested) {
+      return;
+    } // cancelled while PENDING — CANCELLED already written by cancelExplorerRun()
 
     const browser = await chromium.launch();
     if (registryEntry.cancelRequested) {
@@ -142,7 +154,9 @@ async function executeExplorerRun(run: Run, input: StartExplorerRunInput, deps: 
     registryEntry.browser = browser;
     try {
       const context = await browser.newContext();
-      if (deps.installRoutes) await deps.installRoutes(context);
+      if (deps.installRoutes) {
+        await deps.installRoutes(context);
+      }
 
       const page = await context.newPage();
       await installNavigationGuard(page, {
@@ -171,21 +185,23 @@ async function executeExplorerRun(run: Run, input: StartExplorerRunInput, deps: 
         llmClientFactory: trackedJudgeClientFactory,
         navMap,
         onNavMapEntryVerified: navMapRepo
-          ? (entry) => navMapRepo.updateEntryVerification(run.targetBaseUrl, entry.role, entry.label, {
-              isStale: false,
-              lastVerifiedAt: new Date(),
-            })
+          ? (entry) =>
+              navMapRepo.updateEntryVerification(run.targetBaseUrl, entry.role, entry.label, {
+                isStale: false,
+                lastVerifiedAt: new Date(),
+              })
           : undefined,
         onNavMapEntryStale: navMapRepo
           ? (entry) => navMapRepo.updateEntryVerification(run.targetBaseUrl, entry.role, entry.label, { isStale: true })
           : undefined,
         onNavMapEntryRelabeled: navMapRepo
-          ? (entry, newLabel) => navMapRepo.updateEntryVerification(run.targetBaseUrl, entry.role, entry.label, {
-              isStale: false,
-              label: newLabel,
-              lastVerifiedAt: new Date(),
-              lastRelabeledAt: new Date(),
-            })
+          ? (entry, newLabel) =>
+              navMapRepo.updateEntryVerification(run.targetBaseUrl, entry.role, entry.label, {
+                isStale: false,
+                label: newLabel,
+                lastVerifiedAt: new Date(),
+                lastRelabeledAt: new Date(),
+              })
           : undefined,
       });
       if (!located) {
@@ -217,7 +233,9 @@ async function executeExplorerRun(run: Run, input: StartExplorerRunInput, deps: 
       await browser.close();
     }
   } catch (error) {
-    if (registryEntry.cancelRequested) return; // CANCELLED already written by cancelExplorerRun(), not a real failure
+    if (registryEntry.cancelRequested) {
+      return;
+    } // CANCELLED already written by cancelExplorerRun(), not a real failure
     await runFailed(run, deps, error);
   } finally {
     explorerCancellationRegistry.delete(run.id);

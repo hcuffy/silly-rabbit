@@ -15,9 +15,9 @@ function makeProfile(overrides: Partial<TargetProfile> = {}): TargetProfile {
     loginUrl: "https://release.example.com/#/login",
     email: "test@example.com",
     password: "hunter2",
-    emailSelector: "[data-cy-id=\"login.email\"]",
-    passwordSelector: "[data-cy-id=\"login.password\"]",
-    submitSelector: "[data-cy-id=\"login.button\"]",
+    emailSelector: '[data-cy-id="login.email"]',
+    passwordSelector: '[data-cy-id="login.password"]',
+    submitSelector: '[data-cy-id="login.button"]',
     allowedDomains: ["release.example.com"],
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -49,41 +49,47 @@ describe("TargetProfileRepo (target-profiles-spec.md §3) — mongodb-memory-ser
     expect(retrieved).toEqual(profile);
   });
 
-  it("the raw Mongo document stores email/password as ciphertext, never plaintext — real assertion " +
-    "against the stored document itself, not just the repo's decrypted return value", async () => {
-    const repo = new TargetProfileRepo(connection.db, CREDENTIAL_ENCRYPTION_KEY);
-    const profile = makeProfile({ id: randomUUID(), email: "raw-check@example.com", password: "super-secret-value" });
+  it(
+    "the raw Mongo document stores email/password as ciphertext, never plaintext — real assertion " +
+      "against the stored document itself, not just the repo's decrypted return value",
+    async () => {
+      const repo = new TargetProfileRepo(connection.db, CREDENTIAL_ENCRYPTION_KEY);
+      const profile = makeProfile({ id: randomUUID(), email: "raw-check@example.com", password: "super-secret-value" });
 
-    await repo.create(profile);
+      await repo.create(profile);
 
-    const rawDocument = await connection.db
-      .collection<{ _id: string; email: string; password: string }>("targetProfiles")
-      .findOne({ _id: profile.id });
-    expect(rawDocument).not.toBeNull();
-    expect(rawDocument?.email).not.toBe("raw-check@example.com");
-    expect(rawDocument?.email).not.toContain("raw-check@example.com");
-    expect(rawDocument?.password).not.toBe("super-secret-value");
-    expect(rawDocument?.password).not.toContain("super-secret-value");
-    expect(rawDocument?.email.split(":")).toHaveLength(3);
-    expect(rawDocument?.password.split(":")).toHaveLength(3);
-  });
+      const rawDocument = await connection.db
+        .collection<{ _id: string; email: string; password: string }>("targetProfiles")
+        .findOne({ _id: profile.id });
+      expect(rawDocument).not.toBeNull();
+      expect(rawDocument?.email).not.toBe("raw-check@example.com");
+      expect(rawDocument?.email).not.toContain("raw-check@example.com");
+      expect(rawDocument?.password).not.toBe("super-secret-value");
+      expect(rawDocument?.password).not.toContain("super-secret-value");
+      expect(rawDocument?.email.split(":")).toHaveLength(3);
+      expect(rawDocument?.password.split(":")).toHaveLength(3);
+    },
+  );
 
-  it("a profile with no login configured (selectors/credentials all omitted) round-trips fine — " +
-    "profiles are allowed to carry just baseUrl/allowedDomains", async () => {
-    const repo = new TargetProfileRepo(connection.db, CREDENTIAL_ENCRYPTION_KEY);
-    const profile = makeProfile({
-      id: randomUUID(),
-      loginUrl: undefined,
-      email: undefined,
-      password: undefined,
-      emailSelector: undefined,
-      passwordSelector: undefined,
-      submitSelector: undefined,
-    });
+  it(
+    "a profile with no login configured (selectors/credentials all omitted) round-trips fine — " +
+      "profiles are allowed to carry just baseUrl/allowedDomains",
+    async () => {
+      const repo = new TargetProfileRepo(connection.db, CREDENTIAL_ENCRYPTION_KEY);
+      const profile = makeProfile({
+        id: randomUUID(),
+        loginUrl: undefined,
+        email: undefined,
+        password: undefined,
+        emailSelector: undefined,
+        passwordSelector: undefined,
+        submitSelector: undefined,
+      });
 
-    await repo.create(profile);
-    expect(await repo.get(profile.id)).toEqual(profile);
-  });
+      await repo.create(profile);
+      expect(await repo.get(profile.id)).toEqual(profile);
+    },
+  );
 
   it("list returns all profiles, sorted by name", async () => {
     const repo = new TargetProfileRepo(connection.db, CREDENTIAL_ENCRYPTION_KEY);

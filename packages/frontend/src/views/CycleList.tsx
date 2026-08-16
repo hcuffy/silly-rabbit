@@ -13,16 +13,21 @@ export function CycleList() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [rowError, setRowError] = useState<string | undefined>(undefined);
 
-  if (isPending) return <p>Loading cycles…</p>;
-  if (isError)
+  if (isPending) {
+    return <p>Loading cycles…</p>;
+  }
+  if (isError) {
     return (
       <p className="form-error" role="alert">
         Failed to load cycles: {error.message}
       </p>
     );
+  }
 
   async function handleArchive(id: string): Promise<void> {
-    if (!window.confirm("Archive this cycle? It stays viewable, but can no longer be picked for new runs.")) return;
+    if (!window.confirm("Archive this cycle? It stays viewable, but can no longer be picked for new runs.")) {
+      return;
+    }
     setRowError(undefined);
     try {
       await archiveMutation.mutateAsync(id);

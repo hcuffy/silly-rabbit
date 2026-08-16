@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { enforceScreenshotStorageCap } from "../screenshotRetention.js";
 
+// eslint-disable-next-line max-params -- 4 terse scalar args used tersely at 10 call sites; grouping would only add verbosity
 async function writeAgedFile(directory: string, name: string, sizeBytes: number, ageSeconds: number): Promise<void> {
   await writeFile(join(directory, name), Buffer.alloc(sizeBytes));
   const mtime = new Date(Date.now() - ageSeconds * 1000);

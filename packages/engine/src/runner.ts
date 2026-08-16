@@ -148,9 +148,7 @@ export async function runEngineLoop(input: EngineLoopInput): Promise<EngineLoopO
   }
 
   for (const [screenId, seenDedupKeys] of dedupKeysByScreen) {
-    const openPrior = input.existingFindings.filter(
-      (f) => f.screenId === screenId && (f.status === "NEW" || f.status === "RECURRING"),
-    );
+    const openPrior = input.existingFindings.filter((f) => f.screenId === screenId && (f.status === "NEW" || f.status === "RECURRING"));
     for (const prior of openPrior) {
       if (!seenDedupKeys.has(prior.dedupKey)) {
         findings.push({ ...prior, status: "RESOLVED", runId: input.runId, updatedAt: now });

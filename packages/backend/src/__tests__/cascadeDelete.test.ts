@@ -155,47 +155,50 @@ describe("cascadeDelete (delete-cancel-spec.md §5, phase 1) — real Mongo + re
     expect(await fileExists(finding.screenshotPath as string)).toBe(false);
   });
 
-  it("deleteSessionRecordingCascade chains correctly through the full nested chain: " +
-    "SessionRecording -> N SessionReplayRuns -> each run's own Findings (+ files) — the exact gap the " +
-    "original audit found (steps degrading to [] on read) no longer applies because nothing is left to read", async () => {
-    const recording: SessionRecording = {
-      sessionId: randomUUID(),
-      targetBaseUrl: "https://dev.rabbit.example",
-      recordedAt: new Date(),
-      steps: [{ action: "navigate", selectorStrategy: "css", value: "https://dev.rabbit.example", timestampOffsetMs: 0 }],
-    };
-    await sessionRecordingRepo.create(recording);
+  it(
+    "deleteSessionRecordingCascade chains correctly through the full nested chain: " +
+      "SessionRecording -> N SessionReplayRuns -> each run's own Findings (+ files) — the exact gap the " +
+      "original audit found (steps degrading to [] on read) no longer applies because nothing is left to read",
+    async () => {
+      const recording: SessionRecording = {
+        sessionId: randomUUID(),
+        targetBaseUrl: "https://dev.rabbit.example",
+        recordedAt: new Date(),
+        steps: [{ action: "navigate", selectorStrategy: "css", value: "https://dev.rabbit.example", timestampOffsetMs: 0 }],
+      };
+      await sessionRecordingRepo.create(recording);
 
-    const replayRunA = makeReplayRun({ sessionId: recording.sessionId });
-    const replayRunB = makeReplayRun({ sessionId: recording.sessionId });
-    const unrelatedReplayRun = makeReplayRun({ sessionId: randomUUID() });
-    await sessionReplayRunRepo.create(replayRunA);
-    await sessionReplayRunRepo.create(replayRunB);
-    await sessionReplayRunRepo.create(unrelatedReplayRun);
+      const replayRunA = makeReplayRun({ sessionId: recording.sessionId });
+      const replayRunB = makeReplayRun({ sessionId: recording.sessionId });
+      const unrelatedReplayRun = makeReplayRun({ sessionId: randomUUID() });
+      await sessionReplayRunRepo.create(replayRunA);
+      await sessionReplayRunRepo.create(replayRunB);
+      await sessionReplayRunRepo.create(unrelatedReplayRun);
 
-    const findingA = await makeFindingWithFiles({ runId: replayRunA.id, origin: "session-replay" });
-    const findingB1 = await makeFindingWithFiles({ runId: replayRunB.id, origin: "session-replay" });
-    const findingB2 = await makeFindingWithFiles({ runId: replayRunB.id, origin: "session-replay" });
-    const unrelatedFinding = await makeFindingWithFiles({ runId: unrelatedReplayRun.id, origin: "session-replay" });
+      const findingA = await makeFindingWithFiles({ runId: replayRunA.id, origin: "session-replay" });
+      const findingB1 = await makeFindingWithFiles({ runId: replayRunB.id, origin: "session-replay" });
+      const findingB2 = await makeFindingWithFiles({ runId: replayRunB.id, origin: "session-replay" });
+      const unrelatedFinding = await makeFindingWithFiles({ runId: unrelatedReplayRun.id, origin: "session-replay" });
 
-    const result = await deleteSessionRecordingCascade(recording.sessionId, {
-      sessionReplayRunRepo,
-      findingRepo,
-      sessionRecordingRepo,
-    });
-    expect(result).toEqual({ deletedSessionReplayRuns: 2, deletedFindings: 3 });
+      const result = await deleteSessionRecordingCascade(recording.sessionId, {
+        sessionReplayRunRepo,
+        findingRepo,
+        sessionRecordingRepo,
+      });
+      expect(result).toEqual({ deletedSessionReplayRuns: 2, deletedFindings: 3 });
 
-    expect(await sessionRecordingRepo.get(recording.sessionId)).toBeNull();
-    expect(await sessionReplayRunRepo.get(replayRunA.id)).toBeNull();
-    expect(await sessionReplayRunRepo.get(replayRunB.id)).toBeNull();
-    expect(await findingRepo.get(findingA.id)).toBeNull();
-    expect(await findingRepo.get(findingB1.id)).toBeNull();
-    expect(await findingRepo.get(findingB2.id)).toBeNull();
-    expect(await fileExists(findingA.screenshotPath as string)).toBe(false);
-    expect(await fileExists(findingB1.screenshotPath as string)).toBe(false);
+      expect(await sessionRecordingRepo.get(recording.sessionId)).toBeNull();
+      expect(await sessionReplayRunRepo.get(replayRunA.id)).toBeNull();
+      expect(await sessionReplayRunRepo.get(replayRunB.id)).toBeNull();
+      expect(await findingRepo.get(findingA.id)).toBeNull();
+      expect(await findingRepo.get(findingB1.id)).toBeNull();
+      expect(await findingRepo.get(findingB2.id)).toBeNull();
+      expect(await fileExists(findingA.screenshotPath as string)).toBe(false);
+      expect(await fileExists(findingB1.screenshotPath as string)).toBe(false);
 
-    expect(await sessionReplayRunRepo.get(unrelatedReplayRun.id)).not.toBeNull();
-    expect(await findingRepo.get(unrelatedFinding.id)).not.toBeNull();
-    expect(await fileExists(unrelatedFinding.screenshotPath as string)).toBe(true);
-  });
+      expect(await sessionReplayRunRepo.get(unrelatedReplayRun.id)).not.toBeNull();
+      expect(await findingRepo.get(unrelatedFinding.id)).not.toBeNull();
+      expect(await fileExists(unrelatedFinding.screenshotPath as string)).toBe(true);
+    },
+  );
 });

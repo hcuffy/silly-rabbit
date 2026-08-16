@@ -107,9 +107,7 @@ describe("login (auto-login-spec §2/§6)", () => {
 
   it("resolves when login navigates away from the login URL", async () => {
     await withContext(async (context) => {
-      await context.route(`${LOGIN_URL}**`, (route) =>
-        route.fulfill({ contentType: "text/html", body: successLoginHtml() }),
-      );
+      await context.route(`${LOGIN_URL}**`, (route) => route.fulfill({ contentType: "text/html", body: successLoginHtml() }));
       await context.route(`${SUCCESS_URL}**`, (route) =>
         route.fulfill({
           contentType: "text/html",
@@ -124,9 +122,7 @@ describe("login (auto-login-spec §2/§6)", () => {
 
   it("resolves the 2-step (identifier-first) flow when nextSelector is set", async () => {
     await withContext(async (context) => {
-      await context.route(`${LOGIN_URL}**`, (route) =>
-        route.fulfill({ contentType: "text/html", body: twoStepLoginHtml() }),
-      );
+      await context.route(`${LOGIN_URL}**`, (route) => route.fulfill({ contentType: "text/html", body: twoStepLoginHtml() }));
       await context.route(`${SUCCESS_URL}**`, (route) =>
         route.fulfill({
           contentType: "text/html",
@@ -141,9 +137,7 @@ describe("login (auto-login-spec §2/§6)", () => {
 
   it("throws a credential-free error when login page does not navigate away", async () => {
     await withContext(async (context) => {
-      await context.route(`${LOGIN_URL}**`, (route) =>
-        route.fulfill({ contentType: "text/html", body: failureLoginHtml() }),
-      );
+      await context.route(`${LOGIN_URL}**`, (route) => route.fulfill({ contentType: "text/html", body: failureLoginHtml() }));
       const page = await context.newPage();
       let caught: unknown;
       try {
@@ -164,12 +158,14 @@ describe("login (auto-login-spec §2/§6)", () => {
       let caught: unknown;
       try {
         await login(page, TEST_CREDS, (url) => {
-          if (url === LOGIN_URL) throw guardError;
+          if (url === LOGIN_URL) {
+            throw guardError;
+          }
         });
       } catch (error) {
         caught = error;
       }
-  
+
       expect(caught).toBe(guardError);
       expect(page.url()).toBe("about:blank");
     });
@@ -177,9 +173,7 @@ describe("login (auto-login-spec §2/§6)", () => {
 
   it("re-checks the post-login redirect URL against onBeforeNavigate", async () => {
     await withContext(async (context) => {
-      await context.route(`${LOGIN_URL}**`, (route) =>
-        route.fulfill({ contentType: "text/html", body: successLoginHtml() }),
-      );
+      await context.route(`${LOGIN_URL}**`, (route) => route.fulfill({ contentType: "text/html", body: successLoginHtml() }));
       await context.route(`${SUCCESS_URL}**`, (route) =>
         route.fulfill({
           contentType: "text/html",
@@ -191,7 +185,9 @@ describe("login (auto-login-spec §2/§6)", () => {
       let caught: unknown;
       try {
         await login(page, TEST_CREDS, (url) => {
-          if (url.includes("dashboard")) throw guardError;
+          if (url.includes("dashboard")) {
+            throw guardError;
+          }
         });
       } catch (error) {
         caught = error;
@@ -203,9 +199,7 @@ describe("login (auto-login-spec §2/§6)", () => {
 
   it("succeeds unchanged when the hook passes every URL", async () => {
     await withContext(async (context) => {
-      await context.route(`${LOGIN_URL}**`, (route) =>
-        route.fulfill({ contentType: "text/html", body: successLoginHtml() }),
-      );
+      await context.route(`${LOGIN_URL}**`, (route) => route.fulfill({ contentType: "text/html", body: successLoginHtml() }));
       await context.route(`${SUCCESS_URL}**`, (route) =>
         route.fulfill({
           contentType: "text/html",
@@ -225,9 +219,7 @@ describe("login (auto-login-spec §2/§6)", () => {
 
   it("waits for the password element to reveal after nextSelector when the app destroys and recreates it (Ember-swap regression)", async () => {
     await withContext(async (context) => {
-      await context.route(`${LOGIN_URL}**`, (route) =>
-        route.fulfill({ contentType: "text/html", body: emberSwapLoginHtml() }),
-      );
+      await context.route(`${LOGIN_URL}**`, (route) => route.fulfill({ contentType: "text/html", body: emberSwapLoginHtml() }));
       await context.route(`${SUCCESS_URL}**`, (route) =>
         route.fulfill({
           contentType: "text/html",
@@ -242,9 +234,7 @@ describe("login (auto-login-spec §2/§6)", () => {
 
   it("resolves when the app navigates via a hash-only change (hash-routing regression)", async () => {
     await withContext(async (context) => {
-      await context.route(`${LOGIN_URL}**`, (route) =>
-        route.fulfill({ contentType: "text/html", body: hashRoutingLoginHtml() }),
-      );
+      await context.route(`${LOGIN_URL}**`, (route) => route.fulfill({ contentType: "text/html", body: hashRoutingLoginHtml() }));
       const page = await context.newPage();
       const hashLoginUrl = `${LOGIN_URL}#/login`;
       await login(page, { ...TEST_CREDS, loginUrl: hashLoginUrl, timeoutMs: 3000 });
@@ -254,9 +244,7 @@ describe("login (auto-login-spec §2/§6)", () => {
 
   it("redacts password from Playwright fill error (call-log sanitization)", async () => {
     await withContext(async (context) => {
-      await context.route(`${LOGIN_URL}**`, (route) =>
-        route.fulfill({ contentType: "text/html", body: fillFailureLoginHtml() }),
-      );
+      await context.route(`${LOGIN_URL}**`, (route) => route.fulfill({ contentType: "text/html", body: fillFailureLoginHtml() }));
       const page = await context.newPage();
       let caught: unknown;
       try {

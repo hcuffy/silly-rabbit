@@ -54,7 +54,9 @@ function makeFinding(overrides: Partial<Finding> = {}): Finding {
 
 async function waitUntil(predicate: () => Promise<boolean>): Promise<void> {
   for (let attempt = 0; attempt < 300; attempt++) {
-    if (await predicate()) return;
+    if (await predicate()) {
+      return;
+    }
     await new Promise((resolve) => setTimeout(resolve, 50));
   }
   throw new Error("condition not met in time");
@@ -115,21 +117,29 @@ describe("HTTP cancel/delete routes — /runs and /findings (delete-cancel-spec.
     await mongod.stop();
   });
 
-  it("POST /runs/:id/cancel on a real RUNNING run closes the real chromium instance — 200, status " +
-    "sticks at CANCELLED", async () => {
-    const run = await startRun(
-      { charter: "test the locations flow", targetBaseUrl: MOCK_BASE_URL },
-      { ...deps, installRoutes: async (context) => { await context.route("**/*", () => new Promise(() => {})); } },
-    );
-    await waitUntil(async () => (await deps.runRepo.get(run.id))?.status === "RUNNING");
-    await new Promise((resolve) => setTimeout(resolve, 400));
+  it(
+    "POST /runs/:id/cancel on a real RUNNING run closes the real chromium instance — 200, status " + "sticks at CANCELLED",
+    async () => {
+      const run = await startRun(
+        { charter: "test the locations flow", targetBaseUrl: MOCK_BASE_URL },
+        {
+          ...deps,
+          installRoutes: async (context) => {
+            await context.route("**/*", () => new Promise(() => {}));
+          },
+        },
+      );
+      await waitUntil(async () => (await deps.runRepo.get(run.id))?.status === "RUNNING");
+      await new Promise((resolve) => setTimeout(resolve, 400));
 
-    const cancelResponse = await injectAuthed({ method: "POST", url: `/runs/${run.id}/cancel` });
-    expect(cancelResponse.statusCode).toBe(200);
-    expect(cancelResponse.json()).toEqual({ cancelled: true });
+      const cancelResponse = await injectAuthed({ method: "POST", url: `/runs/${run.id}/cancel` });
+      expect(cancelResponse.statusCode).toBe(200);
+      expect(cancelResponse.json()).toEqual({ cancelled: true });
 
-    await waitUntil(async () => (await deps.runRepo.get(run.id))?.status === "CANCELLED");
-  }, 20_000);
+      await waitUntil(async () => (await deps.runRepo.get(run.id))?.status === "CANCELLED");
+    },
+    20_000,
+  );
 
   it("POST /runs/:id/cancel returns 409 for an already-COMPLETED run", async () => {
     const triggerResponse = await injectAuthed({
@@ -153,38 +163,40 @@ describe("HTTP cancel/delete routes — /runs and /findings (delete-cancel-spec.
     expect(response.statusCode).toBe(404);
   });
 
-  it("DELETE /runs/:id cascades to Findings via the route layer (not just the repo), returns counts, " +
-    "and a subsequent GET 404s", async () => {
-    const triggerResponse = await injectAuthed({
-      method: "POST",
-      url: "/runs",
-      payload: { charter: "test the locations flow", targetBaseUrl: MOCK_BASE_URL },
-    });
-    const { runId } = triggerResponse.json<{ runId: string }>();
-    await waitUntil(async () => {
-      const response = await injectAuthed({ method: "GET", url: `/runs/${runId}` });
-      return response.json<{ status: string }>().status === "COMPLETED";
-    });
+  it(
+    "DELETE /runs/:id cascades to Findings via the route layer (not just the repo), returns counts, " + "and a subsequent GET 404s",
+    async () => {
+      const triggerResponse = await injectAuthed({
+        method: "POST",
+        url: "/runs",
+        payload: { charter: "test the locations flow", targetBaseUrl: MOCK_BASE_URL },
+      });
+      const { runId } = triggerResponse.json<{ runId: string }>();
+      await waitUntil(async () => {
+        const response = await injectAuthed({ method: "GET", url: `/runs/${runId}` });
+        return response.json<{ status: string }>().status === "COMPLETED";
+      });
 
-    const finding = makeFinding({ runId });
-    await deps.findingRepo.upsert(finding);
+      const finding = makeFinding({ runId });
+      await deps.findingRepo.upsert(finding);
 
-    const deleteResponse = await injectAuthed({ method: "DELETE", url: `/runs/${runId}` });
-    expect(deleteResponse.statusCode).toBe(200);
-    expect(deleteResponse.json()).toEqual({ deletedFindings: 1, deletedTestRun: false });
+      const deleteResponse = await injectAuthed({ method: "DELETE", url: `/runs/${runId}` });
+      expect(deleteResponse.statusCode).toBe(200);
+      expect(deleteResponse.json()).toEqual({ deletedFindings: 1, deletedTestRun: false });
 
-    const getResponse = await injectAuthed({ method: "GET", url: `/runs/${runId}` });
-    expect(getResponse.statusCode).toBe(404);
-    expect(await deps.findingRepo.get(finding.id)).toBeNull();
-  }, 20_000);
+      const getResponse = await injectAuthed({ method: "GET", url: `/runs/${runId}` });
+      expect(getResponse.statusCode).toBe(404);
+      expect(await deps.findingRepo.get(finding.id)).toBeNull();
+    },
+    20_000,
+  );
 
   it("DELETE /runs/:id returns 404 for an unknown id", async () => {
     const response = await injectAuthed({ method: "DELETE", url: `/runs/${randomUUID()}` });
     expect(response.statusCode).toBe(404);
   });
 
-  it("DELETE /findings/:id hard-deletes — 204, distinct from POST /findings/:id/feedback's dismiss " +
-    "(both routes coexist)", async () => {
+  it("DELETE /findings/:id hard-deletes — 204, distinct from POST /findings/:id/feedback's dismiss " + "(both routes coexist)", async () => {
     const finding = makeFinding();
     await deps.findingRepo.upsert(finding);
 

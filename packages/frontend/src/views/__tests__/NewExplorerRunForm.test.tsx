@@ -20,7 +20,9 @@ describe("NewExplorerRunForm (D8 dashboard trigger UI)", () => {
 
   it("submits the form, POSTs /explorer/runs, and calls onCreated with the new run id", async () => {
     const fetchMock = vi.fn((url: string, init?: RequestInit) => {
-      if (init?.method === "POST") return Promise.resolve(jsonResponse({ runId: "run-456", status: "PENDING" }, 202));
+      if (init?.method === "POST") {
+        return Promise.resolve(jsonResponse({ runId: "run-456", status: "PENDING" }, 202));
+      }
       return Promise.resolve(jsonResponse([]));
     });
     vi.stubGlobal("fetch", fetchMock);
@@ -61,14 +63,16 @@ describe("NewExplorerRunForm (D8 dashboard trigger UI)", () => {
     expect(fetchMock.mock.calls.some(([, init]) => init?.method === "POST")).toBe(false);
   });
 
-  it("marks Feature name, Section description, and Target base URL required (real, non-optional " +
-    "fields per CreateExplorerRunInputSchema)", () => {
-    renderWithClient(<NewExplorerRunForm onCreated={vi.fn()} />);
+  it(
+    "marks Feature name, Section description, and Target base URL required (real, non-optional " + "fields per CreateExplorerRunInputSchema)",
+    () => {
+      renderWithClient(<NewExplorerRunForm onCreated={vi.fn()} />);
 
-    expect(screen.getByLabelText("Feature name")).toBeRequired();
-    expect(screen.getByLabelText("Section description")).toBeRequired();
-    expect(screen.getByLabelText("Target base URL")).toBeRequired();
-  });
+      expect(screen.getByLabelText("Feature name")).toBeRequired();
+      expect(screen.getByLabelText("Section description")).toBeRequired();
+      expect(screen.getByLabelText("Target base URL")).toBeRequired();
+    },
+  );
 
   it("suppresses native validation bubbles (noValidate) — required stays for screen readers", () => {
     const { container } = renderWithClient(<NewExplorerRunForm onCreated={vi.fn()} />);
@@ -76,19 +80,22 @@ describe("NewExplorerRunForm (D8 dashboard trigger UI)", () => {
     expect(container.querySelector("form")).toHaveAttribute("novalidate");
   });
 
-  it("empty required fields on submit: shows real inline error text for each, marks them aria-invalid, " +
-    "and focuses the first invalid field (Feature name, first in document order)", async () => {
-    const user = userEvent.setup();
-    renderWithClient(<NewExplorerRunForm onCreated={vi.fn()} />);
+  it(
+    "empty required fields on submit: shows real inline error text for each, marks them aria-invalid, " +
+      "and focuses the first invalid field (Feature name, first in document order)",
+    async () => {
+      const user = userEvent.setup();
+      renderWithClient(<NewExplorerRunForm onCreated={vi.fn()} />);
 
-    await user.click(screen.getByRole("button", { name: "Run explorer" }));
+      await user.click(screen.getByRole("button", { name: "Run explorer" }));
 
-    expect(await screen.findByText("Feature name is required.")).toBeInTheDocument();
-    expect(screen.getByText("Section description is required.")).toBeInTheDocument();
-    expect(screen.getByText("Target base URL is required.")).toBeInTheDocument();
-    expect(screen.getByLabelText("Feature name")).toHaveAttribute("aria-invalid", "true");
-    expect(screen.getByLabelText("Feature name")).toHaveFocus();
-  });
+      expect(await screen.findByText("Feature name is required.")).toBeInTheDocument();
+      expect(screen.getByText("Section description is required.")).toBeInTheDocument();
+      expect(screen.getByText("Target base URL is required.")).toBeInTheDocument();
+      expect(screen.getByLabelText("Feature name")).toHaveAttribute("aria-invalid", "true");
+      expect(screen.getByLabelText("Feature name")).toHaveFocus();
+    },
+  );
 
   it("picking an example description fills the textarea (onboarding-friction fix)", async () => {
     const user = userEvent.setup();

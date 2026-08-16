@@ -15,13 +15,7 @@ export function LoginScreen() {
       <form className="login-screen__form" onSubmit={handleSubmit}>
         <h1>Silly Rabbit</h1>
         <label htmlFor="password">Password</label>
-        <input
-          id="password"
-          type="password"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          autoFocus
-        />
+        <input id="password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoFocus />
         <button type="submit" className="button button--primary" disabled={mutation.isPending}>
           {mutation.isPending ? "Signing in…" : "Sign in"}
         </button>

@@ -41,44 +41,49 @@ function makeLearning(overrides: Partial<Learning> = {}): Learning {
   };
 }
 
-describe("cascadeDelete — Learning.firstSeenRunId/lastConfirmedRunId dangling reference " +
-  "(delete-cancel-spec.md §5, deliberate, documented behavior)", () => {
-  let mongod: MongoMemoryServer;
-  let connection: MongoConnection;
-  let runRepo: RunRepo;
-  let testRunRepo: TestRunRepo;
-  let findingRepo: FindingRepo;
-  let learningRepo: LearningRepo;
+describe(
+  "cascadeDelete — Learning.firstSeenRunId/lastConfirmedRunId dangling reference " + "(delete-cancel-spec.md §5, deliberate, documented behavior)",
+  () => {
+    let mongod: MongoMemoryServer;
+    let connection: MongoConnection;
+    let runRepo: RunRepo;
+    let testRunRepo: TestRunRepo;
+    let findingRepo: FindingRepo;
+    let learningRepo: LearningRepo;
 
-  beforeAll(async () => {
-    mongod = await MongoMemoryServer.create();
-    connection = await connectMongo(mongod.getUri());
-    runRepo = new RunRepo(connection.db);
-    testRunRepo = new TestRunRepo(connection.db);
-    findingRepo = new FindingRepo(connection.db);
-    learningRepo = new LearningRepo(connection.db);
-  });
+    beforeAll(async () => {
+      mongod = await MongoMemoryServer.create();
+      connection = await connectMongo(mongod.getUri());
+      runRepo = new RunRepo(connection.db);
+      testRunRepo = new TestRunRepo(connection.db);
+      findingRepo = new FindingRepo(connection.db);
+      learningRepo = new LearningRepo(connection.db);
+    });
 
-  afterAll(async () => {
-    await closeMongo(connection);
-    await mongod.stop();
-  });
+    afterAll(async () => {
+      await closeMongo(connection);
+      await mongod.stop();
+    });
 
-  it("a Learning referencing a Run survives that Run's cascade-delete, with " +
-    "firstSeenRunId/lastConfirmedRunId left unchanged (now dangling) — deliberate, not an oversight", async () => {
-    const run = makeRun();
-    await runRepo.create(run);
+    it(
+      "a Learning referencing a Run survives that Run's cascade-delete, with " +
+        "firstSeenRunId/lastConfirmedRunId left unchanged (now dangling) — deliberate, not an oversight",
+      async () => {
+        const run = makeRun();
+        await runRepo.create(run);
 
-    const learning = makeLearning({ firstSeenRunId: run.id, lastConfirmedRunId: run.id });
-    await learningRepo.upsert(learning);
+        const learning = makeLearning({ firstSeenRunId: run.id, lastConfirmedRunId: run.id });
+        await learningRepo.upsert(learning);
 
-    await deleteRunCascade(run.id, { runRepo, testRunRepo, findingRepo });
+        await deleteRunCascade(run.id, { runRepo, testRunRepo, findingRepo });
 
-    expect(await runRepo.get(run.id)).toBeNull();
+        expect(await runRepo.get(run.id)).toBeNull();
 
-    const survivingLearning = await learningRepo.findByDedupKey(learning.featureId, learning.dedupKey as string);
-    expect(survivingLearning).not.toBeNull();
-    expect(survivingLearning?.firstSeenRunId).toBe(run.id);
-    expect(survivingLearning?.lastConfirmedRunId).toBe(run.id);
-  });
-});
+        const survivingLearning = await learningRepo.findByDedupKey(learning.featureId, learning.dedupKey as string);
+        expect(survivingLearning).not.toBeNull();
+        expect(survivingLearning?.firstSeenRunId).toBe(run.id);
+        expect(survivingLearning?.lastConfirmedRunId).toBe(run.id);
+      },
+    );
+  },
+);

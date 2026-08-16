@@ -73,9 +73,7 @@ describe("TestRunSchema", () => {
       runId: "run-1",
       research: research(),
       testPlan: [hypothesis()],
-      checkOutcomes: [
-        { hypothesisId: hypothesis().id, check: "happy", result: "passed" },
-      ],
+      checkOutcomes: [{ hypothesisId: hypothesis().id, check: "happy", result: "passed" }],
       findingIds: [],
       startedAt: new Date(),
       finishedAt: new Date(),

@@ -78,13 +78,13 @@ const REQUIRED_REAL_TARGET_VARS = [
 
 function resolveRealTargetLoginCreds(): LoginCreds | undefined {
   const baseUrl = process.env.TARGET_BASE_URL;
-  if (!baseUrl) return undefined;
+  if (!baseUrl) {
+    return undefined;
+  }
 
   const missing = REQUIRED_REAL_TARGET_VARS.filter((name) => !process.env[name]);
   if (missing.length > 0) {
-    throw new Error(
-      `TARGET_BASE_URL is set but missing required env var(s): ${missing.join(", ")}`,
-    );
+    throw new Error(`TARGET_BASE_URL is set but missing required env var(s): ${missing.join(", ")}`);
   }
 
   return {
@@ -96,9 +96,7 @@ function resolveRealTargetLoginCreds(): LoginCreds | undefined {
     submitSelector: process.env.TARGET_SUBMIT_SELECTOR!,
     nextSelector: process.env.TARGET_NEXT_SELECTOR,
     timeoutMs: process.env.TIMEOUT_MS ? Number(process.env.TIMEOUT_MS) : undefined,
-    loginReadyTimeoutMs: process.env.LOGIN_READY_TIMEOUT_MS
-      ? Number(process.env.LOGIN_READY_TIMEOUT_MS)
-      : undefined,
+    loginReadyTimeoutMs: process.env.LOGIN_READY_TIMEOUT_MS ? Number(process.env.LOGIN_READY_TIMEOUT_MS) : undefined,
   };
 }
 
@@ -153,7 +151,9 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
       const credentialEncryptionKeyPath = process.env.CREDENTIAL_ENCRYPTION_KEY_PATH || DEFAULT_CREDENTIAL_ENCRYPTION_KEY_PATH;
       const credentialEncryptionKey = await resolveCredentialEncryptionKey(process.env, credentialEncryptionKeyPath);
       const profile = await resolveTargetProfileByNameOrId(mongoConnection.db, values.profile, credentialEncryptionKey);
-      if (!profile) throw new Error(`target profile not found: "${values.profile}"`);
+      if (!profile) {
+        throw new Error(`target profile not found: "${values.profile}"`);
+      }
 
       const overrides = buildTargetProfileOverrides(profile);
       loginCreds = overrides.loginCreds;
@@ -172,7 +172,9 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
     let cycleFields: { cycleId?: string; cycleRunNumber?: number } = {};
     if (values.cycle) {
       const cycle = await resolveCycleByNameOrId(mongoConnection.db, values.cycle);
-      if (!cycle) throw new Error(`cycle not found: "${values.cycle}"`);
+      if (!cycle) {
+        throw new Error(`cycle not found: "${values.cycle}"`);
+      }
       const cycleRunNumber = await incrementAndGetRunNumber(mongoConnection.db, cycle.id);
       cycleFields = cycleRunNumber === undefined ? {} : { cycleId: cycle.id, cycleRunNumber };
     }
@@ -201,9 +203,7 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
         baseUrl,
         browser,
         loginCreds,
-        installRoutes: loginCreds
-          ? undefined
-          : (context) => installMockTarget(context, variant, seed),
+        installRoutes: loginCreds ? undefined : (context) => installMockTarget(context, variant, seed),
         charterNav: { locationsPath },
         onBeforeNavigate: loginCreds
           ? (url) => {
@@ -211,9 +211,7 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
               assertNotProductionUrl(url, productionUrlPatterns);
             }
           : undefined,
-        onBeforeAction: loginCreds
-          ? (action: ActionDescriptor) => assertNotDestructive(action, DEFAULT_DESTRUCTIVE_PATTERNS)
-          : undefined,
+        onBeforeAction: loginCreds ? (action: ActionDescriptor) => assertNotDestructive(action, DEFAULT_DESTRUCTIVE_PATTERNS) : undefined,
       });
 
       const output = await runEngineLoop({
@@ -227,15 +225,17 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
         maxUsdPerRun,
       });
 
-      const urlByScreenId = new Map(
-        observations.map((observation) => [deriveScreenId(observation).screenId, observation.url]),
-      );
+      const urlByScreenId = new Map(observations.map((observation) => [deriveScreenId(observation).screenId, observation.url]));
 
       const reproSpecPaths: string[] = [];
       for (const finding of output.findings) {
-        if (finding.verdict !== "REGRESSION") continue;
+        if (finding.verdict !== "REGRESSION") {
+          continue;
+        }
         const url = urlByScreenId.get(finding.screenId);
-        if (!url) continue;
+        if (!url) {
+          continue;
+        }
 
         await mkdir(outputDirectory, { recursive: true });
         const specPath = join(outputDirectory, `${finding.id}.spec.ts`);

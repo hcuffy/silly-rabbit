@@ -35,7 +35,9 @@ function throwingJudgeClient(): AnthropicLike {
 
 async function waitForStatus(getStatus: () => Promise<string | undefined>, status: string): Promise<void> {
   for (let attempt = 0; attempt < 200; attempt++) {
-    if ((await getStatus()) === status) return;
+    if ((await getStatus()) === status) {
+      return;
+    }
     await new Promise((resolve) => setTimeout(resolve, 25));
   }
   throw new Error(`never reached status ${status}`);
@@ -58,186 +60,196 @@ function makeCycle(name: string, runCounter = 0): Cycle {
   };
 }
 
-describe("cycle-field stamping at run-creation time (run-cycles-spec.md §6) — real Mongo, no dashboard/" +
-  "CLI/MCP param wiring, direct lifecycle-function calls only", () => {
-  let mongod: MongoMemoryServer;
-  let connection: MongoConnection;
-  let cycleRepo: CycleRepo;
-
-  beforeAll(async () => {
-    mongod = await MongoMemoryServer.create();
-    connection = await connectMongo(mongod.getUri());
-    cycleRepo = new CycleRepo(connection.db);
-    await cycleRepo.ensureIndexes();
-  }, 30_000);
-
-  afterAll(async () => {
-    await closeMongo(connection);
-    await mongod.stop();
-  });
-
-  describe("charter runs (orchestrator.ts's startRun)", () => {
-    let deps: OrchestratorDeps;
+describe(
+  "cycle-field stamping at run-creation time (run-cycles-spec.md §6) — real Mongo, no dashboard/" +
+    "CLI/MCP param wiring, direct lifecycle-function calls only",
+  () => {
+    let mongod: MongoMemoryServer;
+    let connection: MongoConnection;
+    let cycleRepo: CycleRepo;
 
     beforeAll(async () => {
-      const reproSpecDirectory = await mkdtemp(join(tmpdir(), "silly-rabbit-repro-cyclewiring-"));
-      const screenshotDirectory = await mkdtemp(join(tmpdir(), "silly-rabbit-screenshot-cyclewiring-"));
-      deps = {
-        runRepo: new RunRepo(connection.db),
-        findingRepo: new FindingRepo(connection.db),
-        baselineRepo: new BaselineRepo(connection.db),
-        appMapRepo: new AppMapRepo(connection.db),
-        cycleRepo,
-        reproSpecDirectory,
-        screenshotDirectory,
-        screenshotStorageCapBytes: 1_000_000_000,
-        judgeClientFactory: throwingJudgeClient,
-        allowedDomains: [],
-        productionUrlPatterns: [],
-      };
+      mongod = await MongoMemoryServer.create();
+      connection = await connectMongo(mongod.getUri());
+      cycleRepo = new CycleRepo(connection.db);
+      await cycleRepo.ensureIndexes();
+    }, 30_000);
+
+    afterAll(async () => {
+      await closeMongo(connection);
+      await mongod.stop();
     });
 
-    it("an explicit cycleId stamps cycleId/cycleRunNumber on the created Run and increments the cycle's runCounter", async () => {
-      const cycle = makeCycle("Release 1");
-      await cycleRepo.create(cycle);
+    describe("charter runs (orchestrator.ts's startRun)", () => {
+      let deps: OrchestratorDeps;
 
-      const run = await startRun({ charter: "x", targetBaseUrl: DISALLOWED_BASE_URL, cycleId: cycle.id }, deps);
+      beforeAll(async () => {
+        const reproSpecDirectory = await mkdtemp(join(tmpdir(), "silly-rabbit-repro-cyclewiring-"));
+        const screenshotDirectory = await mkdtemp(join(tmpdir(), "silly-rabbit-screenshot-cyclewiring-"));
+        deps = {
+          runRepo: new RunRepo(connection.db),
+          findingRepo: new FindingRepo(connection.db),
+          baselineRepo: new BaselineRepo(connection.db),
+          appMapRepo: new AppMapRepo(connection.db),
+          cycleRepo,
+          reproSpecDirectory,
+          screenshotDirectory,
+          screenshotStorageCapBytes: 1_000_000_000,
+          judgeClientFactory: throwingJudgeClient,
+          allowedDomains: [],
+          productionUrlPatterns: [],
+        };
+      });
 
-      expect(run.cycleId).toBe(cycle.id);
-      expect(run.cycleRunNumber).toBe(1);
-      expect((await cycleRepo.get(cycle.id))?.runCounter).toBe(1);
-      await waitForRunFailed(deps.runRepo, run.id);
-    });
+      it("an explicit cycleId stamps cycleId/cycleRunNumber on the created Run and increments the cycle's runCounter", async () => {
+        const cycle = makeCycle("Release 1");
+        await cycleRepo.create(cycle);
 
-    it("no cycleId given creates a Run exactly as before this feature — cycleId/cycleRunNumber left " +
-      "undefined, no Cycle document touched at all", async () => {
-      const cycle = makeCycle("Release 2");
-      await cycleRepo.create(cycle);
+        const run = await startRun({ charter: "x", targetBaseUrl: DISALLOWED_BASE_URL, cycleId: cycle.id }, deps);
 
-      const run = await startRun({ charter: "x", targetBaseUrl: DISALLOWED_BASE_URL }, deps);
+        expect(run.cycleId).toBe(cycle.id);
+        expect(run.cycleRunNumber).toBe(1);
+        expect((await cycleRepo.get(cycle.id))?.runCounter).toBe(1);
+        await waitForRunFailed(deps.runRepo, run.id);
+      });
 
-      expect(run.cycleId).toBeUndefined();
-      expect(run.cycleRunNumber).toBeUndefined();
-      expect((await cycleRepo.get(cycle.id))?.runCounter).toBe(0);
+      it(
+        "no cycleId given creates a Run exactly as before this feature — cycleId/cycleRunNumber left " +
+          "undefined, no Cycle document touched at all",
+        async () => {
+          const cycle = makeCycle("Release 2");
+          await cycleRepo.create(cycle);
 
-      const stored = await connection.db.collection<{ _id: string }>("runs").findOne({ _id: run.id });
-      expect(stored).not.toHaveProperty("cycleId");
-      expect(stored).not.toHaveProperty("cycleRunNumber");
-      await waitForRunFailed(deps.runRepo, run.id);
-    });
-  });
+          const run = await startRun({ charter: "x", targetBaseUrl: DISALLOWED_BASE_URL }, deps);
 
-  describe("explorer runs (explorerRunLifecycle.ts's startExplorerRun)", () => {
-    let deps: ExplorerRunLifecycleDeps;
+          expect(run.cycleId).toBeUndefined();
+          expect(run.cycleRunNumber).toBeUndefined();
+          expect((await cycleRepo.get(cycle.id))?.runCounter).toBe(0);
 
-    beforeAll(() => {
-      deps = {
-        runRepo: new RunRepo(connection.db),
-        testRunRepo: new TestRunRepo(connection.db),
-        learningRepo: new LearningRepo(connection.db),
-        findingRepo: new FindingRepo(connection.db),
-        cycleRepo,
-        judgeClientFactory: throwingJudgeClient,
-        allowedDomains: [],
-        productionUrlPatterns: [],
-        screenshotDirectory: "/tmp/silly-rabbit-explorer-cyclewiring-screenshots",
-        screenshotStorageCapBytes: 1_000_000_000,
-      };
-    });
-
-    it("an explicit cycleId stamps cycleId/cycleRunNumber, sharing the same runCounter sequence as charter runs on that cycle", async () => {
-      const cycle = makeCycle("Release 3", 5);
-      await cycleRepo.create(cycle);
-
-      const run = await startExplorerRun(
-        { featureId: "f", sectionDescription: "x", targetBaseUrl: DISALLOWED_BASE_URL, cycleId: cycle.id },
-        deps,
-      );
-
-      expect(run.cycleId).toBe(cycle.id);
-      expect(run.cycleRunNumber).toBe(6);
-      await waitForRunFailed(deps.runRepo, run.id);
-    });
-
-    it("no cycleId given leaves the created Run undefined for both cycle fields", async () => {
-      const run = await startExplorerRun(
-        { featureId: "f", sectionDescription: "x", targetBaseUrl: DISALLOWED_BASE_URL },
-        deps,
-      );
-
-      expect(run.cycleId).toBeUndefined();
-      expect(run.cycleRunNumber).toBeUndefined();
-      await waitForRunFailed(deps.runRepo, run.id);
-    });
-  });
-
-  describe("session-replay runs (sessionReplayRunLifecycle.ts's startSessionReplayRun)", () => {
-    let deps: SessionReplayRunLifecycleDeps;
-    let sessionRecordingRepo: SessionRecordingRepo;
-    let sessionReplayRunRepo: SessionReplayRunRepo;
-
-    beforeAll(() => {
-      sessionRecordingRepo = new SessionRecordingRepo(connection.db);
-      sessionReplayRunRepo = new SessionReplayRunRepo(connection.db);
-      deps = {
-        sessionRecordingRepo,
-        sessionReplayRunRepo,
-        baselineRepo: new BaselineRepo(connection.db),
-        findingRepo: new FindingRepo(connection.db),
-        cycleRepo,
-        judgeClientFactory: throwingJudgeClient,
-        allowedDomains: ["mock.local"],
-        productionUrlPatterns: [],
-        installRoutes: async (context) => {
-          await context.route("**/*", () => new Promise(() => {}));
+          const stored = await connection.db.collection<{ _id: string }>("runs").findOne({ _id: run.id });
+          expect(stored).not.toHaveProperty("cycleId");
+          expect(stored).not.toHaveProperty("cycleRunNumber");
+          await waitForRunFailed(deps.runRepo, run.id);
         },
-      };
+      );
     });
 
-    async function seedRecording(): Promise<SessionRecording> {
-      const sessionRecording: SessionRecording = {
-        sessionId: randomUUID(),
-        targetBaseUrl: MOCK_BASE_URL,
-        recordedAt: new Date(),
-        steps: [{ action: "navigate", selectorStrategy: "css", value: MOCK_BASE_URL, timestampOffsetMs: 0 }],
-      };
-      await sessionRecordingRepo.create(sessionRecording);
-      return sessionRecording;
-    }
+    describe("explorer runs (explorerRunLifecycle.ts's startExplorerRun)", () => {
+      let deps: ExplorerRunLifecycleDeps;
 
-    it("an explicit cycleId stamps cycleId/replayRunNumber (not cycleRunNumber) using a counter " +
-      "independent of the same cycle's runCounter", async () => {
-      const cycle = makeCycle("Release 4", 9);
-      await cycleRepo.create(cycle);
-      const recording = await seedRecording();
+      beforeAll(() => {
+        deps = {
+          runRepo: new RunRepo(connection.db),
+          testRunRepo: new TestRunRepo(connection.db),
+          learningRepo: new LearningRepo(connection.db),
+          findingRepo: new FindingRepo(connection.db),
+          cycleRepo,
+          judgeClientFactory: throwingJudgeClient,
+          allowedDomains: [],
+          productionUrlPatterns: [],
+          screenshotDirectory: "/tmp/silly-rabbit-explorer-cyclewiring-screenshots",
+          screenshotStorageCapBytes: 1_000_000_000,
+        };
+      });
 
-      const run = await startSessionReplayRun({ sessionId: recording.sessionId, cycleId: cycle.id }, deps);
-      if (!run) throw new Error("unreachable — recording was just created");
+      it("an explicit cycleId stamps cycleId/cycleRunNumber, sharing the same runCounter sequence as charter runs on that cycle", async () => {
+        const cycle = makeCycle("Release 3", 5);
+        await cycleRepo.create(cycle);
 
-      expect(run.cycleId).toBe(cycle.id);
-      expect(run.replayRunNumber).toBe(1);
-      expect((await cycleRepo.get(cycle.id))?.runCounter).toBe(9);
+        const run = await startExplorerRun({ featureId: "f", sectionDescription: "x", targetBaseUrl: DISALLOWED_BASE_URL, cycleId: cycle.id }, deps);
 
-      await waitForStatus(async () => (await sessionReplayRunRepo.get(run.id))?.status, "RUNNING");
-      await cancelSessionReplayRun(run.id, deps);
-    }, 20_000);
+        expect(run.cycleId).toBe(cycle.id);
+        expect(run.cycleRunNumber).toBe(6);
+        await waitForRunFailed(deps.runRepo, run.id);
+      });
 
-    it("no cycleId given leaves the created SessionReplayRun undefined for both cycle fields, and doesn't " +
-      "create/touch any Cycle document", async () => {
-      const recording = await seedRecording();
+      it("no cycleId given leaves the created Run undefined for both cycle fields", async () => {
+        const run = await startExplorerRun({ featureId: "f", sectionDescription: "x", targetBaseUrl: DISALLOWED_BASE_URL }, deps);
 
-      const run = await startSessionReplayRun({ sessionId: recording.sessionId }, deps);
-      if (!run) throw new Error("unreachable — recording was just created");
+        expect(run.cycleId).toBeUndefined();
+        expect(run.cycleRunNumber).toBeUndefined();
+        await waitForRunFailed(deps.runRepo, run.id);
+      });
+    });
 
-      expect(run.cycleId).toBeUndefined();
-      expect(run.replayRunNumber).toBeUndefined();
+    describe("session-replay runs (sessionReplayRunLifecycle.ts's startSessionReplayRun)", () => {
+      let deps: SessionReplayRunLifecycleDeps;
+      let sessionRecordingRepo: SessionRecordingRepo;
+      let sessionReplayRunRepo: SessionReplayRunRepo;
 
-      const stored = await connection.db.collection<{ _id: string }>("sessionReplayRuns").findOne({ _id: run.id });
-      expect(stored).not.toHaveProperty("cycleId");
-      expect(stored).not.toHaveProperty("replayRunNumber");
+      beforeAll(() => {
+        sessionRecordingRepo = new SessionRecordingRepo(connection.db);
+        sessionReplayRunRepo = new SessionReplayRunRepo(connection.db);
+        deps = {
+          sessionRecordingRepo,
+          sessionReplayRunRepo,
+          baselineRepo: new BaselineRepo(connection.db),
+          findingRepo: new FindingRepo(connection.db),
+          cycleRepo,
+          judgeClientFactory: throwingJudgeClient,
+          allowedDomains: ["mock.local"],
+          productionUrlPatterns: [],
+          installRoutes: async (context) => {
+            await context.route("**/*", () => new Promise(() => {}));
+          },
+        };
+      });
 
-      await waitForStatus(async () => (await sessionReplayRunRepo.get(run.id))?.status, "RUNNING");
-      await cancelSessionReplayRun(run.id, deps);
-    }, 20_000);
-  });
-});
+      async function seedRecording(): Promise<SessionRecording> {
+        const sessionRecording: SessionRecording = {
+          sessionId: randomUUID(),
+          targetBaseUrl: MOCK_BASE_URL,
+          recordedAt: new Date(),
+          steps: [{ action: "navigate", selectorStrategy: "css", value: MOCK_BASE_URL, timestampOffsetMs: 0 }],
+        };
+        await sessionRecordingRepo.create(sessionRecording);
+        return sessionRecording;
+      }
+
+      it(
+        "an explicit cycleId stamps cycleId/replayRunNumber (not cycleRunNumber) using a counter " + "independent of the same cycle's runCounter",
+        async () => {
+          const cycle = makeCycle("Release 4", 9);
+          await cycleRepo.create(cycle);
+          const recording = await seedRecording();
+
+          const run = await startSessionReplayRun({ sessionId: recording.sessionId, cycleId: cycle.id }, deps);
+          if (!run) {
+            throw new Error("unreachable — recording was just created");
+          }
+
+          expect(run.cycleId).toBe(cycle.id);
+          expect(run.replayRunNumber).toBe(1);
+          expect((await cycleRepo.get(cycle.id))?.runCounter).toBe(9);
+
+          await waitForStatus(async () => (await sessionReplayRunRepo.get(run.id))?.status, "RUNNING");
+          await cancelSessionReplayRun(run.id, deps);
+        },
+        20_000,
+      );
+
+      it(
+        "no cycleId given leaves the created SessionReplayRun undefined for both cycle fields, and doesn't " + "create/touch any Cycle document",
+        async () => {
+          const recording = await seedRecording();
+
+          const run = await startSessionReplayRun({ sessionId: recording.sessionId }, deps);
+          if (!run) {
+            throw new Error("unreachable — recording was just created");
+          }
+
+          expect(run.cycleId).toBeUndefined();
+          expect(run.replayRunNumber).toBeUndefined();
+
+          const stored = await connection.db.collection<{ _id: string }>("sessionReplayRuns").findOne({ _id: run.id });
+          expect(stored).not.toHaveProperty("cycleId");
+          expect(stored).not.toHaveProperty("replayRunNumber");
+
+          await waitForStatus(async () => (await sessionReplayRunRepo.get(run.id))?.status, "RUNNING");
+          await cancelSessionReplayRun(run.id, deps);
+        },
+        20_000,
+      );
+    });
+  },
+);

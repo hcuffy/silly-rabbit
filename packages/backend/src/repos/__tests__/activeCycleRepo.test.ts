@@ -34,18 +34,21 @@ describe("ActiveCycleRepo (single-document pointer, not an isActive boolean fiel
     expect(pointer?.updatedAt).toBeInstanceOf(Date);
   });
 
-  it("setting a second time replaces the pointer rather than creating a second document — exactly " +
-    "one active cycle holds by construction, not by an enforced invariant", async () => {
-    const repo = new ActiveCycleRepo(connection.db);
-    const first = randomUUID();
-    const second = randomUUID();
+  it(
+    "setting a second time replaces the pointer rather than creating a second document — exactly " +
+      "one active cycle holds by construction, not by an enforced invariant",
+    async () => {
+      const repo = new ActiveCycleRepo(connection.db);
+      const first = randomUUID();
+      const second = randomUUID();
 
-    await repo.set(first);
-    await repo.set(second);
+      await repo.set(first);
+      await repo.set(second);
 
-    expect((await repo.get())?.cycleId).toBe(second);
-    expect(await connection.db.collection("activeCycle").countDocuments()).toBe(1);
-  });
+      expect((await repo.get())?.cycleId).toBe(second);
+      expect(await connection.db.collection("activeCycle").countDocuments()).toBe(1);
+    },
+  );
 
   it("clear removes the pointer, returning to the no-active-cycle state", async () => {
     const repo = new ActiveCycleRepo(connection.db);

@@ -25,9 +25,7 @@ describe("useTriageShortcuts (D8 dashboard triage)", () => {
     const user = userEvent.setup();
     const onFeedback = vi.fn();
     const findings = [makeFinding({ id: "a", featureId: undefined })];
-    renderHook(() =>
-      useTriageShortcuts({ findings, activeIndex: 0, onNavigate: vi.fn(), onFeedback }),
-    );
+    renderHook(() => useTriageShortcuts({ findings, activeIndex: 0, onNavigate: vi.fn(), onFeedback }));
 
     await user.keyboard("3");
 
@@ -38,9 +36,7 @@ describe("useTriageShortcuts (D8 dashboard triage)", () => {
     const user = userEvent.setup();
     const onFeedback = vi.fn();
     const findings = [makeFinding({ id: "a", featureId: "locations" })];
-    renderHook(() =>
-      useTriageShortcuts({ findings, activeIndex: 0, onNavigate: vi.fn(), onFeedback }),
-    );
+    renderHook(() => useTriageShortcuts({ findings, activeIndex: 0, onNavigate: vi.fn(), onFeedback }));
 
     await user.keyboard("1");
     await user.keyboard("2");
@@ -53,9 +49,7 @@ describe("useTriageShortcuts (D8 dashboard triage)", () => {
     const user = userEvent.setup();
     const onFeedback = vi.fn();
     const findings = [makeFinding({ id: "a", featureId: undefined })];
-    renderHook(() =>
-      useTriageShortcuts({ findings, activeIndex: 0, onNavigate: vi.fn(), onFeedback }),
-    );
+    renderHook(() => useTriageShortcuts({ findings, activeIndex: 0, onNavigate: vi.fn(), onFeedback }));
 
     await user.keyboard("1");
     await user.keyboard("2");
@@ -69,8 +63,7 @@ describe("useTriageShortcuts (D8 dashboard triage)", () => {
     const findings = [makeFinding({ id: "a" }), makeFinding({ id: "b" }), makeFinding({ id: "c" })];
 
     const { rerender } = renderHook(
-      ({ activeIndex }: { activeIndex: number }) =>
-        useTriageShortcuts({ findings, activeIndex, onNavigate, onFeedback: vi.fn() }),
+      ({ activeIndex }: { activeIndex: number }) => useTriageShortcuts({ findings, activeIndex, onNavigate, onFeedback: vi.fn() }),
       { initialProps: { activeIndex: 0 } },
     );
 
@@ -90,9 +83,7 @@ describe("useTriageShortcuts (D8 dashboard triage)", () => {
     const user = userEvent.setup();
     const onFeedback = vi.fn();
     const findings = [makeFinding({ id: "a" })];
-    renderHook(() =>
-      useTriageShortcuts({ findings, activeIndex: 0, onNavigate: vi.fn(), onFeedback }),
-    );
+    renderHook(() => useTriageShortcuts({ findings, activeIndex: 0, onNavigate: vi.fn(), onFeedback }));
 
     const input = document.createElement("input");
     document.body.appendChild(input);

@@ -29,6 +29,6 @@ describe("generateReproSpec (driver-spec §5)", () => {
     expect(spec).toContain(url);
     expect(spec).toContain("expect(ariaSnapshotMasked).toBe(");
     expect(spec).toContain(JSON.stringify(finding.evidence.ariaSnapshot));
-    expect(spec).toContain("import { deriveFingerprint } from \"@silly-rabbit/engine\"");
+    expect(spec).toContain('import { deriveFingerprint } from "@silly-rabbit/engine"');
   });
 });

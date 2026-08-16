@@ -36,13 +36,19 @@ const sessionReplayCancellationRegistry = new Map<string, CancellationEntry>();
 
 export async function cancelSessionReplayRun(id: string, deps: SessionReplayRunLifecycleDeps): Promise<boolean> {
   const cancelled = await deps.sessionReplayRunRepo.cancel(id);
-  if (!cancelled) return false;
+  if (!cancelled) {
+    return false;
+  }
 
   const entry = sessionReplayCancellationRegistry.get(id);
   if (entry) {
     entry.cancelRequested = true;
-    if (entry.browser) await entry.browser.close();
-    if (entry.jobSettled) await entry.jobSettled.catch(() => {});
+    if (entry.browser) {
+      await entry.browser.close();
+    }
+    if (entry.jobSettled) {
+      await entry.jobSettled.catch(() => {});
+    }
   }
   return true;
 }
@@ -58,7 +64,9 @@ export async function startSessionReplayRun(
   deps: SessionReplayRunLifecycleDeps,
 ): Promise<SessionReplayRun | undefined> {
   const sessionRecording = await deps.sessionRecordingRepo.get(input.sessionId);
-  if (!sessionRecording) return undefined;
+  if (!sessionRecording) {
+    return undefined;
+  }
 
   const releaseSlot = reserveRunSlot(deps.maxConcurrentRuns);
   try {
@@ -79,7 +87,9 @@ export async function startSessionReplayRun(
     // executeSessionReplayRun's own first line already registered its CancellationEntry
     // synchronously — safe to attach the job promise to it right here, no race.
     const registryEntry = sessionReplayCancellationRegistry.get(run.id);
-    if (registryEntry) registryEntry.jobSettled = job;
+    if (registryEntry) {
+      registryEntry.jobSettled = job;
+    }
 
     return run;
   } finally {
@@ -104,7 +114,9 @@ async function executeSessionReplayRun(
   registryEntry.browser = browser;
   try {
     const context = await browser.newContext();
-    if (deps.installRoutes) await deps.installRoutes(context);
+    if (deps.installRoutes) {
+      await deps.installRoutes(context);
+    }
 
     const page = await context.newPage();
     await installNavigationGuard(page, {
@@ -132,7 +144,9 @@ async function executeSessionReplayRun(
       },
     );
   } catch (error) {
-    if (registryEntry.cancelRequested) return; // CANCELLED already written by cancelSessionReplayRun(), not a real failure
+    if (registryEntry.cancelRequested) {
+      return;
+    } // CANCELLED already written by cancelSessionReplayRun(), not a real failure
     await deps.sessionReplayRunRepo.update(run.id, {
       status: "FAILED",
       completedAt: new Date(),

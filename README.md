@@ -71,7 +71,7 @@ Once the zero-config demo above works, this is the next step — pointing Silly 
 
 ### Dashboard access (Silly Rabbit's own backend)
 
-Separate from the target-app credentials below, which authenticate the agent *into the app it's testing*, not into Silly Rabbit itself.
+Separate from the target-app credentials below, which authenticate the agent _into the app it's testing_, not into Silly Rabbit itself.
 
 ```
 DASHBOARD_PASSWORD=<a real password, yours to pick>
@@ -81,7 +81,7 @@ Required, no default — the backend refuses to start without it. `SESSION_SECRE
 
 ### Target login (the app under test)
 
-How the agent authenticates *into the app it's testing*. Applies to both exploration modes. Two options — auto-login is preferred (session never stale); storageState is the fallback. Also set `ALLOWED_DOMAINS` (comma-separated hostnames) to your target's host — leaving it empty starts the backend fine but fails every real-target run's first safety check; the backend logs a warning at startup naming this exact consequence if you forget.
+How the agent authenticates _into the app it's testing_. Applies to both exploration modes. Two options — auto-login is preferred (session never stale); storageState is the fallback. Also set `ALLOWED_DOMAINS` (comma-separated hostnames) to your target's host — leaving it empty starts the backend fine but fails every real-target run's first safety check; the backend logs a warning at startup naming this exact consequence if you forget.
 
 #### Option A — Auto-login (preferred)
 
@@ -123,4 +123,5 @@ STORAGE_STATE_PATH=/absolute/path/to/.silly-rabbit/auth.json
 **3. Restart the backend.** If the file is absent or the var is unset, runs proceed unauthenticated. Auto-login takes precedence when all six `TARGET_*` vars are set.
 
 ## License
+
 MIT — see [LICENSE](./LICENSE).

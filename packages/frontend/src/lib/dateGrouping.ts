@@ -1,28 +1,19 @@
-const MONTH_NAMES = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
+const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 function isSameCalendarDay(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
 export function formatDayGroupLabel(date: Date, now: Date = new Date()): string {
-  if (isSameCalendarDay(date, now)) return "Today";
+  if (isSameCalendarDay(date, now)) {
+    return "Today";
+  }
 
   const yesterday = new Date(now);
   yesterday.setDate(yesterday.getDate() - 1);
-  if (isSameCalendarDay(date, yesterday)) return "Yesterday";
+  if (isSameCalendarDay(date, yesterday)) {
+    return "Yesterday";
+  }
 
   const sameYear = date.getFullYear() === now.getFullYear();
   const monthDay = `${MONTH_NAMES[date.getMonth()]} ${date.getDate()}`;

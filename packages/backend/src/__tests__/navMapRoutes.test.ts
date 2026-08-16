@@ -23,7 +23,13 @@ import { TestRunRepo } from "../repos/testRunRepo.js";
 const NAV_MAP_ORIGIN = "https://nav-map-route.example.com";
 
 function throwingJudgeClient(): AnthropicLike {
-  return { messages: { create: () => { throw new Error("judge should not be called by a NavMap crawl"); } } };
+  return {
+    messages: {
+      create: () => {
+        throw new Error("judge should not be called by a NavMap crawl");
+      },
+    },
+  };
 }
 
 async function installRoutes(context: BrowserContext): Promise<void> {

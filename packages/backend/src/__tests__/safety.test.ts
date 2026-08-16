@@ -89,9 +89,7 @@ describe("assertNotDestructive (safety-spec §5)", () => {
   });
 
   it("accepts a custom pattern list, defaulting to DEFAULT_DESTRUCTIVE_PATTERNS", () => {
-    expect(() => assertNotDestructive({ role: "button", accessibleName: "Launch" }, ["launch"])).toThrow(
-      SafetyViolation,
-    );
+    expect(() => assertNotDestructive({ role: "button", accessibleName: "Launch" }, ["launch"])).toThrow(SafetyViolation);
     expect(DEFAULT_DESTRUCTIVE_PATTERNS).toContain("delete");
   });
 });
@@ -121,32 +119,35 @@ describe("assertRollbackDeleteAllowed (explorer-spec §9/§13.9 — narrowly-sco
   });
 });
 
-describe("buildNavigationAllowedCheck (single source of truth for the request-level navigation guard's predicate — " +
-  "same functions as onBeforeNavigate, not a second copy)", () => {
-  it("allows a host that is allowlisted and not a production pattern", () => {
-    const isAllowed = buildNavigationAllowedCheck(["dev.rabbit.example"], []);
-    expect(isAllowed("https://dev.rabbit.example/path")).toEqual({ allowed: true });
-  });
+describe(
+  "buildNavigationAllowedCheck (single source of truth for the request-level navigation guard's predicate — " +
+    "same functions as onBeforeNavigate, not a second copy)",
+  () => {
+    it("allows a host that is allowlisted and not a production pattern", () => {
+      const isAllowed = buildNavigationAllowedCheck(["dev.rabbit.example"], []);
+      expect(isAllowed("https://dev.rabbit.example/path")).toEqual({ allowed: true });
+    });
 
-  it("refuses a host that is off the allowlist, with a reason", () => {
-    const isAllowed = buildNavigationAllowedCheck(["dev.rabbit.example"], []);
-    const result = isAllowed("https://other.example/path");
-    expect(result.allowed).toBe(false);
-    expect(!result.allowed && result.reason).toContain("not on the domain allowlist");
-  });
+    it("refuses a host that is off the allowlist, with a reason", () => {
+      const isAllowed = buildNavigationAllowedCheck(["dev.rabbit.example"], []);
+      const result = isAllowed("https://other.example/path");
+      expect(result.allowed).toBe(false);
+      expect(!result.allowed && result.reason).toContain("not on the domain allowlist");
+    });
 
-  it("refuses an allowlisted host that also matches a production-url pattern", () => {
-    const isAllowed = buildNavigationAllowedCheck(["rabbit.com"], [/^rabbit\.com$/i]);
-    const result = isAllowed("https://rabbit.com/path");
-    expect(result.allowed).toBe(false);
-    expect(!result.allowed && result.reason).toContain("production-url pattern");
-  });
+    it("refuses an allowlisted host that also matches a production-url pattern", () => {
+      const isAllowed = buildNavigationAllowedCheck(["rabbit.com"], [/^rabbit\.com$/i]);
+      const result = isAllowed("https://rabbit.com/path");
+      expect(result.allowed).toBe(false);
+      expect(!result.allowed && result.reason).toContain("production-url pattern");
+    });
 
-  it("never throws — always returns the {allowed, reason} shape, even for a refused url", () => {
-    const isAllowed = buildNavigationAllowedCheck([], []);
-    expect(() => isAllowed("https://anything.example")).not.toThrow();
-  });
-});
+    it("never throws — always returns the {allowed, reason} shape, even for a refused url", () => {
+      const isAllowed = buildNavigationAllowedCheck([], []);
+      expect(() => isAllowed("https://anything.example")).not.toThrow();
+    });
+  },
+);
 
 describe("parseAllowedDomains / parseProductionUrlPatterns (env parsing)", () => {
   it("parses a comma-separated, trimmed, lowercased host list", () => {
@@ -186,11 +187,14 @@ describe("parseAllowedDomains / parseProductionUrlPatterns (env parsing)", () =>
     expect(parseProductionUrlPatterns("")).toEqual([]);
   });
 
-  it("this is exactly the fix for the real config bug found earlier: an unanchored bare-domain pattern used " +
-    "to match a multi-label dev host as a substring — plain-hostname input closes that", () => {
-    const [pattern] = parseProductionUrlPatterns("prod.example.com");
-    expect(pattern?.test("staging.dev.prod.example.com")).toBe(false);
-  });
+  it(
+    "this is exactly the fix for the real config bug found earlier: an unanchored bare-domain pattern used " +
+      "to match a multi-label dev host as a substring — plain-hostname input closes that",
+    () => {
+      const [pattern] = parseProductionUrlPatterns("prod.example.com");
+      expect(pattern?.test("staging.dev.prod.example.com")).toBe(false);
+    },
+  );
 });
 
 describe("warnIfAllowedDomainsEmpty (onboarding-friction fix)", () => {

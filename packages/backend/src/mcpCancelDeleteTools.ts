@@ -36,9 +36,13 @@ export function registerMcpCancelDeleteTools(server: McpServer, deps: McpToolDep
       inputSchema: { runId: z.string() },
     },
     async ({ runId }) => {
-      if (await cancelRun(runId, deps)) return jsonResult({ cancelled: true });
+      if (await cancelRun(runId, deps)) {
+        return jsonResult({ cancelled: true });
+      }
       const run = await deps.runRepo.get(runId);
-      if (!run) return errorResult("run not found");
+      if (!run) {
+        return errorResult("run not found");
+      }
       return errorResult(`run is already ${run.status}, cannot cancel`);
     },
   );
@@ -51,9 +55,13 @@ export function registerMcpCancelDeleteTools(server: McpServer, deps: McpToolDep
       inputSchema: { runId: z.string() },
     },
     async ({ runId }) => {
-      if (await cancelExplorerRun(runId, deps)) return jsonResult({ cancelled: true });
+      if (await cancelExplorerRun(runId, deps)) {
+        return jsonResult({ cancelled: true });
+      }
       const run = await deps.runRepo.get(runId);
-      if (!run) return errorResult("run not found");
+      if (!run) {
+        return errorResult("run not found");
+      }
       return errorResult(`run is already ${run.status}, cannot cancel`);
     },
   );
@@ -66,9 +74,13 @@ export function registerMcpCancelDeleteTools(server: McpServer, deps: McpToolDep
       inputSchema: { runId: z.string() },
     },
     async ({ runId }) => {
-      if (await cancelSessionReplayRun(runId, deps)) return jsonResult({ cancelled: true });
+      if (await cancelSessionReplayRun(runId, deps)) {
+        return jsonResult({ cancelled: true });
+      }
       const run = await deps.sessionReplayRunRepo.get(runId);
-      if (!run) return errorResult("session-replay run not found");
+      if (!run) {
+        return errorResult("session-replay run not found");
+      }
       return errorResult(`run is already ${run.status}, cannot cancel`);
     },
   );
@@ -77,13 +89,16 @@ export function registerMcpCancelDeleteTools(server: McpServer, deps: McpToolDep
     "delete_run",
     {
       title: "Delete a charter-scripted run",
-      description: "Permanently delete a D1-D7 Run, cascading to its Findings. Call without force first " +
+      description:
+        "Permanently delete a D1-D7 Run, cascading to its Findings. Call without force first " +
         "to preview the blast radius; call again with force:true to confirm.",
       inputSchema: { runId: z.string(), force: z.boolean().optional() },
     },
     async ({ runId, force }) => {
       const run = await deps.runRepo.get(runId);
-      if (!run) return errorResult("run not found");
+      if (!run) {
+        return errorResult("run not found");
+      }
       if (!force) {
         const preview = await previewRunCascade(runId, deps);
         return errorResult(
@@ -102,13 +117,16 @@ export function registerMcpCancelDeleteTools(server: McpServer, deps: McpToolDep
     "delete_explorer_run",
     {
       title: "Delete an explorer (D8) run",
-      description: "Permanently delete a D8 run, cascading to its TestRun and Findings. Call without force " +
+      description:
+        "Permanently delete a D8 run, cascading to its TestRun and Findings. Call without force " +
         "first to preview the blast radius; call again with force:true to confirm.",
       inputSchema: { runId: z.string(), force: z.boolean().optional() },
     },
     async ({ runId, force }) => {
       const run = await deps.runRepo.get(runId);
-      if (!run) return errorResult("run not found");
+      if (!run) {
+        return errorResult("run not found");
+      }
       if (!force) {
         const preview = await previewRunCascade(runId, deps);
         return errorResult(
@@ -127,13 +145,16 @@ export function registerMcpCancelDeleteTools(server: McpServer, deps: McpToolDep
     "delete_session_replay_run",
     {
       title: "Delete a session-replay run",
-      description: "Permanently delete a SessionReplayRun, cascading to its Findings. Call without force " +
+      description:
+        "Permanently delete a SessionReplayRun, cascading to its Findings. Call without force " +
         "first to preview the blast radius; call again with force:true to confirm.",
       inputSchema: { runId: z.string(), force: z.boolean().optional() },
     },
     async ({ runId, force }) => {
       const run = await deps.sessionReplayRunRepo.get(runId);
-      if (!run) return errorResult("session-replay run not found");
+      if (!run) {
+        return errorResult("session-replay run not found");
+      }
       if (!force) {
         const preview = await previewSessionReplayRunCascade(runId, deps);
         const progress = progressSuffix(run.status, run.summary.stepsExecuted);
@@ -153,13 +174,16 @@ export function registerMcpCancelDeleteTools(server: McpServer, deps: McpToolDep
     "delete_session_recording",
     {
       title: "Delete a recorded session",
-      description: "Permanently delete a SessionRecording, cascading to every SessionReplayRun made from it " +
+      description:
+        "Permanently delete a SessionRecording, cascading to every SessionReplayRun made from it " +
         "and their Findings. Call without force first to preview the blast radius; call again with force:true to confirm.",
       inputSchema: { sessionId: z.string().uuid(), force: z.boolean().optional() },
     },
     async ({ sessionId, force }) => {
       const recording = await deps.sessionRecordingRepo.get(sessionId);
-      if (!recording) return errorResult("session recording not found");
+      if (!recording) {
+        return errorResult("session recording not found");
+      }
       if (!force) {
         const preview = await previewSessionRecordingCascade(sessionId, deps);
         return errorResult(
@@ -180,13 +204,16 @@ export function registerMcpCancelDeleteTools(server: McpServer, deps: McpToolDep
     "delete_finding",
     {
       title: "Delete a finding",
-      description: "Permanently delete a Finding — distinct from submit_finding_feedback's dismiss, which " +
+      description:
+        "Permanently delete a Finding — distinct from submit_finding_feedback's dismiss, which " +
         "is reversible. Call without force first to preview; call again with force:true to confirm.",
       inputSchema: { findingId: z.string(), force: z.boolean().optional() },
     },
     async ({ findingId, force }) => {
       const finding = await deps.findingRepo.get(findingId);
-      if (!finding) return errorResult("finding not found");
+      if (!finding) {
+        return errorResult("finding not found");
+      }
       if (!force) {
         const hasScreenshot = finding.screenshotPath !== undefined || finding.beforeScreenshotPath !== undefined;
         return errorResult(

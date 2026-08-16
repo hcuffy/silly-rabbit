@@ -3,28 +3,38 @@ import type { SectionElement } from "@silly-rabbit/shared";
 
 function findFirstByRole(node: AriaNode, role: string): AriaNode | undefined {
   for (const child of node.children) {
-    if (child.role === role) return child;
+    if (child.role === role) {
+      return child;
+    }
     const found = findFirstByRole(child, role);
-    if (found) return found;
+    if (found) {
+      return found;
+    }
   }
   return undefined;
 }
 
 export function collectByRole(node: AriaNode, role: string, out: AriaNode[]): void {
   for (const child of node.children) {
-    if (child.role === role) out.push(child);
+    if (child.role === role) {
+      out.push(child);
+    }
     collectByRole(child, role, out);
   }
 }
 
 export function markSubtreeConsumed(node: AriaNode, consumed: Set<AriaNode>): void {
   consumed.add(node);
-  for (const child of node.children) markSubtreeConsumed(child, consumed);
+  for (const child of node.children) {
+    markSubtreeConsumed(child, consumed);
+  }
 }
 
 function tableEntityFields(tableNode: AriaNode): string[] {
   const headerRow = findFirstByRole(tableNode, "row");
-  if (!headerRow) return [];
+  if (!headerRow) {
+    return [];
+  }
   const headers: AriaNode[] = [];
   collectByRole(headerRow, "columnheader", headers);
   const names = headers.map((header) => header.name).filter((name): name is string => Boolean(name));
@@ -49,7 +59,9 @@ export function detectTable(tree: AriaNode): TableDetectionResult | undefined {
 
   const rows: AriaNode[] = [];
   collectByRole(tree, "row", rows);
-  if (rows.length < 2) return undefined;
+  if (rows.length < 2) {
+    return undefined;
+  }
 
   return {
     element: { kind: "table", accessibleName: "table", role: "row" },
@@ -72,13 +84,17 @@ function findRepeatedChildGroup(node: AriaNode): AriaNode[] | undefined {
   const bySignature = new Map<string, AriaNode[]>();
   for (const child of node.children) {
     const signature = childShapeSignature(child);
-    if (!signature.includes(",")) continue;
+    if (!signature.includes(",")) {
+      continue;
+    }
     const group = bySignature.get(signature) ?? [];
     group.push(child);
     bySignature.set(signature, group);
   }
   for (const group of bySignature.values()) {
-    if (group.length >= 2) return group;
+    if (group.length >= 2) {
+      return group;
+    }
   }
   return undefined;
 }
@@ -99,7 +115,9 @@ export function detectCardGroup(tree: AriaNode): CardDetectionResult | undefined
 
   for (const child of tree.children) {
     const found = detectCardGroup(child);
-    if (found) return found;
+    if (found) {
+      return found;
+    }
   }
   return undefined;
 }

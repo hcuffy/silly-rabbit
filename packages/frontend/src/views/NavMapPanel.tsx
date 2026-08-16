@@ -24,7 +24,9 @@ export function NavMapPanel() {
   const deleteMutation = useDeleteNavMap();
 
   useEffect(() => {
-    if (defaultApplied || !activeProfileId || !profiles) return;
+    if (defaultApplied || !activeProfileId || !profiles) {
+      return;
+    }
     const activeProfile = profiles.find((profile) => profile.id === activeProfileId);
     if (activeProfile) {
       setBaseUrlInput(activeProfile.baseUrl);
@@ -40,14 +42,20 @@ export function NavMapPanel() {
   }
 
   function handleCrawl(): void {
-    if (!isValidUrl(baseUrlInput)) return;
+    if (!isValidUrl(baseUrlInput)) {
+      return;
+    }
     setQueriedBaseUrl(baseUrlInput);
     crawlMutation.mutate(baseUrlInput);
   }
 
   async function handleDelete(): Promise<void> {
-    if (!queriedBaseUrl) return;
-    if (!window.confirm(`Delete the NavMap for "${queriedBaseUrl}"? This cannot be undone.`)) return;
+    if (!queriedBaseUrl) {
+      return;
+    }
+    if (!window.confirm(`Delete the NavMap for "${queriedBaseUrl}"? This cannot be undone.`)) {
+      return;
+    }
     await deleteMutation.mutateAsync(queriedBaseUrl);
   }
 
@@ -76,25 +84,17 @@ export function NavMapPanel() {
           type="button"
           className="button button--primary"
           disabled={!isValidUrl(baseUrlInput) || crawlMutation.isPending}
-          onClick={handleCrawl}
-        >
+          onClick={handleCrawl}>
           {crawlMutation.isPending ? "Crawling…" : "Crawl"}
         </button>
         {navMap && (
-          <button
-            type="button"
-            className="button button--destructive"
-            disabled={deleteMutation.isPending}
-            onClick={() => void handleDelete()}
-          >
+          <button type="button" className="button button--destructive" disabled={deleteMutation.isPending} onClick={() => void handleDelete()}>
             {deleteMutation.isPending ? "Deleting…" : "Delete map"}
           </button>
         )}
       </div>
 
-      {crawlMutation.isPending && (
-        <p role="status">Crawling — a real browser is visiting this target's nav, this can take a while…</p>
-      )}
+      {crawlMutation.isPending && <p role="status">Crawling — a real browser is visiting this target's nav, this can take a while…</p>}
       {crawlMutation.isError && (
         <p className="form-error" role="alert">
           Crawl failed: {crawlMutation.error.message}
@@ -118,8 +118,7 @@ export function NavMapPanel() {
       {navMap && (
         <div className="nav-map-panel__result">
           <p>
-            {navMap.entries.length} entr{navMap.entries.length === 1 ? "y" : "ies"} mapped, crawled{" "}
-            {new Date(navMap.crawledAt).toLocaleString()}.
+            {navMap.entries.length} entr{navMap.entries.length === 1 ? "y" : "ies"} mapped, crawled {new Date(navMap.crawledAt).toLocaleString()}.
           </p>
           <table className="run-history">
             <thead>
@@ -137,9 +136,7 @@ export function NavMapPanel() {
                   <td>{entry.role}</td>
                   <td>{entry.normalizedUrl ?? "—"}</td>
                   <td>
-                    <span className={`status-badge status-badge--${entry.isStale ? "inactive" : "active"}`}>
-                      {entry.isStale ? "Stale" : "Fresh"}
-                    </span>
+                    <span className={`status-badge status-badge--${entry.isStale ? "inactive" : "active"}`}>{entry.isStale ? "Stale" : "Fresh"}</span>
                   </td>
                 </tr>
               ))}

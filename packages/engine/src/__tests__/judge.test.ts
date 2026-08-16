@@ -1,15 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import {
-  DEFAULT_SONNET_MODEL,
-  runJudge,
-  type AnthropicLike,
-  type AnthropicMessageResponse,
-} from "../judge.js";
+import { DEFAULT_SONNET_MODEL, runJudge, type AnthropicLike, type AnthropicMessageResponse } from "../judge.js";
 
-function toolUseResponse(
-  input: unknown,
-  usage = { input_tokens: 100, output_tokens: 50 },
-): AnthropicMessageResponse {
+function toolUseResponse(input: unknown, usage = { input_tokens: 100, output_tokens: 50 }): AnthropicMessageResponse {
   return { content: [{ type: "tool_use", name: "submit_verdict", input }], usage };
 }
 
@@ -19,7 +11,9 @@ function fakeClient(responses: AnthropicMessageResponse[]): AnthropicLike {
     messages: {
       create: () => {
         const next = queue.shift();
-        if (!next) throw new Error("fakeClient: no more canned responses");
+        if (!next) {
+          throw new Error("fakeClient: no more canned responses");
+        }
         return Promise.resolve(next);
       },
     },
@@ -76,8 +70,7 @@ describe("runJudge (judge-spec §4/§6/§8) — mocked SDK client, no real API i
   });
 
   it(
-    "low-confidence Sonnet escalates to Opus; still-low Opus confidence -> NEEDS_HUMAN, " +
-      "keeping Opus's real confidence number (not zeroed)",
+    "low-confidence Sonnet escalates to Opus; still-low Opus confidence -> NEEDS_HUMAN, " + "keeping Opus's real confidence number (not zeroed)",
     async () => {
       const client = fakeClient([
         toolUseResponse({

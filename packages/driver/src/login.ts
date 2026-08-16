@@ -25,16 +25,10 @@ export interface LoginCreds {
   loginReadyTimeoutMs?: number;
 }
 
-export async function login(
-  page: Page,
-  creds: LoginCreds,
-  onBeforeNavigate?: (url: string) => Promise<void> | void,
-): Promise<void> {
+export async function login(page: Page, creds: LoginCreds, onBeforeNavigate?: (url: string) => Promise<void> | void): Promise<void> {
   const loginUrlObject = new URL(creds.loginUrl);
   const isOnLoginPage = (url: URL): boolean =>
-    url.origin === loginUrlObject.origin &&
-    url.pathname === loginUrlObject.pathname &&
-    url.hash === loginUrlObject.hash;
+    url.origin === loginUrlObject.origin && url.pathname === loginUrlObject.pathname && url.hash === loginUrlObject.hash;
 
   const timeout = creds.timeoutMs ?? 10_000;
 
@@ -62,10 +56,7 @@ export async function login(
   }
 
   try {
-    await Promise.all([
-      page.waitForURL((url) => !isOnLoginPage(url), { timeout }),
-      page.locator(creds.submitSelector).click(),
-    ]);
+    await Promise.all([page.waitForURL((url) => !isOnLoginPage(url), { timeout }), page.locator(creds.submitSelector).click()]);
   } catch (error) {
     const redacted = redact(error, creds.password);
     // eslint-disable-next-line preserve-caught-error -- cause must be the redacted error (raw one can leak the password)
@@ -77,18 +68,14 @@ export async function login(
   let lastSnapshot = await page.ariaSnapshot();
   while (hasLoadingIndicator(lastSnapshot)) {
     if (Date.now() >= readyDeadline) {
-      throw new Error(
-        `post-login readiness timeout: still loading after ${readyTimeout}ms\n${lastSnapshot}`,
-      );
+      throw new Error(`post-login readiness timeout: still loading after ${readyTimeout}ms\n${lastSnapshot}`);
     }
     await page.waitForTimeout(READINESS_POLL_INTERVAL_MS);
     lastSnapshot = await page.ariaSnapshot();
   }
 
   if (isOnLoginPage(new URL(page.url()))) {
-    throw new Error(
-      `login failed at ${creds.loginUrl}: still on login page after readiness wait\n${lastSnapshot}`,
-    );
+    throw new Error(`login failed at ${creds.loginUrl}: still on login page after readiness wait\n${lastSnapshot}`);
   }
 
   await onBeforeNavigate?.(page.url());

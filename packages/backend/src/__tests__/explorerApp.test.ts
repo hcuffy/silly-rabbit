@@ -51,7 +51,9 @@ async function waitUntilTerminal(app: FastifyInstance, runId: string, sessionCoo
       headers: { cookie: sessionCookie },
     });
     const body = response.json<Run>();
-    if (body.status === "COMPLETED" || body.status === "FAILED") return body;
+    if (body.status === "COMPLETED" || body.status === "FAILED") {
+      return body;
+    }
     await new Promise((resolve) => setTimeout(resolve, 50));
   }
   throw new Error(`run ${runId} did not reach a terminal state in time`);
@@ -125,41 +127,48 @@ describe("Fastify app — explorer routes (D8 HTTP wiring)", () => {
     expect(response.statusCode).toBe(404);
   });
 
-  it("triggers, locates the section against the real mock target, and persists a TestRun + findings, " +
-    "fetched via GET in the shape the frontend will need", async () => {
-    const postResponse = await injectAuthed({
-      method: "POST",
-      url: "/explorer/runs",
-      payload: { featureId: "locations", sectionDescription: "warehouse", targetBaseUrl: `${MOCK_BASE_URL}${LIST_PATH}` },
-    });
-    expect(postResponse.statusCode).toBe(202);
-    const { runId, status } = postResponse.json<ExplorerRunResponseBody>();
-    expect(["PENDING", "RUNNING"]).toContain(status);
+  it(
+    "triggers, locates the section against the real mock target, and persists a TestRun + findings, " +
+      "fetched via GET in the shape the frontend will need",
+    async () => {
+      const postResponse = await injectAuthed({
+        method: "POST",
+        url: "/explorer/runs",
+        payload: { featureId: "locations", sectionDescription: "warehouse", targetBaseUrl: `${MOCK_BASE_URL}${LIST_PATH}` },
+      });
+      expect(postResponse.statusCode).toBe(202);
+      const { runId, status } = postResponse.json<ExplorerRunResponseBody>();
+      expect(["PENDING", "RUNNING"]).toContain(status);
 
-    const final = await waitUntilTerminal(app, runId, sessionCookie);
-    expect(final.status).toBe("COMPLETED");
+      const final = await waitUntilTerminal(app, runId, sessionCookie);
+      expect(final.status).toBe("COMPLETED");
 
-    const getResponse = await injectAuthed({ method: "GET", url: `/explorer/runs/${runId}` });
-    const body = getResponse.json<Run & { testRun: TestRun; findings: unknown[] }>();
-    expect(body.testRun.featureId).toBe("locations");
-    expect(body.testRun.runId).toBe(runId);
-    expect(body.testRun.testPlan).toEqual([]);
-    expect(body.findings).toEqual([]);
-  }, 15_000);
+      const getResponse = await injectAuthed({ method: "GET", url: `/explorer/runs/${runId}` });
+      const body = getResponse.json<Run & { testRun: TestRun; findings: unknown[] }>();
+      expect(body.testRun.featureId).toBe("locations");
+      expect(body.testRun.runId).toBe(runId);
+      expect(body.testRun.testPlan).toEqual([]);
+      expect(body.findings).toEqual([]);
+    },
+    15_000,
+  );
 
-  it("a request naming a disallowed domain is rejected before any browser action happens " +
-    "(safety guards actually bound, not just wired-looking)", async () => {
-    const postResponse = await injectAuthed({
-      method: "POST",
-      url: "/explorer/runs",
-      payload: { featureId: "locations", sectionDescription: "warehouse", targetBaseUrl: "http://not-allowed.example" },
-    });
-    expect(postResponse.statusCode).toBe(202);
-    const { runId } = postResponse.json<ExplorerRunResponseBody>();
+  it(
+    "a request naming a disallowed domain is rejected before any browser action happens " + "(safety guards actually bound, not just wired-looking)",
+    async () => {
+      const postResponse = await injectAuthed({
+        method: "POST",
+        url: "/explorer/runs",
+        payload: { featureId: "locations", sectionDescription: "warehouse", targetBaseUrl: "http://not-allowed.example" },
+      });
+      expect(postResponse.statusCode).toBe(202);
+      const { runId } = postResponse.json<ExplorerRunResponseBody>();
 
-    const final = await waitUntilTerminal(app, runId, sessionCookie);
-    expect(final.status).toBe("FAILED");
-    expect(final.error).toContain("not on the domain allowlist");
-    expect(final.stepsUsed).toBe(0);
-  }, 15_000);
+      const final = await waitUntilTerminal(app, runId, sessionCookie);
+      expect(final.status).toBe("FAILED");
+      expect(final.error).toContain("not on the domain allowlist");
+      expect(final.stepsUsed).toBe(0);
+    },
+    15_000,
+  );
 });

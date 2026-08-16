@@ -12,7 +12,9 @@ export function attachCapture(page: Page): CaptureHandle {
   let httpErrors: HttpErrorSignal[] = [];
 
   page.on("console", (message) => {
-    if (message.type() === "error") consoleErrors.push(message.text());
+    if (message.type() === "error") {
+      consoleErrors.push(message.text());
+    }
   });
 
   page.on("pageerror", (error) => {
@@ -50,9 +52,15 @@ export async function captureObservation(page: Page, handle: CaptureHandle): Pro
     documentTitle,
     isBlank: tree.children.length === 0,
   };
-  if (consoleErrors.length > 0) observation.consoleErrors = consoleErrors;
-  if (httpErrors.length > 0) observation.httpErrors = httpErrors;
-  if (screenshotBuffer) observation.screenshotBuffer = screenshotBuffer;
+  if (consoleErrors.length > 0) {
+    observation.consoleErrors = consoleErrors;
+  }
+  if (httpErrors.length > 0) {
+    observation.httpErrors = httpErrors;
+  }
+  if (screenshotBuffer) {
+    observation.screenshotBuffer = screenshotBuffer;
+  }
 
   return observation;
 }

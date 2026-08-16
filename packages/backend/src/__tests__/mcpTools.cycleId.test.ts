@@ -26,7 +26,13 @@ const MOCK_BASE_URL = "https://mcp-cycle.local/";
 const CREDENTIAL_ENCRYPTION_KEY = "c".repeat(64);
 
 function throwingJudgeClient(): AnthropicLike {
-  return { messages: { create: () => { throw new Error("judge should not be called in this test"); } } };
+  return {
+    messages: {
+      create: () => {
+        throw new Error("judge should not be called in this test");
+      },
+    },
+  };
 }
 
 function textOf(result: { content: Array<{ type: string; text?: string }> }): unknown {
@@ -52,7 +58,9 @@ async function waitUntilTerminal(client: Client, toolName: string, runId: string
   for (let attempt = 0; attempt < 300; attempt++) {
     const result = await client.callTool({ name: toolName, arguments: { runId } });
     const body = textOf(result as never) as { status: string };
-    if (body.status === "COMPLETED" || body.status === "FAILED") return;
+    if (body.status === "COMPLETED" || body.status === "FAILED") {
+      return;
+    }
     await new Promise((resolve) => setTimeout(resolve, 50));
   }
   throw new Error(`run ${runId} did not reach a terminal state in time`);
@@ -127,9 +135,7 @@ describe("MCP tools — cycleId (run-cycles-spec.md phase 3), real chromium + re
     expect(result.isError).toBeFalsy();
     const { runId } = textOf(result as never) as { runId: string };
 
-    const run = await connection.db
-      .collection<{ _id: string; cycleId?: string; cycleRunNumber?: number }>("runs")
-      .findOne({ _id: runId });
+    const run = await connection.db.collection<{ _id: string; cycleId?: string; cycleRunNumber?: number }>("runs").findOne({ _id: runId });
     expect(run?.cycleId).toBe(cycle.id);
     expect(run?.cycleRunNumber).toBe(1);
 
@@ -144,9 +150,7 @@ describe("MCP tools — cycleId (run-cycles-spec.md phase 3), real chromium + re
     expect(result.isError).toBeFalsy();
     const { runId } = textOf(result as never) as { runId: string };
 
-    const run = await connection.db
-      .collection<{ _id: string; cycleId?: string; cycleRunNumber?: number }>("runs")
-      .findOne({ _id: runId });
+    const run = await connection.db.collection<{ _id: string; cycleId?: string; cycleRunNumber?: number }>("runs").findOne({ _id: runId });
     expect(run?.cycleId).toBeUndefined();
     expect(run?.cycleRunNumber).toBeUndefined();
 
@@ -199,9 +203,7 @@ describe("MCP tools — cycleId (run-cycles-spec.md phase 3), real chromium + re
     expect(result.isError).toBeFalsy();
     const { runId } = textOf(result as never) as { runId: string };
 
-    const run = await connection.db
-      .collection<{ _id: string; cycleId?: string; cycleRunNumber?: number }>("runs")
-      .findOne({ _id: runId });
+    const run = await connection.db.collection<{ _id: string; cycleId?: string; cycleRunNumber?: number }>("runs").findOne({ _id: runId });
     expect(run?.cycleId).toBe(cycle.id);
     expect(run?.cycleRunNumber).toBe(1);
 

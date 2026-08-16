@@ -16,12 +16,16 @@ const CyclesListQuerySchema = z.object({
 });
 
 function requireCycleRepo(deps: AppDeps): CycleRepo {
-  if (!deps.cycleRepo) throw new Error("cycleRepo not configured");
+  if (!deps.cycleRepo) {
+    throw new Error("cycleRepo not configured");
+  }
   return deps.cycleRepo;
 }
 
 function requireActiveCycleRepo(deps: AppDeps): ActiveCycleRepo {
-  if (!deps.activeCycleRepo) throw new Error("activeCycleRepo not configured");
+  if (!deps.activeCycleRepo) {
+    throw new Error("activeCycleRepo not configured");
+  }
   return deps.activeCycleRepo;
 }
 
@@ -44,7 +48,9 @@ export function registerCycleRoutes(app: FastifyInstance, deps: AppDeps): void {
 
   app.get<{ Params: { id: string } }>("/cycles/:id", async (request, reply) => {
     const cycle = await cycleRepo.get(request.params.id);
-    if (!cycle) return reply.status(404).send({ error: "cycle not found" });
+    if (!cycle) {
+      return reply.status(404).send({ error: "cycle not found" });
+    }
     return cycle;
   });
 
@@ -70,20 +76,26 @@ export function registerCycleRoutes(app: FastifyInstance, deps: AppDeps): void {
 
   app.post<{ Params: { id: string } }>("/cycles/:id/archive", async (request, reply) => {
     const cycle = await cycleRepo.get(request.params.id);
-    if (!cycle) return reply.status(404).send({ error: "cycle not found" });
+    if (!cycle) {
+      return reply.status(404).send({ error: "cycle not found" });
+    }
 
     if (cycle.isDefault) {
       return reply.status(409).send({ error: "the Uncategorized cycle cannot be archived" });
     }
 
     const archived = await cycleRepo.archive(request.params.id);
-    if (!archived) return reply.status(409).send({ error: `cycle is already ${cycle.status}, cannot archive` });
+    if (!archived) {
+      return reply.status(409).send({ error: `cycle is already ${cycle.status}, cannot archive` });
+    }
     return reply.status(200).send(await cycleRepo.get(request.params.id));
   });
 
   app.post<{ Params: { id: string } }>("/cycles/:id/activate", async (request, reply) => {
     const cycle = await cycleRepo.get(request.params.id);
-    if (!cycle) return reply.status(404).send({ error: "cycle not found" });
+    if (!cycle) {
+      return reply.status(404).send({ error: "cycle not found" });
+    }
 
     await activeCycleRepo.set(request.params.id);
     return reply.status(204).send();
@@ -91,7 +103,9 @@ export function registerCycleRoutes(app: FastifyInstance, deps: AppDeps): void {
 
   app.get<{ Params: { id: string } }>("/cycles/:id/stats", async (request, reply) => {
     const cycle = await cycleRepo.get(request.params.id);
-    if (!cycle) return reply.status(404).send({ error: "cycle not found" });
+    if (!cycle) {
+      return reply.status(404).send({ error: "cycle not found" });
+    }
 
     const [runIds, replayRunIds] = await Promise.all([
       deps.runRepo.findIdsByCycleId(request.params.id),

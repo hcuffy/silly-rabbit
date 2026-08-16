@@ -37,92 +37,100 @@ function throwingJudgeClient(): AnthropicLike {
 
 async function waitUntil(predicate: () => Promise<boolean>): Promise<void> {
   for (let attempt = 0; attempt < 300; attempt++) {
-    if (await predicate()) return;
+    if (await predicate()) {
+      return;
+    }
     await new Promise((resolve) => setTimeout(resolve, 50));
   }
   throw new Error("condition not met in time");
 }
 
-describe("POST /runs concurrency cap (RESOURCE EXHAUSTION audit fix) — MAX_CONCURRENT_RUNS enforced " +
-  "at the HTTP boundary, shared inFlightRuns signal, real chromium", () => {
-  let mongod: MongoMemoryServer;
-  let connection: MongoConnection;
-  let app: FastifyInstance;
-  let sessionCookie: string;
-  let deps: AppDeps;
+describe(
+  "POST /runs concurrency cap (RESOURCE EXHAUSTION audit fix) — MAX_CONCURRENT_RUNS enforced " +
+    "at the HTTP boundary, shared inFlightRuns signal, real chromium",
+  () => {
+    let mongod: MongoMemoryServer;
+    let connection: MongoConnection;
+    let app: FastifyInstance;
+    let sessionCookie: string;
+    let deps: AppDeps;
 
-  function injectAuthed(options: InjectOptions): Promise<LightMyRequestResponse> {
-    return app.inject({ ...options, headers: { ...options.headers, cookie: sessionCookie } });
-  }
+    function injectAuthed(options: InjectOptions): Promise<LightMyRequestResponse> {
+      return app.inject({ ...options, headers: { ...options.headers, cookie: sessionCookie } });
+    }
 
-  beforeAll(async () => {
-    mongod = await MongoMemoryServer.create();
-    connection = await connectMongo(mongod.getUri());
-    const reproSpecDirectory = await mkdtemp(join(tmpdir(), "silly-rabbit-repro-cap-"));
-    const screenshotDirectory = await mkdtemp(join(tmpdir(), "silly-rabbit-screenshot-cap-"));
-    deps = {
-      runRepo: new RunRepo(connection.db),
-      findingRepo: new FindingRepo(connection.db),
-      baselineRepo: new BaselineRepo(connection.db),
-      appMapRepo: new AppMapRepo(connection.db),
-      testRunRepo: new TestRunRepo(connection.db),
-      learningRepo: new LearningRepo(connection.db),
-      featureDocumentRepo: new FeatureDocumentRepo(connection.db),
-      sessionRecordingRepo: new SessionRecordingRepo(connection.db),
-      sessionReplayRunRepo: new SessionReplayRunRepo(connection.db),
-      reproSpecDirectory,
-      screenshotDirectory,
-      screenshotStorageCapBytes: 1_000_000_000,
-      judgeClientFactory: throwingJudgeClient,
-      allowedDomains: ["mock.local"],
-      productionUrlPatterns: [],
-      maxConcurrentRuns: 1,
-      corsOrigins: ["http://localhost:5173"],
-      dashboardPassword: "test-password",
-      sessionSecret: "test-session-secret",
-      cookieSecure: false,
-      cookieSameSite: "lax",
-      installRoutes: (context) => installMockTarget(context, "baseline", seedFor()),
-    };
-    app = buildApp(deps);
+    beforeAll(async () => {
+      mongod = await MongoMemoryServer.create();
+      connection = await connectMongo(mongod.getUri());
+      const reproSpecDirectory = await mkdtemp(join(tmpdir(), "silly-rabbit-repro-cap-"));
+      const screenshotDirectory = await mkdtemp(join(tmpdir(), "silly-rabbit-screenshot-cap-"));
+      deps = {
+        runRepo: new RunRepo(connection.db),
+        findingRepo: new FindingRepo(connection.db),
+        baselineRepo: new BaselineRepo(connection.db),
+        appMapRepo: new AppMapRepo(connection.db),
+        testRunRepo: new TestRunRepo(connection.db),
+        learningRepo: new LearningRepo(connection.db),
+        featureDocumentRepo: new FeatureDocumentRepo(connection.db),
+        sessionRecordingRepo: new SessionRecordingRepo(connection.db),
+        sessionReplayRunRepo: new SessionReplayRunRepo(connection.db),
+        reproSpecDirectory,
+        screenshotDirectory,
+        screenshotStorageCapBytes: 1_000_000_000,
+        judgeClientFactory: throwingJudgeClient,
+        allowedDomains: ["mock.local"],
+        productionUrlPatterns: [],
+        maxConcurrentRuns: 1,
+        corsOrigins: ["http://localhost:5173"],
+        dashboardPassword: "test-password",
+        sessionSecret: "test-session-secret",
+        cookieSecure: false,
+        cookieSameSite: "lax",
+        installRoutes: (context) => installMockTarget(context, "baseline", seedFor()),
+      };
+      app = buildApp(deps);
 
-    const loginResponse = await app.inject({
-      method: "POST",
-      url: "/auth/login",
-      payload: { password: deps.dashboardPassword },
-    });
-    sessionCookie = loginResponse.cookies.map((cookie) => `${cookie.name}=${cookie.value}`).join("; ");
-  }, 30_000);
+      const loginResponse = await app.inject({
+        method: "POST",
+        url: "/auth/login",
+        payload: { password: deps.dashboardPassword },
+      });
+      sessionCookie = loginResponse.cookies.map((cookie) => `${cookie.name}=${cookie.value}`).join("; ");
+    }, 30_000);
 
-  afterAll(async () => {
-    await app.close();
-    await closeMongo(connection);
-    await mongod.stop();
-  });
-
-  it("rejects the 2nd of 2 rapid-fire triggers with 429 while the 1st proceeds, then accepts a 3rd " +
-    "once the 1st completes", async () => {
-    const [first, second] = await Promise.all([
-      injectAuthed({ method: "POST", url: "/runs", payload: { charter: "test the locations flow", targetBaseUrl: MOCK_BASE_URL } }),
-      injectAuthed({ method: "POST", url: "/runs", payload: { charter: "test the locations flow", targetBaseUrl: MOCK_BASE_URL } }),
-    ]);
-
-    expect(first.statusCode).toBe(202);
-    expect(second.statusCode).toBe(429);
-    const body = second.json<{ error: string }>();
-    expect(body.error).toContain("max concurrent runs");
-
-    const { runId: firstRunId } = first.json<{ runId: string }>();
-    await waitUntil(async () => {
-      const response = await injectAuthed({ method: "GET", url: `/runs/${firstRunId}` });
-      return response.json<{ status: string }>().status === "COMPLETED";
+    afterAll(async () => {
+      await app.close();
+      await closeMongo(connection);
+      await mongod.stop();
     });
 
-    const third = await injectAuthed({
-      method: "POST",
-      url: "/runs",
-      payload: { charter: "test the locations flow", targetBaseUrl: MOCK_BASE_URL },
-    });
-    expect(third.statusCode).toBe(202);
-  }, 30_000);
-});
+    it(
+      "rejects the 2nd of 2 rapid-fire triggers with 429 while the 1st proceeds, then accepts a 3rd " + "once the 1st completes",
+      async () => {
+        const [first, second] = await Promise.all([
+          injectAuthed({ method: "POST", url: "/runs", payload: { charter: "test the locations flow", targetBaseUrl: MOCK_BASE_URL } }),
+          injectAuthed({ method: "POST", url: "/runs", payload: { charter: "test the locations flow", targetBaseUrl: MOCK_BASE_URL } }),
+        ]);
+
+        expect(first.statusCode).toBe(202);
+        expect(second.statusCode).toBe(429);
+        const body = second.json<{ error: string }>();
+        expect(body.error).toContain("max concurrent runs");
+
+        const { runId: firstRunId } = first.json<{ runId: string }>();
+        await waitUntil(async () => {
+          const response = await injectAuthed({ method: "GET", url: `/runs/${firstRunId}` });
+          return response.json<{ status: string }>().status === "COMPLETED";
+        });
+
+        const third = await injectAuthed({
+          method: "POST",
+          url: "/runs",
+          payload: { charter: "test the locations flow", targetBaseUrl: MOCK_BASE_URL },
+        });
+        expect(third.statusCode).toBe(202);
+      },
+      30_000,
+    );
+  },
+);

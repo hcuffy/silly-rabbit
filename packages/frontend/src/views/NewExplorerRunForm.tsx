@@ -52,7 +52,9 @@ export function NewExplorerRunForm({ onCreated }: { onCreated: (runId: string) =
       return;
     }
     setValidationError(undefined);
-    if (cycleId) setLastUsedCycleId(cycleId);
+    if (cycleId) {
+      setLastUsedCycleId(cycleId);
+    }
     mutation.mutate(parsed.data, {
       onSuccess: (response) => onCreated(response.runId),
     });
@@ -89,10 +91,10 @@ export function NewExplorerRunForm({ onCreated }: { onCreated: (runId: string) =
         </span>
         <FieldHint
           text={
-            'A SHORT description matching how this section appears in navigation ' +
+            "A SHORT description matching how this section appears in navigation " +
             '(e.g. "the billing and invoices page") — NOT a multi-step instruction. ' +
             "The explorer finds the section by this description, then decides itself what to test. " +
-            'Contrast with Charter above: Charter is a full instruction, this is just a label used to locate ' +
+            "Contrast with Charter above: Charter is a full instruction, this is just a label used to locate " +
             'the section — a full instruction here causes "section not found in navigation" errors.'
           }
         />
@@ -115,9 +117,10 @@ export function NewExplorerRunForm({ onCreated }: { onCreated: (runId: string) =
         aria-label="Insert an example section description"
         value=""
         onChange={(event) => {
-          if (event.target.value) setSectionDescription(event.target.value);
-        }}
-      >
+          if (event.target.value) {
+            setSectionDescription(event.target.value);
+          }
+        }}>
         <option value="">— insert an example description —</option>
         {EXAMPLE_SECTION_DESCRIPTIONS.map((example) => (
           <option key={example} value={example}>

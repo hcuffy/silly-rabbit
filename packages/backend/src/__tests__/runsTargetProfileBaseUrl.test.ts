@@ -51,8 +51,7 @@ function makeProfile(overrides: Partial<TargetProfile> = {}): TargetProfile {
   };
 }
 
-describe("targetBaseUrl defaults from the active target profile (target-profiles-spec.md phase 3, item 1) " +
-  "— real chromium, real Mongo", () => {
+describe("targetBaseUrl defaults from the active target profile (target-profiles-spec.md phase 3, item 1) " + "— real chromium, real Mongo", () => {
   let mongod: MongoMemoryServer;
   let connection: MongoConnection;
   let app: FastifyInstance;

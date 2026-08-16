@@ -36,10 +36,13 @@ interface RawCapturedEvent {
 const CAPTURE_BINDING_NAME = "__sillyRabbitRecordStep";
 
 function isSameTarget(a: Omit<SessionRecordingStep, "timestampOffsetMs">, b: SessionRecordingStep): boolean {
-  if (a.selectorStrategy !== b.selectorStrategy) return false;
+  if (a.selectorStrategy !== b.selectorStrategy) {
+    return false;
+  }
   return a.selectorStrategy === "role" ? a.role === b.role && a.accessibleName === b.accessibleName : a.cssSelector === b.cssSelector;
 }
 
+// eslint-disable-next-line max-params -- named options param, not a raw scalar
 export async function attachSessionCapture(
   page: Page,
   recordingStartedAt: Date,
@@ -52,12 +55,20 @@ export async function attachSessionCapture(
   page.on("response", (response) => {
     void (async () => {
       const request = response.request();
-      if (!CAPTURED_RESOURCE_TYPES.has(request.resourceType())) return;
-      if (new URL(response.url()).origin !== targetOrigin) return;
-      if (!isJsonResponse(response.headers()["content-type"])) return;
+      if (!CAPTURED_RESOURCE_TYPES.has(request.resourceType())) {
+        return;
+      }
+      if (new URL(response.url()).origin !== targetOrigin) {
+        return;
+      }
+      if (!isJsonResponse(response.headers()["content-type"])) {
+        return;
+      }
 
       const body = await response.body().catch(() => undefined);
-      if (!body) return;
+      if (!body) {
+        return;
+      }
 
       networkCaptures.push({
         url: response.url(),
@@ -88,7 +99,9 @@ export async function attachSessionCapture(
 
   let hasSkippedInitialNavigation = false;
   page.on("framenavigated", (frame) => {
-    if (frame !== page.mainFrame()) return;
+    if (frame !== page.mainFrame()) {
+      return;
+    }
     if (!hasSkippedInitialNavigation) {
       hasSkippedInitialNavigation = true;
       return;
@@ -119,12 +132,20 @@ const installPageListeners = (bindingName: string): void => {
 
   const inferRole = (element: Element): string | undefined => {
     const explicit = element.getAttribute("role");
-    if (explicit) return explicit;
-    if (element.tagName === "A" && element.hasAttribute("href")) return "link";
+    if (explicit) {
+      return explicit;
+    }
+    if (element.tagName === "A" && element.hasAttribute("href")) {
+      return "link";
+    }
     if (element.tagName === "INPUT") {
       const type = (element.getAttribute("type") ?? "text").toLowerCase();
-      if (type === "checkbox") return "checkbox";
-      if (type === "radio") return "radio";
+      if (type === "checkbox") {
+        return "checkbox";
+      }
+      if (type === "radio") {
+        return "radio";
+      }
       return "textbox";
     }
     return IMPLICIT_ROLE_BY_TAG[element.tagName];
@@ -132,19 +153,27 @@ const installPageListeners = (bindingName: string): void => {
 
   const accessibleNameFor = (element: Element): string => {
     const ariaLabel = element.getAttribute("aria-label");
-    if (ariaLabel) return ariaLabel.trim();
+    if (ariaLabel) {
+      return ariaLabel.trim();
+    }
     const labelledBy = element.getAttribute("aria-labelledby");
     if (labelledBy) {
       const labelElement = document.getElementById(labelledBy);
-      if (labelElement?.textContent) return labelElement.textContent.trim();
+      if (labelElement?.textContent) {
+        return labelElement.textContent.trim();
+      }
     }
     const placeholder = element.getAttribute("placeholder");
-    if (placeholder) return placeholder.trim();
+    if (placeholder) {
+      return placeholder.trim();
+    }
     return element.textContent?.trim() ?? "";
   };
 
   const cssSelectorFor = (element: Element): string => {
-    if (element.id) return `#${CSS.escape(element.id)}`;
+    if (element.id) {
+      return `#${CSS.escape(element.id)}`;
+    }
     const parts: string[] = [];
     let current: Element | null = element;
     for (let depth = 0; current && depth < 4; depth++) {
@@ -153,7 +182,9 @@ const installPageListeners = (bindingName: string): void => {
       const parent: Element | null = current.parentElement;
       if (parent) {
         const siblings = Array.from(parent.children).filter((sibling) => sibling.tagName === tagName);
-        if (siblings.length > 1) part += `:nth-of-type(${siblings.indexOf(current) + 1})`;
+        if (siblings.length > 1) {
+          part += `:nth-of-type(${siblings.indexOf(current) + 1})`;
+        }
       }
       parts.unshift(part);
       current = parent;
@@ -166,17 +197,23 @@ const installPageListeners = (bindingName: string): void => {
   ): { selectorStrategy: "role"; role: string; accessibleName: string } | { selectorStrategy: "css"; cssSelector: string } => {
     const role = inferRole(element);
     const accessibleName = role ? accessibleNameFor(element) : "";
-    if (role && accessibleName) return { selectorStrategy: "role", role, accessibleName };
+    if (role && accessibleName) {
+      return { selectorStrategy: "role", role, accessibleName };
+    }
     return { selectorStrategy: "css", cssSelector: cssSelectorFor(element) };
   };
 
   const report = (window as unknown as Record<string, (event: unknown) => void>)[bindingName];
-  if (!report) return;
+  if (!report) {
+    return;
+  }
 
   document.addEventListener(
     "click",
     (domEvent) => {
-      if (!(domEvent.target instanceof Element)) return;
+      if (!(domEvent.target instanceof Element)) {
+        return;
+      }
       report({ action: "click", ...describeSelector(domEvent.target) });
     },
     true,
@@ -186,7 +223,9 @@ const installPageListeners = (bindingName: string): void => {
     "input",
     (domEvent) => {
       const target = domEvent.target;
-      if (!(target instanceof HTMLInputElement) && !(target instanceof HTMLTextAreaElement)) return;
+      if (!(target instanceof HTMLInputElement) && !(target instanceof HTMLTextAreaElement)) {
+        return;
+      }
       // Never capture a real password value — redacted at the point of capture, in-browser, not after
       // (a recorded session may be against a real login form with a real credential).
       const isPassword = target instanceof HTMLInputElement && target.type === "password";

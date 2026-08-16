@@ -1,18 +1,15 @@
 import { useCyclesList } from "../lib/cycleQueries.js";
 
-export function CycleSelect({
-  id,
-  label,
-  value,
-  onChange,
-  hideLabel = false,
-}: {
+interface CycleSelectProps {
   id: string;
   label: string;
   value: string;
   onChange: (cycleId: string) => void;
   hideLabel?: boolean;
-}) {
+}
+
+export function CycleSelect(props: CycleSelectProps) {
+  const { id, label, value, onChange, hideLabel = false } = props;
   const { data: cycles, isPending } = useCyclesList("active");
 
   return (
@@ -27,8 +24,7 @@ export function CycleSelect({
         aria-label={hideLabel ? label : undefined}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        disabled={isPending}
-      >
+        disabled={isPending}>
         <option value="">— no cycle —</option>
         {(cycles ?? []).map((cycle) => (
           <option key={cycle.id} value={cycle.id}>

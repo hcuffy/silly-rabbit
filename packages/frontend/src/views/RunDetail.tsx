@@ -36,13 +36,16 @@ export function RunDetail({ runId, runNumber }: { runId: string; runNumber?: num
     onFeedback: (findingId: string, verdict: FeedbackVerdict) => feedbackMutation.mutate({ findingId, verdict }),
   });
 
-  if (runQuery.isPending) return <p>Loading run…</p>;
-  if (runQuery.isError)
+  if (runQuery.isPending) {
+    return <p>Loading run…</p>;
+  }
+  if (runQuery.isError) {
     return (
       <p className="form-error" role="alert">
         Failed to load run: {runQuery.error.message}
       </p>
     );
+  }
 
   const run = runQuery.data;
   const headerText =
@@ -59,14 +62,12 @@ export function RunDetail({ runId, runNumber }: { runId: string; runNumber?: num
       <p>Target: {run.targetBaseUrl}</p>
       {targetStats && (
         <p className="finding-stats">
-          Across all runs against this target: {targetStats.newCount} new · {targetStats.suppressedCount} suppressed
-          all-time
+          Across all runs against this target: {targetStats.newCount} new · {targetStats.suppressedCount} suppressed all-time
         </p>
       )}
       {hasScoredTargetAccuracy && targetStats && (
         <p className="finding-stats">
-          Judge accuracy all-time (D8 findings with feedback only): {targetStats.agree} agree ·{" "}
-          {targetStats.disagree} disagree
+          Judge accuracy all-time (D8 findings with feedback only): {targetStats.agree} agree · {targetStats.disagree} disagree
         </p>
       )}
       <p>
@@ -92,13 +93,12 @@ export function RunDetail({ runId, runNumber }: { runId: string; runNumber?: num
           </p>
           {hasScoredAccuracy && (
             <p className="finding-stats">
-              Judge accuracy (D8 findings with feedback only): {judgeAccuracy.agree} agree ·{" "}
-              {judgeAccuracy.disagree} disagree
+              Judge accuracy (D8 findings with feedback only): {judgeAccuracy.agree} agree · {judgeAccuracy.disagree} disagree
             </p>
           )}
           <p className="triage-hint">
-            Keyboard: <kbd>1</kbd> confirmed issue · <kbd>2</kbd> intended behavior (explorer findings only) ·{" "}
-            <kbd>3</kbd> dismiss · <kbd>N</kbd>/<kbd>P</kbd> next/previous finding.
+            Keyboard: <kbd>1</kbd> confirmed issue · <kbd>2</kbd> intended behavior (explorer findings only) · <kbd>3</kbd> dismiss · <kbd>N</kbd>/
+            <kbd>P</kbd> next/previous finding.
           </p>
           <ul className="finding-list">
             {findings.map((finding, index) => (

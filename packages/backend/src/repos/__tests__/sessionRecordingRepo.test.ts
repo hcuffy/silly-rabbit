@@ -74,36 +74,37 @@ describe("SessionRecordingRepo (session-replay-spec §5.1) — mongodb-memory-se
     expect(await repo.get(sessionRecording.sessionId)).toEqual(sessionRecording);
   });
 
-  it("strips explicit-undefined optional fields inside each step, not just at the document's top level " +
-    "(SessionRecordingStep is this codebase's first array-of-objects-with-optional-fields shape — the " +
-    "undefined-serializes-as-null bug class applies per-step, not only to the document root)", async () => {
-    const repo = new SessionRecordingRepo(connection.db);
-    const sessionRecording = makeSessionRecording({
-      steps: [
-        {
-          action: "click",
-          selectorStrategy: "css",
-          cssSelector: "#save",
-          role: undefined,
-          accessibleName: undefined,
-          value: undefined,
-          timestampOffsetMs: 0,
-        },
-      ],
-    });
-    await repo.create(sessionRecording);
+  it(
+    "strips explicit-undefined optional fields inside each step, not just at the document's top level " +
+      "(SessionRecordingStep is this codebase's first array-of-objects-with-optional-fields shape — the " +
+      "undefined-serializes-as-null bug class applies per-step, not only to the document root)",
+    async () => {
+      const repo = new SessionRecordingRepo(connection.db);
+      const sessionRecording = makeSessionRecording({
+        steps: [
+          {
+            action: "click",
+            selectorStrategy: "css",
+            cssSelector: "#save",
+            role: undefined,
+            accessibleName: undefined,
+            value: undefined,
+            timestampOffsetMs: 0,
+          },
+        ],
+      });
+      await repo.create(sessionRecording);
 
-    const document = await connection.db
-      .collection<SessionRecordingDocument>("sessionRecordings")
-      .findOne({ _id: sessionRecording.sessionId });
-    expect(document?.steps[0]).not.toHaveProperty("role");
-    expect(document?.steps[0]).not.toHaveProperty("accessibleName");
-    expect(document?.steps[0]).not.toHaveProperty("value");
+      const document = await connection.db.collection<SessionRecordingDocument>("sessionRecordings").findOne({ _id: sessionRecording.sessionId });
+      expect(document?.steps[0]).not.toHaveProperty("role");
+      expect(document?.steps[0]).not.toHaveProperty("accessibleName");
+      expect(document?.steps[0]).not.toHaveProperty("value");
 
-    const fetched = await repo.get(sessionRecording.sessionId);
-    expect(fetched?.steps[0]?.role).toBeUndefined();
-    expect(fetched?.steps[0]?.cssSelector).toBe("#save");
-  });
+      const fetched = await repo.get(sessionRecording.sessionId);
+      expect(fetched?.steps[0]?.role).toBeUndefined();
+      expect(fetched?.steps[0]?.cssSelector).toBe("#save");
+    },
+  );
 
   it("ensureIndexes creates a targetBaseUrl+recordedAt compound index, and is idempotent", async () => {
     const repo = new SessionRecordingRepo(connection.db);
@@ -114,18 +115,20 @@ describe("SessionRecordingRepo (session-replay-spec §5.1) — mongodb-memory-se
     expect(indexes.some((index) => index.key.targetBaseUrl === 1 && index.key.recordedAt === -1)).toBe(true);
   });
 
-  it("list() returns every recording, newest-recorded first (session-replay-spec §8.3 CONFIRM-7: plain " +
-    "list, no filtering/pagination for v1)", async () => {
-    const repo = new SessionRecordingRepo(connection.db);
-    const older = makeSessionRecording({ recordedAt: new Date(Date.now() - 60_000) });
-    const newer = makeSessionRecording({ recordedAt: new Date() });
-    await repo.create(older);
-    await repo.create(newer);
+  it(
+    "list() returns every recording, newest-recorded first (session-replay-spec §8.3 CONFIRM-7: plain " + "list, no filtering/pagination for v1)",
+    async () => {
+      const repo = new SessionRecordingRepo(connection.db);
+      const older = makeSessionRecording({ recordedAt: new Date(Date.now() - 60_000) });
+      const newer = makeSessionRecording({ recordedAt: new Date() });
+      await repo.create(older);
+      await repo.create(newer);
 
-    const list = await repo.list();
-    const ids = list.map((recording) => recording.sessionId);
-    expect(ids.indexOf(newer.sessionId)).toBeLessThan(ids.indexOf(older.sessionId));
-  });
+      const list = await repo.list();
+      const ids = list.map((recording) => recording.sessionId);
+      expect(ids.indexOf(newer.sessionId)).toBeLessThan(ids.indexOf(older.sessionId));
+    },
+  );
 
   it("delete() removes the recording entirely (delete-cancel-spec.md, phase 1)", async () => {
     const repo = new SessionRecordingRepo(connection.db);

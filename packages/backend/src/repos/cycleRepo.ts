@@ -27,10 +27,7 @@ export class CycleRepo {
 
   async ensureIndexes(): Promise<void> {
     await this.collection.createIndex({ status: 1 });
-    await this.collection.createIndex(
-      { isDefault: 1 },
-      { unique: true, partialFilterExpression: { isDefault: true } },
-    );
+    await this.collection.createIndex({ isDefault: 1 }, { unique: true, partialFilterExpression: { isDefault: true } });
   }
 
   async create(cycle: Cycle): Promise<void> {
@@ -43,7 +40,10 @@ export class CycleRepo {
   }
 
   async list(filter: { status?: "active" | "archived" } = {}): Promise<Cycle[]> {
-    const documents = await this.collection.find(stripUndefinedKeys({ ...filter })).sort({ createdAt: 1 }).toArray();
+    const documents = await this.collection
+      .find(stripUndefinedKeys({ ...filter }))
+      .sort({ createdAt: 1 })
+      .toArray();
     return documents.map(fromDocument);
   }
 
@@ -56,26 +56,20 @@ export class CycleRepo {
   }
 
   async incrementAndGetRunNumber(cycleId: string): Promise<number | undefined> {
-    const result = await this.collection.findOneAndUpdate(
-      { _id: cycleId },
-      { $inc: { runCounter: 1 } },
-      { returnDocument: "after" },
-    );
+    const result = await this.collection.findOneAndUpdate({ _id: cycleId }, { $inc: { runCounter: 1 } }, { returnDocument: "after" });
     return result?.runCounter;
   }
 
   async incrementAndGetSessionReplayRunNumber(cycleId: string): Promise<number | undefined> {
-    const result = await this.collection.findOneAndUpdate(
-      { _id: cycleId },
-      { $inc: { sessionReplayRunCounter: 1 } },
-      { returnDocument: "after" },
-    );
+    const result = await this.collection.findOneAndUpdate({ _id: cycleId }, { $inc: { sessionReplayRunCounter: 1 } }, { returnDocument: "after" });
     return result?.sessionReplayRunCounter;
   }
 
   async ensureDefaultCycle(): Promise<void> {
     const existing = await this.collection.findOne({ isDefault: true });
-    if (existing) return;
+    if (existing) {
+      return;
+    }
 
     const cycle = CycleSchema.parse({
       id: randomUUID(),
@@ -91,7 +85,9 @@ export class CycleRepo {
     try {
       await this.collection.insertOne(toDocument(cycle));
     } catch (error) {
-      if (error instanceof MongoServerError && error.code === DUPLICATE_KEY_ERROR_CODE) return;
+      if (error instanceof MongoServerError && error.code === DUPLICATE_KEY_ERROR_CODE) {
+        return;
+      }
       throw error;
     }
   }

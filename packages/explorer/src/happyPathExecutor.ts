@@ -1,10 +1,4 @@
-import {
-  computeDedupKey,
-  deriveFingerprint,
-  deriveScreenId,
-  DEFAULT_CONFIDENCE_THRESHOLD,
-  type FindingDraft,
-} from "@silly-rabbit/engine";
+import { computeDedupKey, deriveFingerprint, deriveScreenId, DEFAULT_CONFIDENCE_THRESHOLD, type FindingDraft } from "@silly-rabbit/engine";
 import { attachCapture, captureObservation, type ActionDescriptor } from "@silly-rabbit/driver";
 import type { Check, CheckOutcome, Finding, ResearchInventory, SectionElement } from "@silly-rabbit/shared";
 import { randomUUID } from "node:crypto";
@@ -13,6 +7,11 @@ import { buildDedupSignature } from "./dedupSignature.js";
 import { judgeOutcome, type OutcomeJudgeOptions } from "./outcomeJudge.js";
 
 export type PlaywrightRole = Parameters<Page["getByRole"]>[0];
+
+export interface ActionClickCallbacks {
+  onBeforeNavigate?: (url: string) => Promise<void> | void;
+  onBeforeAction?: (action: ActionDescriptor) => Promise<void> | void;
+}
 
 export interface HappyPathCheckInput {
   page: Page;
@@ -72,7 +71,9 @@ function resolveFoundButton(element: SectionElement): ActionButtonResolution {
 
 export function resolveActionButton(research: ResearchInventory, check: Check): ActionButtonResolution {
   const buttons = research.elements.filter((element) => element.kind === "button");
-  if (buttons.length === 0) return { status: "not-needed" };
+  if (buttons.length === 0) {
+    return { status: "not-needed" };
+  }
 
   if (check.targetElement) {
     const exact = buttons.find((button) => button.accessibleName === check.targetElement);
@@ -103,18 +104,21 @@ async function resolveFormActionUrl(page: Page, buttonLocator: ReturnType<Page["
 export async function performResolvedActionClick(
   page: Page,
   buttonResolution: ActionButtonResolution,
-  onBeforeNavigate?: (url: string) => Promise<void> | void,
-  onBeforeAction?: (action: ActionDescriptor) => Promise<void> | void,
+  callbacks: ActionClickCallbacks = {},
 ): Promise<void> {
-  if (buttonResolution.status !== "found") return;
+  if (buttonResolution.status !== "found") {
+    return;
+  }
   const actionButton = buttonResolution.element;
   const buttonLocator = page.getByRole(actionButton.role as PlaywrightRole, { name: actionButton.accessibleName });
 
   const formActionUrl = await resolveFormActionUrl(page, buttonLocator);
-  if (formActionUrl) await onBeforeNavigate?.(formActionUrl);
+  if (formActionUrl) {
+    await callbacks.onBeforeNavigate?.(formActionUrl);
+  }
 
   const action: ActionDescriptor = { role: actionButton.role, accessibleName: actionButton.accessibleName };
-  await onBeforeAction?.(action);
+  await callbacks.onBeforeAction?.(action);
   await buttonLocator.click();
 }
 
@@ -173,12 +177,17 @@ export async function executeHappyPathCheck(input: HappyPathCheckInput): Promise
 
   for (const [fieldName, value] of Object.entries(check.inputValues ?? {})) {
     const element = findElementByAccessibleName(research, fieldName);
-    if (element) await fillElement(page, element, value);
+    if (element) {
+      await fillElement(page, element, value);
+    }
   }
 
   const beforeScreenshotBuffer = await page.screenshot().catch(() => undefined);
 
-  await performResolvedActionClick(page, buttonResolution, input.onBeforeNavigate, input.onBeforeAction);
+  await performResolvedActionClick(page, buttonResolution, {
+    onBeforeNavigate: input.onBeforeNavigate,
+    onBeforeAction: input.onBeforeAction,
+  });
 
   await page.waitForLoadState("networkidle");
   const observation = await captureObservation(page, handle);

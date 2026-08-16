@@ -83,8 +83,7 @@ describe("CycleRepo (run-cycles-spec.md §3/§6) — mongodb-memory-server, no D
     expect(secondArchive).toBe(false);
   });
 
-  it("archive refuses to archive the isDefault cycle — real assertion against the stored document, not " +
-    "just the return value", async () => {
+  it("archive refuses to archive the isDefault cycle — real assertion against the stored document, not " + "just the return value", async () => {
     const repo = new CycleRepo(connection.db);
     const defaultCycle = makeCycle({ isDefault: true, name: "Uncategorized" });
     await repo.create(defaultCycle);
@@ -95,94 +94,100 @@ describe("CycleRepo (run-cycles-spec.md §3/§6) — mongodb-memory-server, no D
     expect((await repo.get(defaultCycle.id))?.status).toBe("active");
   });
 
-  it("incrementAndGetRunNumber returns a 1-based sequence, and is independent of " +
-    "incrementAndGetSessionReplayRunNumber's own sequence on the same cycle", async () => {
-    const repo = new CycleRepo(connection.db);
-    const cycle = makeCycle();
-    await repo.create(cycle);
+  it(
+    "incrementAndGetRunNumber returns a 1-based sequence, and is independent of " +
+      "incrementAndGetSessionReplayRunNumber's own sequence on the same cycle",
+    async () => {
+      const repo = new CycleRepo(connection.db);
+      const cycle = makeCycle();
+      await repo.create(cycle);
 
-    expect(await repo.incrementAndGetRunNumber(cycle.id)).toBe(1);
-    expect(await repo.incrementAndGetRunNumber(cycle.id)).toBe(2);
-    expect(await repo.incrementAndGetSessionReplayRunNumber(cycle.id)).toBe(1);
-    expect(await repo.incrementAndGetRunNumber(cycle.id)).toBe(3);
-    expect(await repo.incrementAndGetSessionReplayRunNumber(cycle.id)).toBe(2);
-  });
+      expect(await repo.incrementAndGetRunNumber(cycle.id)).toBe(1);
+      expect(await repo.incrementAndGetRunNumber(cycle.id)).toBe(2);
+      expect(await repo.incrementAndGetSessionReplayRunNumber(cycle.id)).toBe(1);
+      expect(await repo.incrementAndGetRunNumber(cycle.id)).toBe(3);
+      expect(await repo.incrementAndGetSessionReplayRunNumber(cycle.id)).toBe(2);
+    },
+  );
 
-  it("incrementAndGetRunNumber/incrementAndGetSessionReplayRunNumber return undefined for an unknown cycleId, " +
-    "not a thrown error", async () => {
+  it("incrementAndGetRunNumber/incrementAndGetSessionReplayRunNumber return undefined for an unknown cycleId, " + "not a thrown error", async () => {
     const repo = new CycleRepo(connection.db);
     expect(await repo.incrementAndGetRunNumber(randomUUID())).toBeUndefined();
     expect(await repo.incrementAndGetSessionReplayRunNumber(randomUUID())).toBeUndefined();
   });
 
-  it("N real concurrent incrementAndGetRunNumber calls against the same cycle produce N distinct " +
-    "sequential numbers with no duplicates and no gaps — the actual proof the atomic $inc closes the " +
-    "race, not just 'looks atomic'", async () => {
-    const repo = new CycleRepo(connection.db);
-    const cycle = makeCycle();
-    await repo.create(cycle);
+  it(
+    "N real concurrent incrementAndGetRunNumber calls against the same cycle produce N distinct " +
+      "sequential numbers with no duplicates and no gaps — the actual proof the atomic $inc closes the " +
+      "race, not just 'looks atomic'",
+    async () => {
+      const repo = new CycleRepo(connection.db);
+      const cycle = makeCycle();
+      await repo.create(cycle);
 
-    const CONCURRENT_COUNT = 25;
-    const results = await Promise.all(
-      Array.from({ length: CONCURRENT_COUNT }, () => repo.incrementAndGetRunNumber(cycle.id)),
-    );
+      const CONCURRENT_COUNT = 25;
+      const results = await Promise.all(Array.from({ length: CONCURRENT_COUNT }, () => repo.incrementAndGetRunNumber(cycle.id)));
 
-    expect(results.every((value) => value !== undefined)).toBe(true);
-    const sorted = [...results].sort((a, b) => (a ?? 0) - (b ?? 0));
-    expect(sorted).toEqual(Array.from({ length: CONCURRENT_COUNT }, (_, index) => index + 1));
+      expect(results.every((value) => value !== undefined)).toBe(true);
+      const sorted = [...results].sort((a, b) => (a ?? 0) - (b ?? 0));
+      expect(sorted).toEqual(Array.from({ length: CONCURRENT_COUNT }, (_, index) => index + 1));
 
-    const final = await repo.get(cycle.id);
-    expect(final?.runCounter).toBe(CONCURRENT_COUNT);
-  });
+      const final = await repo.get(cycle.id);
+      expect(final?.runCounter).toBe(CONCURRENT_COUNT);
+    },
+  );
 
-  it("N real concurrent runs racing between incrementAndGetRunNumber and " +
-    "incrementAndGetSessionReplayRunNumber on the same cycle don't cross-contaminate each other's sequence",
-  async () => {
-    const repo = new CycleRepo(connection.db);
-    const cycle = makeCycle();
-    await repo.create(cycle);
+  it(
+    "N real concurrent runs racing between incrementAndGetRunNumber and " +
+      "incrementAndGetSessionReplayRunNumber on the same cycle don't cross-contaminate each other's sequence",
+    async () => {
+      const repo = new CycleRepo(connection.db);
+      const cycle = makeCycle();
+      await repo.create(cycle);
 
-    const HALF_COUNT = 15;
-    const [runResults, replayResults] = await Promise.all([
-      Promise.all(Array.from({ length: HALF_COUNT }, () => repo.incrementAndGetRunNumber(cycle.id))),
-      Promise.all(Array.from({ length: HALF_COUNT }, () => repo.incrementAndGetSessionReplayRunNumber(cycle.id))),
-    ]);
+      const HALF_COUNT = 15;
+      const [runResults, replayResults] = await Promise.all([
+        Promise.all(Array.from({ length: HALF_COUNT }, () => repo.incrementAndGetRunNumber(cycle.id))),
+        Promise.all(Array.from({ length: HALF_COUNT }, () => repo.incrementAndGetSessionReplayRunNumber(cycle.id))),
+      ]);
 
-    expect([...runResults].sort((a, b) => (a ?? 0) - (b ?? 0))).toEqual(
-      Array.from({ length: HALF_COUNT }, (_, index) => index + 1),
-    );
-    expect([...replayResults].sort((a, b) => (a ?? 0) - (b ?? 0))).toEqual(
-      Array.from({ length: HALF_COUNT }, (_, index) => index + 1),
-    );
-  });
+      expect([...runResults].sort((a, b) => (a ?? 0) - (b ?? 0))).toEqual(Array.from({ length: HALF_COUNT }, (_, index) => index + 1));
+      expect([...replayResults].sort((a, b) => (a ?? 0) - (b ?? 0))).toEqual(Array.from({ length: HALF_COUNT }, (_, index) => index + 1));
+    },
+  );
 
-  it("ensureDefaultCycle creates exactly one isDefault cycle, and is a no-op on a second sequential call " +
-    "(the restart-idempotency case)", async () => {
-    const repo = new CycleRepo(connection.db);
+  it(
+    "ensureDefaultCycle creates exactly one isDefault cycle, and is a no-op on a second sequential call " + "(the restart-idempotency case)",
+    async () => {
+      const repo = new CycleRepo(connection.db);
 
-    await repo.ensureDefaultCycle();
-    const afterFirst = await connection.db.collection("cycles").find({ isDefault: true }).toArray();
-    expect(afterFirst).toHaveLength(1);
-    expect(afterFirst[0]?.name).toBe("Uncategorized");
-    const firstId = afterFirst[0]?._id;
+      await repo.ensureDefaultCycle();
+      const afterFirst = await connection.db.collection("cycles").find({ isDefault: true }).toArray();
+      expect(afterFirst).toHaveLength(1);
+      expect(afterFirst[0]?.name).toBe("Uncategorized");
+      const firstId = afterFirst[0]?._id;
 
-    await repo.ensureDefaultCycle();
-    const afterSecond = await connection.db.collection("cycles").find({ isDefault: true }).toArray();
-    expect(afterSecond).toHaveLength(1);
-    expect(afterSecond[0]?._id).toBe(firstId);
-  });
+      await repo.ensureDefaultCycle();
+      const afterSecond = await connection.db.collection("cycles").find({ isDefault: true }).toArray();
+      expect(afterSecond).toHaveLength(1);
+      expect(afterSecond[0]?._id).toBe(firstId);
+    },
+  );
 
-  it("N real concurrent ensureDefaultCycle calls (the simultaneous dev+mcp first-boot case) still produce " +
-    "exactly one isDefault cycle — proves the unique partial index closes the race, not just the " +
-    "check-then-insert's happy path", async () => {
-    const repo = new CycleRepo(connection.db);
-    await repo.ensureIndexes();
+  it(
+    "N real concurrent ensureDefaultCycle calls (the simultaneous dev+mcp first-boot case) still produce " +
+      "exactly one isDefault cycle — proves the unique partial index closes the race, not just the " +
+      "check-then-insert's happy path",
+    async () => {
+      const repo = new CycleRepo(connection.db);
+      await repo.ensureIndexes();
 
-    await Promise.all(Array.from({ length: 10 }, () => repo.ensureDefaultCycle()));
+      await Promise.all(Array.from({ length: 10 }, () => repo.ensureDefaultCycle()));
 
-    const defaults = await connection.db.collection("cycles").find({ isDefault: true }).toArray();
-    expect(defaults).toHaveLength(1);
-  });
+      const defaults = await connection.db.collection("cycles").find({ isDefault: true }).toArray();
+      expect(defaults).toHaveLength(1);
+    },
+  );
 
   it("ensureIndexes creates a status index and a unique partial index on isDefault, and is idempotent", async () => {
     const repo = new CycleRepo(connection.db);
@@ -196,17 +201,19 @@ describe("CycleRepo (run-cycles-spec.md §3/§6) — mongodb-memory-server, no D
     expect(defaultIndex?.partialFilterExpression).toEqual({ isDefault: true });
   });
 
-  it("the unique partial index rejects a second isDefault:true document inserted directly, but allows " +
-    "any number of isDefault:false documents", async () => {
-    const repo = new CycleRepo(connection.db);
-    await repo.ensureIndexes();
+  it(
+    "the unique partial index rejects a second isDefault:true document inserted directly, but allows " + "any number of isDefault:false documents",
+    async () => {
+      const repo = new CycleRepo(connection.db);
+      await repo.ensureIndexes();
 
-    await repo.create(makeCycle({ isDefault: true }));
-    await expect(repo.create(makeCycle({ isDefault: true }))).rejects.toThrow();
+      await repo.create(makeCycle({ isDefault: true }));
+      await expect(repo.create(makeCycle({ isDefault: true }))).rejects.toThrow();
 
-    await repo.create(makeCycle({ isDefault: false }));
-    await repo.create(makeCycle({ isDefault: false }));
-    const nonDefaultCount = await connection.db.collection("cycles").countDocuments({ isDefault: false });
-    expect(nonDefaultCount).toBe(2);
-  });
+      await repo.create(makeCycle({ isDefault: false }));
+      await repo.create(makeCycle({ isDefault: false }));
+      const nonDefaultCount = await connection.db.collection("cycles").countDocuments({ isDefault: false });
+      expect(nonDefaultCount).toBe(2);
+    },
+  );
 });

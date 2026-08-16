@@ -33,7 +33,9 @@ export async function getNavMap(baseUrl: string): Promise<NavMapDisplay | null> 
     const response = await request(`/nav-map?baseUrl=${encodeURIComponent(baseUrl)}`);
     return parseNavMapDisplay(await response.json());
   } catch (error) {
-    if (error instanceof ApiError && error.status === 404) return null;
+    if (error instanceof ApiError && error.status === 404) {
+      return null;
+    }
     throw error;
   }
 }

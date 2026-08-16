@@ -22,7 +22,9 @@ export class BaselineRepo {
   }
 
   async getByScreenIds(screenIds: string[]): Promise<Baseline[]> {
-    if (screenIds.length === 0) return [];
+    if (screenIds.length === 0) {
+      return [];
+    }
     const documents = await this.collection.find({ _id: { $in: screenIds } }).toArray();
     return documents.map(fromDocument);
   }

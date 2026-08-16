@@ -2,21 +2,17 @@ import type { Cycle } from "@silly-rabbit/shared";
 import { Link } from "react-router";
 import { useCycleStats } from "../lib/cycleQueries.js";
 
-export function CycleCard({
-  cycle,
-  isActive,
-  onArchive,
-  onActivate,
-  isArchiving,
-  isActivating,
-}: {
+interface CycleCardProps {
   cycle: Cycle;
   isActive: boolean;
   onArchive: () => void;
   onActivate: () => void;
   isArchiving: boolean;
   isActivating: boolean;
-}) {
+}
+
+export function CycleCard(props: CycleCardProps) {
+  const { cycle, isActive, onArchive, onActivate, isArchiving, isActivating } = props;
   const { data: stats } = useCycleStats(cycle.id);
 
   return (
@@ -28,8 +24,7 @@ export function CycleCard({
       </h3>
       {stats && (
         <p className="finding-stats">
-          {stats.runCount} run(s) · {stats.replayRunCount} replay run(s) · {stats.newCount} new ·{" "}
-          {stats.suppressedCount} suppressed
+          {stats.runCount} run(s) · {stats.replayRunCount} replay run(s) · {stats.newCount} new · {stats.suppressedCount} suppressed
         </p>
       )}
       <p className="cycle-card__links">

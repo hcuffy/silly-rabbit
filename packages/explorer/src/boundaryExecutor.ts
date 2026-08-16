@@ -1,10 +1,4 @@
-import {
-  computeDedupKey,
-  deriveFingerprint,
-  deriveScreenId,
-  DEFAULT_CONFIDENCE_THRESHOLD,
-  type FindingDraft,
-} from "@silly-rabbit/engine";
+import { computeDedupKey, deriveFingerprint, deriveScreenId, DEFAULT_CONFIDENCE_THRESHOLD, type FindingDraft } from "@silly-rabbit/engine";
 import { attachCapture, captureObservation, type ActionDescriptor } from "@silly-rabbit/driver";
 import type { BoundaryCheck, CheckOutcome, Finding, ResearchInventory } from "@silly-rabbit/shared";
 import { randomUUID } from "node:crypto";
@@ -70,18 +64,22 @@ function buildSkippedResult(input: BoundaryCheckInput, reasoning: string, screen
 }
 
 function describeRollbackLocator(locator: RollbackLocator): string {
-  if (locator.kind === "marker") return `marker: ${locator.marker}`;
+  if (locator.kind === "marker") {
+    return `marker: ${locator.marker}`;
+  }
   return `inputValues: ${JSON.stringify(locator.inputValues)}, window: ${locator.window.from.toISOString()}–${locator.window.to.toISOString()}`;
 }
 
-function buildRollbackFailureFinding(input: {
+interface RollbackFailureFindingInput {
   runId: string;
   screenId: string;
   featureId: string;
   check: BoundaryCheck;
   locator: RollbackLocator;
   reason: string;
-}): Finding {
+}
+
+function buildRollbackFailureFinding(input: RollbackFailureFindingInput): Finding {
   const maskedSignature = `rollback-failed:${input.reason}:${input.check.description}`;
   const draft: FindingDraft = { screenId: input.screenId, type: "OTHER", evidence: {}, maskedSignature };
   const now = new Date();
@@ -150,12 +148,17 @@ export async function executeBoundaryCheck(input: BoundaryCheckInput): Promise<B
 
   for (const [fieldName, value] of Object.entries(filledValues)) {
     const element = findElementByAccessibleName(research, fieldName);
-    if (element) await fillElement(page, element, value);
+    if (element) {
+      await fillElement(page, element, value);
+    }
   }
 
   const beforeScreenshotBuffer = await page.screenshot().catch(() => undefined);
 
-  await performResolvedActionClick(page, buttonResolution, input.onBeforeNavigate, input.onBeforeAction);
+  await performResolvedActionClick(page, buttonResolution, {
+    onBeforeNavigate: input.onBeforeNavigate,
+    onBeforeAction: input.onBeforeAction,
+  });
 
   await page.waitForLoadState("networkidle");
   const observation = await captureObservation(page, handle);

@@ -58,7 +58,9 @@ export function registerFeatureDocumentRoutes(app: FastifyInstance, deps: AppDep
 
   app.get<{ Params: { featureId: string } }>("/features/:featureId/docs/latest", async (request, reply) => {
     const latest = await deps.featureDocumentRepo.findLatestByFeatureId(request.params.featureId);
-    if (!latest) return reply.status(404).send({ error: "no feature doc generated yet for this feature" });
+    if (!latest) {
+      return reply.status(404).send({ error: "no feature doc generated yet for this feature" });
+    }
     return latest;
   });
 }

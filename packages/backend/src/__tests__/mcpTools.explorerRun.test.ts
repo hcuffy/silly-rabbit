@@ -47,67 +47,75 @@ async function waitForStatus(client: Client, runId: string, terminalStatuses: st
   for (let attempt = 0; attempt < 200; attempt++) {
     const result = await client.callTool({ name: "get_explorer_run", arguments: { runId } });
     const body = textOf(result as never) as { status: string };
-    if (terminalStatuses.includes(body.status)) return body;
+    if (terminalStatuses.includes(body.status)) {
+      return body;
+    }
     await new Promise((resolve) => setTimeout(resolve, 50));
   }
   throw new Error(`run ${runId} did not reach a terminal state in time`);
 }
 
-describe("MCP tools — trigger_explorer_run / get_explorer_run (mcp-server-spec §4.4), real chromium + " +
-  "real Mongo, direct in-process call (no HTTP hop, per §4.1)", () => {
-  let mongod: MongoMemoryServer;
-  let connection: MongoConnection;
-  let client: Client;
+describe(
+  "MCP tools — trigger_explorer_run / get_explorer_run (mcp-server-spec §4.4), real chromium + " +
+    "real Mongo, direct in-process call (no HTTP hop, per §4.1)",
+  () => {
+    let mongod: MongoMemoryServer;
+    let connection: MongoConnection;
+    let client: Client;
 
-  beforeAll(async () => {
-    mongod = await MongoMemoryServer.create();
-    connection = await connectMongo(mongod.getUri());
-    const reproSpecDirectory = await mkdtemp(join(tmpdir(), "silly-rabbit-mcp-explorer-repro-"));
-    const screenshotDirectory = await mkdtemp(join(tmpdir(), "silly-rabbit-mcp-explorer-screenshot-"));
+    beforeAll(async () => {
+      mongod = await MongoMemoryServer.create();
+      connection = await connectMongo(mongod.getUri());
+      const reproSpecDirectory = await mkdtemp(join(tmpdir(), "silly-rabbit-mcp-explorer-repro-"));
+      const screenshotDirectory = await mkdtemp(join(tmpdir(), "silly-rabbit-mcp-explorer-screenshot-"));
 
-    const deps: McpToolDeps = {
-      runRepo: new RunRepo(connection.db),
-      findingRepo: new FindingRepo(connection.db),
-      baselineRepo: new BaselineRepo(connection.db),
-      appMapRepo: new AppMapRepo(connection.db),
-      testRunRepo: new TestRunRepo(connection.db),
-      learningRepo: new LearningRepo(connection.db),
-      sessionRecordingRepo: new SessionRecordingRepo(connection.db),
-      sessionReplayRunRepo: new SessionReplayRunRepo(connection.db),
-      reproSpecDirectory,
-      screenshotDirectory,
-      screenshotStorageCapBytes: 1_000_000_000,
-      judgeClientFactory: emptyPlanJudgeClient,
-      allowedDomains: ["mock.local"],
-      productionUrlPatterns: [],
-      installRoutes: (context) => installMockTarget(context, "baseline", seedFor()),
-    };
+      const deps: McpToolDeps = {
+        runRepo: new RunRepo(connection.db),
+        findingRepo: new FindingRepo(connection.db),
+        baselineRepo: new BaselineRepo(connection.db),
+        appMapRepo: new AppMapRepo(connection.db),
+        testRunRepo: new TestRunRepo(connection.db),
+        learningRepo: new LearningRepo(connection.db),
+        sessionRecordingRepo: new SessionRecordingRepo(connection.db),
+        sessionReplayRunRepo: new SessionReplayRunRepo(connection.db),
+        reproSpecDirectory,
+        screenshotDirectory,
+        screenshotStorageCapBytes: 1_000_000_000,
+        judgeClientFactory: emptyPlanJudgeClient,
+        allowedDomains: ["mock.local"],
+        productionUrlPatterns: [],
+        installRoutes: (context) => installMockTarget(context, "baseline", seedFor()),
+      };
 
-    const server = new McpServer({ name: "silly-rabbit-test", version: "1.0.0" });
-    registerMcpTools(server, deps);
+      const server = new McpServer({ name: "silly-rabbit-test", version: "1.0.0" });
+      registerMcpTools(server, deps);
 
-    const [serverTransport, clientTransport] = InMemoryTransport.createLinkedPair();
-    await server.connect(serverTransport);
-    client = new Client({ name: "test-client", version: "1.0.0" });
-    await client.connect(clientTransport);
-  }, 30_000);
+      const [serverTransport, clientTransport] = InMemoryTransport.createLinkedPair();
+      await server.connect(serverTransport);
+      client = new Client({ name: "test-client", version: "1.0.0" });
+      await client.connect(clientTransport);
+    }, 30_000);
 
-  afterAll(async () => {
-    await closeMongo(connection);
-    await mongod.stop();
-  });
-
-  it("triggers a real explorer run against the mock target and reaches COMPLETED via the poll tool, " +
-    "testRun/research populated", async () => {
-    const triggerResult = await client.callTool({
-      name: "trigger_explorer_run",
-      arguments: { featureId: "locations", sectionDescription: "warehouse", targetBaseUrl: `${MOCK_BASE_URL}${LIST_PATH}` },
+    afterAll(async () => {
+      await closeMongo(connection);
+      await mongod.stop();
     });
-    expect(triggerResult.isError).toBeFalsy();
-    const { runId } = textOf(triggerResult as never) as { runId: string };
 
-    const final = await waitForStatus(client, runId, ["COMPLETED", "FAILED"]);
-    expect(final.status).toBe("COMPLETED");
-    expect((final.testRun as { featureId: string }).featureId).toBe("locations");
-  }, 15_000);
-});
+    it(
+      "triggers a real explorer run against the mock target and reaches COMPLETED via the poll tool, " + "testRun/research populated",
+      async () => {
+        const triggerResult = await client.callTool({
+          name: "trigger_explorer_run",
+          arguments: { featureId: "locations", sectionDescription: "warehouse", targetBaseUrl: `${MOCK_BASE_URL}${LIST_PATH}` },
+        });
+        expect(triggerResult.isError).toBeFalsy();
+        const { runId } = textOf(triggerResult as never) as { runId: string };
+
+        const final = await waitForStatus(client, runId, ["COMPLETED", "FAILED"]);
+        expect(final.status).toBe("COMPLETED");
+        expect((final.testRun as { featureId: string }).featureId).toBe("locations");
+      },
+      15_000,
+    );
+  },
+);

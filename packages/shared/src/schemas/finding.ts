@@ -7,15 +7,7 @@ export const FindingSchema = z.object({
   featureId: z.string().optional(),
   origin: z.enum(["charter", "explorer", "session-replay"]).optional(),
   replayMode: z.enum(["live", "mocked"]).optional(),
-  type: z.enum([
-    "CONSOLE_ERROR",
-    "HTTP_ERROR",
-    "BLANK_SCREEN",
-    "STATE_DIVERGENCE",
-    "VISUAL",
-    "OTHER",
-    "BEHAVIOR_CHECK_FAILED",
-  ]),
+  type: z.enum(["CONSOLE_ERROR", "HTTP_ERROR", "BLANK_SCREEN", "STATE_DIVERGENCE", "VISUAL", "OTHER", "BEHAVIOR_CHECK_FAILED"]),
   verdict: z.enum(["REGRESSION", "INTENDED_CHANGE", "NEEDS_HUMAN", "KNOWN"]).optional(),
   severity: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL", "WARNING"]).optional(),
   reasoning: z.string().optional(),
@@ -27,9 +19,7 @@ export const FindingSchema = z.object({
     ariaSnapshot: z.string().optional(),
     ariaSnapshotBefore: z.string().optional(),
     consoleMessages: z.array(z.string()).optional(),
-    networkErrors: z
-      .array(z.object({ method: z.string().optional(), url: z.string(), status: z.number() }))
-      .optional(),
+    networkErrors: z.array(z.object({ method: z.string().optional(), url: z.string(), status: z.number() })).optional(),
   }),
   dedupKey: z.string(),
   status: z.enum(["NEW", "RECURRING", "RESOLVED", "DISMISSED"]),

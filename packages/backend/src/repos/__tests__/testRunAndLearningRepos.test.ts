@@ -81,8 +81,7 @@ describe("TestRunRepo / LearningRepo (explorer-spec §10.1) — mongodb-memory-s
       expect(await repo.get(randomUUID())).toBeNull();
     });
 
-    it("update patches only the given fields, survives a re-read (D8 live-incident resilience fix — " +
-      "incremental persistence)", async () => {
+    it("update patches only the given fields, survives a re-read (D8 live-incident resilience fix — " + "incremental persistence)", async () => {
       const repo = new TestRunRepo(connection.db);
       const testRun = makeTestRun({ status: "RUNNING" });
       await repo.create(testRun);
@@ -97,9 +96,7 @@ describe("TestRunRepo / LearningRepo (explorer-spec §10.1) — mongodb-memory-s
       const fetched = await repo.get(testRun.id);
       expect(fetched?.status).toBe("COMPLETED");
       expect(fetched?.finishedAt).toEqual(finishedAt);
-      expect(fetched?.checkOutcomes).toEqual([
-        { hypothesisId: "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d", check: "happy", result: "timed_out" },
-      ]);
+      expect(fetched?.checkOutcomes).toEqual([{ hypothesisId: "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d", check: "happy", result: "timed_out" }]);
       expect(fetched?.featureId).toBe(testRun.featureId);
     });
 
@@ -148,19 +145,21 @@ describe("TestRunRepo / LearningRepo (explorer-spec §10.1) — mongodb-memory-s
       expect(indexes.some((index) => index.key.featureId === 1 && index.key.startedAt === -1)).toBe(true);
     });
 
-    it("cancel() flips RUNNING to CANCELLED and returns true; is a no-op returning false once " +
-      "COMPLETED (delete-cancel-spec.md, phase 1)", async () => {
-      const repo = new TestRunRepo(connection.db);
-      const running = makeTestRun({ status: "RUNNING" });
-      await repo.create(running);
-      expect(await repo.cancel(running.id)).toBe(true);
-      expect((await repo.get(running.id))?.status).toBe("CANCELLED");
+    it(
+      "cancel() flips RUNNING to CANCELLED and returns true; is a no-op returning false once " + "COMPLETED (delete-cancel-spec.md, phase 1)",
+      async () => {
+        const repo = new TestRunRepo(connection.db);
+        const running = makeTestRun({ status: "RUNNING" });
+        await repo.create(running);
+        expect(await repo.cancel(running.id)).toBe(true);
+        expect((await repo.get(running.id))?.status).toBe("CANCELLED");
 
-      const completed = makeTestRun({ status: "COMPLETED" });
-      await repo.create(completed);
-      expect(await repo.cancel(completed.id)).toBe(false);
-      expect((await repo.get(completed.id))?.status).toBe("COMPLETED");
-    });
+        const completed = makeTestRun({ status: "COMPLETED" });
+        await repo.create(completed);
+        expect(await repo.cancel(completed.id)).toBe(false);
+        expect((await repo.get(completed.id))?.status).toBe("COMPLETED");
+      },
+    );
 
     it("delete() removes the TestRun entirely", async () => {
       const repo = new TestRunRepo(connection.db);
@@ -208,8 +207,7 @@ describe("TestRunRepo / LearningRepo (explorer-spec §10.1) — mongodb-memory-s
       expect(await repo.findByDedupKey("locations", "no-such-dedup-key")).toBeNull();
     });
 
-    it("ensureIndexes creates a featureId+status compound index matching findActiveByFeatureId's query shape, " +
-      "and is idempotent", async () => {
+    it("ensureIndexes creates a featureId+status compound index matching findActiveByFeatureId's query shape, " + "and is idempotent", async () => {
       const repo = new LearningRepo(connection.db);
       await repo.ensureIndexes();
       await repo.ensureIndexes();

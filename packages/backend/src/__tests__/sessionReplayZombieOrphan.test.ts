@@ -50,7 +50,9 @@ function makeFinding(overrides: Partial<Finding> = {}): Finding {
 
 async function waitUntil(predicate: () => Promise<boolean>): Promise<void> {
   for (let attempt = 0; attempt < 300; attempt++) {
-    if (await predicate()) return;
+    if (await predicate()) {
+      return;
+    }
     await new Promise((resolve) => setTimeout(resolve, 50));
   }
   throw new Error("condition not met in time");
@@ -110,89 +112,104 @@ describe("session-replay zombie-orphan fix + SessionRecording cascade batching (
     await mongod.stop();
   });
 
-  it("DELETE /session-replay/runs/:id on a RUNNING run cancels the job to full completion before " +
-    "cascading — the doomed step's error Finding gets created and correctly counted/deleted by the " +
-    "cascade, not orphaned after it (performance-audit zombie-orphan fix)", async () => {
-    const recording: SessionRecording = {
-      sessionId: randomUUID(),
-      targetBaseUrl: MOCK_BASE_URL,
-      recordedAt: new Date(),
-      steps: [{ action: "navigate", selectorStrategy: "css", value: MOCK_BASE_URL, timestampOffsetMs: 0 }],
-    };
-    await deps.sessionRecordingRepo.create(recording);
+  it(
+    "DELETE /session-replay/runs/:id on a RUNNING run cancels the job to full completion before " +
+      "cascading — the doomed step's error Finding gets created and correctly counted/deleted by the " +
+      "cascade, not orphaned after it (performance-audit zombie-orphan fix)",
+    async () => {
+      const recording: SessionRecording = {
+        sessionId: randomUUID(),
+        targetBaseUrl: MOCK_BASE_URL,
+        recordedAt: new Date(),
+        steps: [{ action: "navigate", selectorStrategy: "css", value: MOCK_BASE_URL, timestampOffsetMs: 0 }],
+      };
+      await deps.sessionRecordingRepo.create(recording);
 
-    const run = await startSessionReplayRun(
-      { sessionId: recording.sessionId },
-      { ...deps, installRoutes: async (context) => { await context.route("**/*", () => new Promise(() => {})); } },
-    );
-    if (!run) throw new Error("unreachable");
-    await waitUntil(async () => (await deps.sessionReplayRunRepo.get(run.id))?.status === "RUNNING");
-    await new Promise((resolve) => setTimeout(resolve, 400));
+      const run = await startSessionReplayRun(
+        { sessionId: recording.sessionId },
+        {
+          ...deps,
+          installRoutes: async (context) => {
+            await context.route("**/*", () => new Promise(() => {}));
+          },
+        },
+      );
+      if (!run) {
+        throw new Error("unreachable");
+      }
+      await waitUntil(async () => (await deps.sessionReplayRunRepo.get(run.id))?.status === "RUNNING");
+      await new Promise((resolve) => setTimeout(resolve, 400));
 
-    const originalUpsert = deps.findingRepo.upsert.bind(deps.findingRepo);
-    const upsertSpy = vi.spyOn(deps.findingRepo, "upsert").mockImplementation(async (finding) => {
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      await originalUpsert(finding);
-    });
-
-    const deleteResponse = await injectAuthed({ method: "DELETE", url: `/session-replay/runs/${run.id}` });
-    upsertSpy.mockRestore();
-    expect(deleteResponse.statusCode).toBe(200);
-    expect(deleteResponse.json<{ deletedFindings: number }>().deletedFindings).toBe(1);
-
-    expect(await deps.sessionReplayRunRepo.get(run.id)).toBeNull();
-
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    expect(await deps.findingRepo.findByRunIds([run.id])).toEqual([]);
-  }, 20_000);
-
-  it("SessionRecording cascade: batched to a fixed number of Mongo round-trips regardless of N " +
-    "replay runs — was 3N+2 (11 for N=3), now 5 total (performance-audit batching fix, measured via " +
-    "real repo-method call counts, not just end-state)", async () => {
-    const recording: SessionRecording = {
-      sessionId: randomUUID(),
-      targetBaseUrl: MOCK_BASE_URL,
-      recordedAt: new Date(),
-      steps: [],
-    };
-    await deps.sessionRecordingRepo.create(recording);
-
-    const runIds = [randomUUID(), randomUUID(), randomUUID()];
-    for (const runId of runIds) {
-      await deps.sessionReplayRunRepo.create({
-        id: runId,
-        sessionId: recording.sessionId,
-        replayMode: "live",
-        status: "COMPLETED",
-        startedAt: new Date(),
-        completedAt: new Date(),
-        summary: { stepsExecuted: 0, stepsDrifted: 0, stepsErrored: 0 },
+      const originalUpsert = deps.findingRepo.upsert.bind(deps.findingRepo);
+      const upsertSpy = vi.spyOn(deps.findingRepo, "upsert").mockImplementation(async (finding) => {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        await originalUpsert(finding);
       });
-      await deps.findingRepo.upsert(makeFinding({ runId }));
-    }
 
-    const findByRunIdsSpy = vi.spyOn(deps.findingRepo, "findByRunIds");
-    const deleteByRunIdsSpy = vi.spyOn(deps.findingRepo, "deleteByRunIds");
-    const findBySessionIdSpy = vi.spyOn(deps.sessionReplayRunRepo, "findBySessionId");
-    const deleteByIdsSpy = vi.spyOn(deps.sessionReplayRunRepo, "deleteByIds");
-    const singularDeleteSpy = vi.spyOn(deps.sessionReplayRunRepo, "delete");
+      const deleteResponse = await injectAuthed({ method: "DELETE", url: `/session-replay/runs/${run.id}` });
+      upsertSpy.mockRestore();
+      expect(deleteResponse.statusCode).toBe(200);
+      expect(deleteResponse.json<{ deletedFindings: number }>().deletedFindings).toBe(1);
 
-    const result = await deleteSessionRecordingCascade(recording.sessionId, deps);
+      expect(await deps.sessionReplayRunRepo.get(run.id)).toBeNull();
 
-    expect(result).toEqual({ deletedSessionReplayRuns: 3, deletedFindings: 3 });
-    expect(findBySessionIdSpy).toHaveBeenCalledTimes(1);
-    expect(findByRunIdsSpy).toHaveBeenCalledTimes(1);
-    expect(deleteByRunIdsSpy).toHaveBeenCalledTimes(1);
-    expect(deleteByIdsSpy).toHaveBeenCalledTimes(1);
-    expect(singularDeleteSpy).not.toHaveBeenCalled(); // old code called this once per replay run (N times)
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      expect(await deps.findingRepo.findByRunIds([run.id])).toEqual([]);
+    },
+    20_000,
+  );
 
-    findByRunIdsSpy.mockRestore();
-    deleteByRunIdsSpy.mockRestore();
-    findBySessionIdSpy.mockRestore();
-    deleteByIdsSpy.mockRestore();
-    singularDeleteSpy.mockRestore();
+  it(
+    "SessionRecording cascade: batched to a fixed number of Mongo round-trips regardless of N " +
+      "replay runs — was 3N+2 (11 for N=3), now 5 total (performance-audit batching fix, measured via " +
+      "real repo-method call counts, not just end-state)",
+    async () => {
+      const recording: SessionRecording = {
+        sessionId: randomUUID(),
+        targetBaseUrl: MOCK_BASE_URL,
+        recordedAt: new Date(),
+        steps: [],
+      };
+      await deps.sessionRecordingRepo.create(recording);
 
-    expect(await deps.sessionRecordingRepo.get(recording.sessionId)).toBeNull();
-    expect(await deps.findingRepo.findByRunIds(runIds)).toEqual([]);
-  }, 20_000);
+      const runIds = [randomUUID(), randomUUID(), randomUUID()];
+      for (const runId of runIds) {
+        await deps.sessionReplayRunRepo.create({
+          id: runId,
+          sessionId: recording.sessionId,
+          replayMode: "live",
+          status: "COMPLETED",
+          startedAt: new Date(),
+          completedAt: new Date(),
+          summary: { stepsExecuted: 0, stepsDrifted: 0, stepsErrored: 0 },
+        });
+        await deps.findingRepo.upsert(makeFinding({ runId }));
+      }
+
+      const findByRunIdsSpy = vi.spyOn(deps.findingRepo, "findByRunIds");
+      const deleteByRunIdsSpy = vi.spyOn(deps.findingRepo, "deleteByRunIds");
+      const findBySessionIdSpy = vi.spyOn(deps.sessionReplayRunRepo, "findBySessionId");
+      const deleteByIdsSpy = vi.spyOn(deps.sessionReplayRunRepo, "deleteByIds");
+      const singularDeleteSpy = vi.spyOn(deps.sessionReplayRunRepo, "delete");
+
+      const result = await deleteSessionRecordingCascade(recording.sessionId, deps);
+
+      expect(result).toEqual({ deletedSessionReplayRuns: 3, deletedFindings: 3 });
+      expect(findBySessionIdSpy).toHaveBeenCalledTimes(1);
+      expect(findByRunIdsSpy).toHaveBeenCalledTimes(1);
+      expect(deleteByRunIdsSpy).toHaveBeenCalledTimes(1);
+      expect(deleteByIdsSpy).toHaveBeenCalledTimes(1);
+      expect(singularDeleteSpy).not.toHaveBeenCalled(); // old code called this once per replay run (N times)
+
+      findByRunIdsSpy.mockRestore();
+      deleteByRunIdsSpy.mockRestore();
+      findBySessionIdSpy.mockRestore();
+      deleteByIdsSpy.mockRestore();
+      singularDeleteSpy.mockRestore();
+
+      expect(await deps.sessionRecordingRepo.get(recording.sessionId)).toBeNull();
+      expect(await deps.findingRepo.findByRunIds(runIds)).toEqual([]);
+    },
+    20_000,
+  );
 });

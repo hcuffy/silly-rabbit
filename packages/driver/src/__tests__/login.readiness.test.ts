@@ -79,9 +79,7 @@ describe("login post-login readiness wait (bug #3, auto-login-spec §2/§6)", ()
 
   it("waits past a slow post-login spinner before resolving", async () => {
     await withContext(async (context) => {
-      await context.route(`${LOGIN_URL}**`, (route) =>
-        route.fulfill({ contentType: "text/html", body: slowSpinnerLoginHtml(300) }),
-      );
+      await context.route(`${LOGIN_URL}**`, (route) => route.fulfill({ contentType: "text/html", body: slowSpinnerLoginHtml(300) }));
       const page = await context.newPage();
       const hashLoginUrl = `${LOGIN_URL}#/login`;
       await login(page, {
@@ -98,9 +96,7 @@ describe("login post-login readiness wait (bug #3, auto-login-spec §2/§6)", ()
 
   it("throws a clear readiness-timeout error, with the final snapshot, when the spinner never clears", async () => {
     await withContext(async (context) => {
-      await context.route(`${LOGIN_URL}**`, (route) =>
-        route.fulfill({ contentType: "text/html", body: stuckSpinnerLoginHtml() }),
-      );
+      await context.route(`${LOGIN_URL}**`, (route) => route.fulfill({ contentType: "text/html", body: stuckSpinnerLoginHtml() }));
       const page = await context.newPage();
       const hashLoginUrl = `${LOGIN_URL}#/login`;
       let caught: unknown;
@@ -123,9 +119,7 @@ describe("login post-login readiness wait (bug #3, auto-login-spec §2/§6)", ()
 
   it("fails when the spinner clears but the app bounced back to the login route", async () => {
     await withContext(async (context) => {
-      await context.route(`${LOGIN_URL}**`, (route) =>
-        route.fulfill({ contentType: "text/html", body: bounceBackToLoginHtml() }),
-      );
+      await context.route(`${LOGIN_URL}**`, (route) => route.fulfill({ contentType: "text/html", body: bounceBackToLoginHtml() }));
       const page = await context.newPage();
       const hashLoginUrl = `${LOGIN_URL}#/login`;
       let caught: unknown;

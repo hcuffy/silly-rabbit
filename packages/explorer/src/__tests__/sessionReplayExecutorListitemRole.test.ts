@@ -46,28 +46,31 @@ describe("resolveReplayLocator — role=listitem fallback + PUA glyph, real chro
     await browser.close();
   });
 
-  it("a listitem-role step falls back to hasText matching when getByRole(name:) resolves to zero " +
-    "(a pre-existing, glyph-unrelated Chromium quirk confirmed via a plain glyph-free control test) — and " +
-    "correctly strips a PUA icon-ligature glyph from the fallback's own locator regex, same discipline as " +
-    "resolveMatch's fix", async () => {
-    page = await browser.newPage();
-    await page.setContent(
-      `<html><head><style>.icon::before { content: "\\e939"; }</style></head><body><ul>
+  it(
+    "a listitem-role step falls back to hasText matching when getByRole(name:) resolves to zero " +
+      "(a pre-existing, glyph-unrelated Chromium quirk confirmed via a plain glyph-free control test) — and " +
+      "correctly strips a PUA icon-ligature glyph from the fallback's own locator regex, same discipline as " +
+      "resolveMatch's fix",
+    async () => {
+      page = await browser.newPage();
+      await page.setContent(
+        `<html><head><style>.icon::before { content: "\\e939"; }</style></head><body><ul>
         <li><i class="icon"></i> Standorte</li>
       </ul></body></html>`,
-    );
+      );
 
-    const result = await executeSessionReplayStep(
-      baseInput(page, {
-        action: "click",
-        selectorStrategy: "role",
-        role: "listitem",
-        accessibleName: "\u{E939} Standorte",
-        timestampOffsetMs: 0,
-      }),
-    );
+      const result = await executeSessionReplayStep(
+        baseInput(page, {
+          action: "click",
+          selectorStrategy: "role",
+          role: "listitem",
+          accessibleName: "\u{E939} Standorte",
+          timestampOffsetMs: 0,
+        }),
+      );
 
-    expect(result.status).toBe("executed");
-    expect(result.findings).toHaveLength(0);
-  });
+      expect(result.status).toBe("executed");
+      expect(result.findings).toHaveLength(0);
+    },
+  );
 });

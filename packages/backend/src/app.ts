@@ -3,13 +3,7 @@ import cors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
 import Fastify, { type FastifyError, type FastifyInstance } from "fastify";
 import { z } from "zod";
-import {
-  createSessionExpiry,
-  passwordMatches,
-  signSessionToken,
-  verifySessionToken,
-  SESSION_COOKIE_NAME,
-} from "./auth.js";
+import { createSessionExpiry, passwordMatches, signSessionToken, verifySessionToken, SESSION_COOKIE_NAME } from "./auth.js";
 import { registerCancelDeleteRoutes } from "./cancelDeleteRoutes.js";
 import { registerCycleRoutes } from "./cycleRoutes.js";
 import { startExplorerRun, type ExplorerRunLifecycleDeps } from "./explorerRunLifecycle.js";
@@ -89,7 +83,9 @@ export function buildApp(deps: AppDeps): FastifyInstance {
   });
 
   app.addHook("onRequest", async (request, reply) => {
-    if (request.routeOptions.url === AUTH_LOGIN_PATH) return;
+    if (request.routeOptions.url === AUTH_LOGIN_PATH) {
+      return;
+    }
     if (!verifySessionToken(request.cookies[SESSION_COOKIE_NAME], deps.sessionSecret)) {
       return reply.status(401).send({ error: "unauthorized" });
     }
@@ -143,7 +139,9 @@ export function buildApp(deps: AppDeps): FastifyInstance {
       const run = await startRun({ ...parsed.data, targetBaseUrl }, resolvedDeps);
       return reply.status(202).send({ runId: run.id, status: run.status });
     } catch (error) {
-      if (error instanceof RunCapacityError) return reply.status(429).send({ error: error.message });
+      if (error instanceof RunCapacityError) {
+        return reply.status(429).send({ error: error.message });
+      }
       throw error;
     }
   });
@@ -163,13 +161,13 @@ export function buildApp(deps: AppDeps): FastifyInstance {
 
   app.get<{ Params: { id: string } }>("/runs/:id", async (request, reply) => {
     const run = await deps.runRepo.get(request.params.id);
-    if (!run) return reply.status(404).send({ error: "run not found" });
+    if (!run) {
+      return reply.status(404).send({ error: "run not found" });
+    }
     return run;
   });
 
-  app.get<{ Params: { id: string } }>("/runs/:id/findings", async (request) =>
-    deps.findingRepo.listByRun(request.params.id),
-  );
+  app.get<{ Params: { id: string } }>("/runs/:id/findings", async (request) => deps.findingRepo.listByRun(request.params.id));
 
   app.post("/explorer/runs", async (request, reply) => {
     const parsed = CreateExplorerRunBodySchema.safeParse(request.body);
@@ -187,7 +185,9 @@ export function buildApp(deps: AppDeps): FastifyInstance {
       const run = await startExplorerRun({ ...parsed.data, targetBaseUrl }, resolvedDeps);
       return reply.status(202).send({ runId: run.id, status: run.status });
     } catch (error) {
-      if (error instanceof RunCapacityError) return reply.status(429).send({ error: error.message });
+      if (error instanceof RunCapacityError) {
+        return reply.status(429).send({ error: error.message });
+      }
       throw error;
     }
   });
@@ -206,12 +206,11 @@ export function buildApp(deps: AppDeps): FastifyInstance {
 
   app.get<{ Params: { id: string } }>("/explorer/runs/:id", async (request, reply) => {
     const run = await deps.runRepo.get(request.params.id);
-    if (!run) return reply.status(404).send({ error: "run not found" });
+    if (!run) {
+      return reply.status(404).send({ error: "run not found" });
+    }
 
-    const [testRun, findings] = await Promise.all([
-      deps.testRunRepo.getByRunId(run.id),
-      deps.findingRepo.listByRun(run.id),
-    ]);
+    const [testRun, findings] = await Promise.all([deps.testRunRepo.getByRunId(run.id), deps.findingRepo.listByRun(run.id)]);
     return { ...run, testRun, findings };
   });
 
@@ -219,10 +218,16 @@ export function buildApp(deps: AppDeps): FastifyInstance {
   registerFindingRoutes(app, deps);
   registerSessionReplayRoutes(app, deps);
   const { navMapRepo } = deps;
-  if (navMapRepo) registerNavMapRoutes(app, { ...deps, navMapRepo });
+  if (navMapRepo) {
+    registerNavMapRoutes(app, { ...deps, navMapRepo });
+  }
   registerCancelDeleteRoutes(app, deps);
-  if (deps.targetProfileRepo && deps.activeTargetProfileRepo) registerTargetProfileRoutes(app, deps);
-  if (deps.cycleRepo && deps.activeCycleRepo) registerCycleRoutes(app, deps);
+  if (deps.targetProfileRepo && deps.activeTargetProfileRepo) {
+    registerTargetProfileRoutes(app, deps);
+  }
+  if (deps.cycleRepo && deps.activeCycleRepo) {
+    registerCycleRoutes(app, deps);
+  }
 
   return app;
 }

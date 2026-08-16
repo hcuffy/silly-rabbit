@@ -44,7 +44,9 @@ export function reviveDates<T extends Record<string, unknown>>(raw: T, dateKeys:
   const revived: Record<string, unknown> = { ...raw };
   for (const key of dateKeys) {
     const value = revived[key];
-    if (typeof value === "string") revived[key] = new Date(value);
+    if (typeof value === "string") {
+      revived[key] = new Date(value);
+    }
   }
   return revived as T;
 }
@@ -109,15 +111,7 @@ export interface RunsPage {
   total: number;
 }
 
-export async function listRuns({
-  limit,
-  offset,
-  cycleId,
-}: {
-  limit: number;
-  offset: number;
-  cycleId?: string;
-}): Promise<RunsPage> {
+export async function listRuns({ limit, offset, cycleId }: { limit: number; offset: number; cycleId?: string }): Promise<RunsPage> {
   const cycleParameter = cycleId ? `&cycleId=${encodeURIComponent(cycleId)}` : "";
   const response = await request(`/runs?limit=${limit}&offset=${offset}${cycleParameter}`);
   const body = (await response.json()) as { runs: unknown[]; total: number };
@@ -169,7 +163,9 @@ export async function getPixelDiff(findingId: string): Promise<number | undefine
     const response = await request(`/findings/${findingId}/pixel-diff`);
     return PixelDiffResponseSchema.parse(await response.json()).pixelDiffScore;
   } catch (error) {
-    if (error instanceof ApiError && (error.status === 404 || error.status === 422)) return undefined;
+    if (error instanceof ApiError && (error.status === 404 || error.status === 422)) {
+      return undefined;
+    }
     throw error;
   }
 }

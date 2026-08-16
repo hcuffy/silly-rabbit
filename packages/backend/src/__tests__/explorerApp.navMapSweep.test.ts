@@ -76,8 +76,8 @@ async function installNavItemFixture(
   await context.route(`${baseUrl}/**`, async (route) => {
     const { pathname } = new URL(route.request().url());
     if (pathname === "/") {
-      const homeBody = `<html><body><h1>Home</h1><ul>` +
-        `<li onclick="window.location.href='${baseUrl}/section'">${navItemLabel}</li></ul></body></html>`;
+      const homeBody =
+        `<html><body><h1>Home</h1><ul>` + `<li onclick="window.location.href='${baseUrl}/section'">${navItemLabel}</li></ul></body></html>`;
       await route.fulfill({ contentType: "text/html", body: homeBody });
       return;
     }
@@ -98,7 +98,9 @@ async function waitUntilTerminal(
   for (let attempt = 0; attempt < 300; attempt++) {
     const response = await app.inject({ method: "GET", url: `/explorer/runs/${runId}`, headers: { cookie: sessionCookie } });
     const body = response.json<{ status: string; llmCallsUsed: number; error?: string }>();
-    if (body.status === "COMPLETED" || body.status === "FAILED") return body;
+    if (body.status === "COMPLETED" || body.status === "FAILED") {
+      return body;
+    }
     await new Promise((resolve) => setTimeout(resolve, 50));
   }
   throw new Error(`run ${runId} did not reach a terminal state in time`);

@@ -84,7 +84,9 @@ function mockAnthropicClient(): AnthropicLike {
   return {
     messages: {
       create: (parameters) => {
-        if (parameters.tool_choice?.name === "submit_test_plan") return Promise.resolve(testPlanResponse());
+        if (parameters.tool_choice?.name === "submit_test_plan") {
+          return Promise.resolve(testPlanResponse());
+        }
         const promptText = parameters.messages[0]?.content ?? "";
         return Promise.resolve(outcomeJudgeResponse(promptText));
       },
@@ -133,16 +135,17 @@ describe("runExplorerTestRun — dismissed findings are not resurrected on re-de
     };
 
     await page.setContent(SECTION_PAGE);
-    const firstRun = await runExplorerTestRun(
-      { page, featureId, runId: `run-${randomUUID()}`, runStartedAt: new Date() },
-      deps,
-    );
+    const firstRun = await runExplorerTestRun({ page, featureId, runId: `run-${randomUUID()}`, runStartedAt: new Date() }, deps);
     expect(firstRun.findingIds).toHaveLength(1);
     const originalFindingId = firstRun.findingIds[0];
-    if (!originalFindingId) throw new Error("expected first run to produce a finding");
+    if (!originalFindingId) {
+      throw new Error("expected first run to produce a finding");
+    }
 
     const originalFinding = await findingRepo.get(originalFindingId);
-    if (!originalFinding) throw new Error("expected first run's finding to be persisted");
+    if (!originalFinding) {
+      throw new Error("expected first run's finding to be persisted");
+    }
     expect(originalFinding.status).toBe("NEW");
 
     await recordFeedback({ finding: originalFinding, featureId, verdict: "dismiss" }, learningRepo, findingRepo);
@@ -150,10 +153,7 @@ describe("runExplorerTestRun — dismissed findings are not resurrected on re-de
     expect(dismissedFinding?.status).toBe("DISMISSED");
 
     await page.setContent(SECTION_PAGE);
-    const secondRun = await runExplorerTestRun(
-      { page, featureId, runId: `run-${randomUUID()}`, runStartedAt: new Date() },
-      deps,
-    );
+    const secondRun = await runExplorerTestRun({ page, featureId, runId: `run-${randomUUID()}`, runStartedAt: new Date() }, deps);
 
     expect(secondRun.findingIds).toHaveLength(1);
     expect(secondRun.findingIds[0]).toBe(originalFindingId);

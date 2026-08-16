@@ -3,6 +3,8 @@ import { SessionReplayDetail } from "./SessionReplayDetail.js";
 
 export function SessionReplayDetailPage() {
   const { id } = useParams<{ id: string }>();
-  if (!id) return null;
+  if (!id) {
+    return null;
+  }
   return <SessionReplayDetail runId={id} />;
 }

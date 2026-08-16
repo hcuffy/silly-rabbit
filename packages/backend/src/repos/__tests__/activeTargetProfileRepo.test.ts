@@ -34,18 +34,21 @@ describe("ActiveTargetProfileRepo (single-document pointer, not an isActive bool
     expect(pointer?.updatedAt).toBeInstanceOf(Date);
   });
 
-  it("setting a second time replaces the pointer rather than creating a second document — exactly " +
-    "one active profile holds by construction, not by an enforced invariant", async () => {
-    const repo = new ActiveTargetProfileRepo(connection.db);
-    const first = randomUUID();
-    const second = randomUUID();
+  it(
+    "setting a second time replaces the pointer rather than creating a second document — exactly " +
+      "one active profile holds by construction, not by an enforced invariant",
+    async () => {
+      const repo = new ActiveTargetProfileRepo(connection.db);
+      const first = randomUUID();
+      const second = randomUUID();
 
-    await repo.set(first);
-    await repo.set(second);
+      await repo.set(first);
+      await repo.set(second);
 
-    expect((await repo.get())?.profileId).toBe(second);
-    expect(await connection.db.collection("activeTargetProfile").countDocuments()).toBe(1);
-  });
+      expect((await repo.get())?.profileId).toBe(second);
+      expect(await connection.db.collection("activeTargetProfile").countDocuments()).toBe(1);
+    },
+  );
 
   it("clear removes the pointer, returning to the no-active-profile state", async () => {
     const repo = new ActiveTargetProfileRepo(connection.db);

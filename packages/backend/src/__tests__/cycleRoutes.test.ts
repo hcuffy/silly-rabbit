@@ -161,21 +161,26 @@ describe("cycle routes (run-cycles-spec.md §4 — cycle management + overview b
     expect(response.statusCode).toBe(404);
   });
 
-  it("archiving the isDefault cycle surfaces the real backend rejection as a structured 409, and the " +
-    "cycle stays active in the stored document — not a silent no-op, not a 500", async () => {
-    await cycleRepo.ensureDefaultCycle();
-    const defaults = await injectAuthed({ method: "GET", url: "/cycles?status=active" });
-    const defaultCycle = defaults.json<{ id: string; isDefault: boolean }[]>().find((cycle) => cycle.isDefault);
-    if (!defaultCycle) throw new Error("unreachable — ensureDefaultCycle was just called");
+  it(
+    "archiving the isDefault cycle surfaces the real backend rejection as a structured 409, and the " +
+      "cycle stays active in the stored document — not a silent no-op, not a 500",
+    async () => {
+      await cycleRepo.ensureDefaultCycle();
+      const defaults = await injectAuthed({ method: "GET", url: "/cycles?status=active" });
+      const defaultCycle = defaults.json<{ id: string; isDefault: boolean }[]>().find((cycle) => cycle.isDefault);
+      if (!defaultCycle) {
+        throw new Error("unreachable — ensureDefaultCycle was just called");
+      }
 
-    const response = await injectAuthed({ method: "POST", url: `/cycles/${defaultCycle.id}/archive` });
+      const response = await injectAuthed({ method: "POST", url: `/cycles/${defaultCycle.id}/archive` });
 
-    expect(response.statusCode).toBe(409);
-    expect(response.json<{ error: string }>().error).toMatch(/uncategorized/i);
+      expect(response.statusCode).toBe(409);
+      expect(response.json<{ error: string }>().error).toMatch(/uncategorized/i);
 
-    const stillActive = await injectAuthed({ method: "GET", url: `/cycles/${defaultCycle.id}` });
-    expect(stillActive.json<{ status: string }>().status).toBe("active");
-  });
+      const stillActive = await injectAuthed({ method: "GET", url: `/cycles/${defaultCycle.id}` });
+      expect(stillActive.json<{ status: string }>().status).toBe("active");
+    },
+  );
 
   it("activate then GET /cycles/active reflects the pointer", async () => {
     const created = await injectAuthed({ method: "POST", url: "/cycles", payload: { name: "Activate-me", kind: "release" } });

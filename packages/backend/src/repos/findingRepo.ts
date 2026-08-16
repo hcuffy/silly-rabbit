@@ -28,19 +28,25 @@ export class FindingRepo {
   }
 
   async findByDedupKeys(keys: string[]): Promise<Finding[]> {
-    if (keys.length === 0) return [];
+    if (keys.length === 0) {
+      return [];
+    }
     const documents = await this.collection.find({ dedupKey: { $in: keys } }).toArray();
     return documents.map(fromDocument);
   }
 
   async findByScreenIds(screenIds: string[]): Promise<Finding[]> {
-    if (screenIds.length === 0) return [];
+    if (screenIds.length === 0) {
+      return [];
+    }
     const documents = await this.collection.find({ screenId: { $in: screenIds } }).toArray();
     return documents.map(fromDocument);
   }
 
   async findByRunIds(runIds: string[]): Promise<Finding[]> {
-    if (runIds.length === 0) return [];
+    if (runIds.length === 0) {
+      return [];
+    }
     const documents = await this.collection.find({ runId: { $in: runIds } }).toArray();
     return documents.map(fromDocument);
   }
@@ -65,7 +71,9 @@ export class FindingRepo {
   }
 
   async deleteByRunIds(runIds: string[]): Promise<void> {
-    if (runIds.length === 0) return;
+    if (runIds.length === 0) {
+      return;
+    }
     await this.collection.deleteMany({ runId: { $in: runIds } });
   }
 }

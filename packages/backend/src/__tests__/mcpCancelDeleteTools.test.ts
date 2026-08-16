@@ -62,7 +62,9 @@ function makeFinding(overrides: Partial<Finding> = {}): Finding {
 
 async function waitFor(predicate: () => Promise<boolean>): Promise<void> {
   for (let attempt = 0; attempt < 300; attempt++) {
-    if (await predicate()) return;
+    if (await predicate()) {
+      return;
+    }
     await new Promise((resolve) => setTimeout(resolve, 50));
   }
   throw new Error("condition not met in time");
@@ -125,9 +127,15 @@ describe("MCP cancel_*/delete_* tools (delete-cancel-spec.md phase 2)", () => {
     expect(tools).toHaveLength(22);
     const names = tools.map((tool) => tool.name);
     for (const expected of [
-      "cancel_run", "cancel_explorer_run", "cancel_session_replay_run",
-      "delete_run", "delete_explorer_run", "delete_session_replay_run",
-      "delete_session_recording", "delete_finding", "delete_nav_map",
+      "cancel_run",
+      "cancel_explorer_run",
+      "cancel_session_replay_run",
+      "delete_run",
+      "delete_explorer_run",
+      "delete_session_replay_run",
+      "delete_session_recording",
+      "delete_finding",
+      "delete_nav_map",
     ]) {
       expect(names).toContain(expected);
     }
@@ -136,7 +144,12 @@ describe("MCP cancel_*/delete_* tools (delete-cancel-spec.md phase 2)", () => {
   it("cancel_run on a real RUNNING run closes the real chromium instance — isError falsy, cancelled:true", async () => {
     const run = await startRun(
       { charter: "test the locations flow", targetBaseUrl: MOCK_BASE_URL },
-      { ...deps, installRoutes: async (context) => { await context.route("**/*", () => new Promise(() => {})); } },
+      {
+        ...deps,
+        installRoutes: async (context) => {
+          await context.route("**/*", () => new Promise(() => {}));
+        },
+      },
     );
     await waitFor(async () => (await deps.runRepo.get(run.id))?.status === "RUNNING");
     await new Promise((resolve) => setTimeout(resolve, 400));
@@ -163,34 +176,40 @@ describe("MCP cancel_*/delete_* tools (delete-cancel-spec.md phase 2)", () => {
     expect(result.isError).toBe(true);
   });
 
-  it("invalid input (missing runId) is rejected by the tool's own inputSchema, isError:true — matches " +
-    "the existing 11-tool precedent, not a thrown protocol error", async () => {
-    const result = await client.callTool({ name: "cancel_run", arguments: {} });
-    expect(result.isError).toBe(true);
-  });
+  it(
+    "invalid input (missing runId) is rejected by the tool's own inputSchema, isError:true — matches " +
+      "the existing 11-tool precedent, not a thrown protocol error",
+    async () => {
+      const result = await client.callTool({ name: "cancel_run", arguments: {} });
+      expect(result.isError).toBe(true);
+    },
+  );
 
-  it("delete_run without force previews an accurate blast radius and mutates nothing; with force:true " +
-    "actually deletes and cascades", async () => {
-    const run = await startRun({ charter: "test the locations flow", targetBaseUrl: MOCK_BASE_URL }, deps);
-    await waitFor(async () => (await deps.runRepo.get(run.id))?.status === "COMPLETED");
+  it(
+    "delete_run without force previews an accurate blast radius and mutates nothing; with force:true " + "actually deletes and cascades",
+    async () => {
+      const run = await startRun({ charter: "test the locations flow", targetBaseUrl: MOCK_BASE_URL }, deps);
+      await waitFor(async () => (await deps.runRepo.get(run.id))?.status === "COMPLETED");
 
-    const finding = makeFinding({ runId: run.id });
-    await findingRepo.upsert(finding);
+      const finding = makeFinding({ runId: run.id });
+      await findingRepo.upsert(finding);
 
-    const preview = await client.callTool({ name: "delete_run", arguments: { runId: run.id } });
-    expect(preview.isError).toBe(true);
-    const previewBody = textOf(preview as never) as { error: string };
-    expect(previewBody.error).toContain("1 finding");
-    expect(await deps.runRepo.get(run.id)).not.toBeNull();
-    expect(await findingRepo.get(finding.id)).not.toBeNull();
+      const preview = await client.callTool({ name: "delete_run", arguments: { runId: run.id } });
+      expect(preview.isError).toBe(true);
+      const previewBody = textOf(preview as never) as { error: string };
+      expect(previewBody.error).toContain("1 finding");
+      expect(await deps.runRepo.get(run.id)).not.toBeNull();
+      expect(await findingRepo.get(finding.id)).not.toBeNull();
 
-    const forced = await client.callTool({ name: "delete_run", arguments: { runId: run.id, force: true } });
-    expect(forced.isError).toBeFalsy();
-    const forcedBody = textOf(forced as never) as { deleted: boolean; cascaded: { deletedFindings: number } };
-    expect(forcedBody).toEqual({ deleted: true, cascaded: { deletedFindings: 1, deletedTestRun: false } });
-    expect(await deps.runRepo.get(run.id)).toBeNull();
-    expect(await findingRepo.get(finding.id)).toBeNull();
-  }, 20_000);
+      const forced = await client.callTool({ name: "delete_run", arguments: { runId: run.id, force: true } });
+      expect(forced.isError).toBeFalsy();
+      const forcedBody = textOf(forced as never) as { deleted: boolean; cascaded: { deletedFindings: number } };
+      expect(forcedBody).toEqual({ deleted: true, cascaded: { deletedFindings: 1, deletedTestRun: false } });
+      expect(await deps.runRepo.get(run.id)).toBeNull();
+      expect(await findingRepo.get(finding.id)).toBeNull();
+    },
+    20_000,
+  );
 
   it("delete_run on an unknown id returns isError:true, no preview computed", async () => {
     const result = await client.callTool({ name: "delete_run", arguments: { runId: randomUUID() } });
@@ -199,8 +218,7 @@ describe("MCP cancel_*/delete_* tools (delete-cancel-spec.md phase 2)", () => {
     expect(body.error).toBe("run not found");
   });
 
-  it("delete_finding without force previews, with force:true deletes for real — distinct from " +
-    "submit_finding_feedback's dismiss", async () => {
+  it("delete_finding without force previews, with force:true deletes for real — distinct from " + "submit_finding_feedback's dismiss", async () => {
     const finding = makeFinding();
     await findingRepo.upsert(finding);
 
@@ -213,8 +231,7 @@ describe("MCP cancel_*/delete_* tools (delete-cancel-spec.md phase 2)", () => {
     expect(await findingRepo.get(finding.id)).toBeNull();
   });
 
-  it("delete_session_recording without force previews the nested cascade count; with force:true " +
-    "deletes the full chain", async () => {
+  it("delete_session_recording without force previews the nested cascade count; with force:true " + "deletes the full chain", async () => {
     const recording: SessionRecording = {
       sessionId: randomUUID(),
       targetBaseUrl: MOCK_BASE_URL,

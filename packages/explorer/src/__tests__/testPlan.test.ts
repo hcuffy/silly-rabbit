@@ -71,9 +71,7 @@ describe("buildTestPlan (explorer-spec §7)", () => {
   });
 
   it("a malformed tool response (missing required field) degrades to an empty plan, never throws (§7 step 3/§11.4)", async () => {
-    const client = fakeClient(
-      toolUseResponse({ hypotheses: [hypothesisCard({ happyPathCheck: { action: "submit" } })] }),
-    );
+    const client = fakeClient(toolUseResponse({ hypotheses: [hypothesisCard({ happyPathCheck: { action: "submit" } })] }));
     const plan = await buildTestPlan(research(), [], { clientFactory: () => client });
     expect(plan).toEqual([]);
   });
@@ -152,40 +150,45 @@ describe("buildTestPlan (explorer-spec §7)", () => {
     expect(capturedPrompt).toContain("don't leave it to be inferred");
   });
 
-  it("instructs the model to avoid export/download/print-shaped actions as check targets " +
-    "(D8 live-incident fix — Export sits outside the CRUD surface this feature tests)", async () => {
-    let capturedPrompt = "";
-    const client: AnthropicLike = {
-      messages: {
-        create: (parameters) => {
-          capturedPrompt = parameters.messages[0]?.content ?? "";
-          return Promise.resolve(toolUseResponse({ hypotheses: [] }));
+  it(
+    "instructs the model to avoid export/download/print-shaped actions as check targets " +
+      "(D8 live-incident fix — Export sits outside the CRUD surface this feature tests)",
+    async () => {
+      let capturedPrompt = "";
+      const client: AnthropicLike = {
+        messages: {
+          create: (parameters) => {
+            capturedPrompt = parameters.messages[0]?.content ?? "";
+            return Promise.resolve(toolUseResponse({ hypotheses: [] }));
+          },
         },
-      },
-    };
-    await buildTestPlan(research(), [], { clientFactory: () => client });
-    expect(capturedPrompt).toContain("export");
-    expect(capturedPrompt).toContain("download");
-    expect(capturedPrompt).toContain("print");
-    expect(capturedPrompt).toContain("outside that surface");
-  });
+      };
+      await buildTestPlan(research(), [], { clientFactory: () => client });
+      expect(capturedPrompt).toContain("export");
+      expect(capturedPrompt).toContain("download");
+      expect(capturedPrompt).toContain("print");
+      expect(capturedPrompt).toContain("outside that surface");
+    },
+  );
 
-  it("instructs the model to avoid import/upload actions as check targets (file-upload exclusion, " +
-    "landed same session as the Export fix)", async () => {
-    let capturedPrompt = "";
-    const client: AnthropicLike = {
-      messages: {
-        create: (parameters) => {
-          capturedPrompt = parameters.messages[0]?.content ?? "";
-          return Promise.resolve(toolUseResponse({ hypotheses: [] }));
+  it(
+    "instructs the model to avoid import/upload actions as check targets (file-upload exclusion, " + "landed same session as the Export fix)",
+    async () => {
+      let capturedPrompt = "";
+      const client: AnthropicLike = {
+        messages: {
+          create: (parameters) => {
+            capturedPrompt = parameters.messages[0]?.content ?? "";
+            return Promise.resolve(toolUseResponse({ hypotheses: [] }));
+          },
         },
-      },
-    };
-    await buildTestPlan(research(), [], { clientFactory: () => client });
-    expect(capturedPrompt).toContain("import");
-    expect(capturedPrompt).toContain("upload");
-    expect(capturedPrompt).toContain("cannot do yet");
-  });
+      };
+      await buildTestPlan(research(), [], { clientFactory: () => client });
+      expect(capturedPrompt).toContain("import");
+      expect(capturedPrompt).toContain("upload");
+      expect(capturedPrompt).toContain("cannot do yet");
+    },
+  );
 
   it("renders a placeholder summary when there are no active learnings", async () => {
     let capturedPrompt = "";

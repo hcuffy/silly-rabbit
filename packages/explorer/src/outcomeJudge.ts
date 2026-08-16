@@ -59,10 +59,7 @@ function buildPrompt(input: OutcomeJudgeInput): string {
   ].join("\n\n");
 }
 
-export async function judgeOutcome(
-  input: OutcomeJudgeInput,
-  options: OutcomeJudgeOptions,
-): Promise<OutcomeJudgeResult & { infraError?: string }> {
+export async function judgeOutcome(input: OutcomeJudgeInput, options: OutcomeJudgeOptions): Promise<OutcomeJudgeResult & { infraError?: string }> {
   const model = options.model ?? DEFAULT_SONNET_MODEL;
 
   try {
@@ -76,7 +73,9 @@ export async function judgeOutcome(
 
     const toolUse = response.content.find((block) => block.type === "tool_use" && block.name === OUTCOME_TOOL_NAME);
     const parsed = toolUse ? OutcomeInputSchema.safeParse(toolUse.input) : undefined;
-    if (parsed?.success) return parsed.data;
+    if (parsed?.success) {
+      return parsed.data;
+    }
 
     return { passed: false, reasoning: "Outcome judge returned no parseable verdict.", confidence: 0 };
   } catch (error) {
@@ -88,7 +87,8 @@ export async function judgeOutcome(
     );
     return {
       passed: false,
-      reasoning: `Outcome judge unavailable — showing NEEDS_HUMAN without a reasoned verdict. Set ` +
+      reasoning:
+        `Outcome judge unavailable — showing NEEDS_HUMAN without a reasoned verdict. Set ` +
         `ANTHROPIC_API_KEY to enable full judging (detail: ${message}).`,
       confidence: 0,
       infraError: message,

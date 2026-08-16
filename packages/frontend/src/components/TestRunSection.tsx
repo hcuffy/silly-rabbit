@@ -14,8 +14,7 @@ function ResearchDetails({ research }: { research: ResearchInventory }) {
       <ul>
         {research.elements.map((element) => (
           <li key={`${element.role}-${element.accessibleName}`}>
-            <strong>{element.kind}</strong>: {element.accessibleName} (<code>{element.role}</code>)
-            {element.required && " — required"}
+            <strong>{element.kind}</strong>: {element.accessibleName} (<code>{element.role}</code>){element.required && " — required"}
             {element.options && ` — options: ${element.options.join(", ")}`}
           </li>
         ))}
@@ -47,7 +46,9 @@ function HypothesisCard({ hypothesis }: { hypothesis: FeatureHypothesis }) {
 
 function summarizeOutcomes(checkOutcomes: CheckOutcome[]): Record<CheckOutcome["result"], number> {
   const summary: Record<CheckOutcome["result"], number> = { passed: 0, failed: 0, skipped: 0, timed_out: 0 };
-  for (const outcome of checkOutcomes) summary[outcome.result] += 1;
+  for (const outcome of checkOutcomes) {
+    summary[outcome.result] += 1;
+  }
   return summary;
 }
 
@@ -146,9 +147,7 @@ export function TestRunSection({ testRun }: { testRun: TestRun }) {
 
       <h3>Check outcomes</h3>
       {testRun.checkOutcomes.length === 0 && <p>No checks have completed yet.</p>}
-      {testRun.checkOutcomes.length > 0 && (
-        <CheckOutcomesSummary checkOutcomes={testRun.checkOutcomes} testPlan={testRun.testPlan} />
-      )}
+      {testRun.checkOutcomes.length > 0 && <CheckOutcomesSummary checkOutcomes={testRun.checkOutcomes} testPlan={testRun.testPlan} />}
 
       <FeatureDocumentSection featureId={testRun.featureId} />
     </section>

@@ -18,15 +18,12 @@ export function errorResult(message: string): CallToolResult {
   return { content: [{ type: "text", text: JSON.stringify({ error: message }) }], isError: true };
 }
 
-export type ProfileResolution =
-  | { ok: true; overrides: TargetProfileOverrides | undefined }
-  | { ok: false; result: CallToolResult };
+export type ProfileResolution = { ok: true; overrides: TargetProfileOverrides | undefined } | { ok: false; result: CallToolResult };
 
-export async function resolveExplicitProfileOverrides(
-  deps: McpToolDeps,
-  profileId: string | undefined,
-): Promise<ProfileResolution> {
-  if (!profileId) return { ok: true, overrides: undefined };
+export async function resolveExplicitProfileOverrides(deps: McpToolDeps, profileId: string | undefined): Promise<ProfileResolution> {
+  if (!profileId) {
+    return { ok: true, overrides: undefined };
+  }
   if (!deps.targetProfileRepo) {
     return { ok: false, result: errorResult("target profiles are not configured on this MCP server") };
   }

@@ -44,9 +44,7 @@ describe("detectDrift (explorer-spec §10.4)", () => {
 
     const flags = detectDrift([finding], [learning]);
 
-    expect(flags).toEqual([
-      { learningId: learning.id, featureId: learning.featureId, reason: "previously_intended_now_failing" },
-    ]);
+    expect(flags).toEqual([{ learningId: learning.id, featureId: learning.featureId, reason: "previously_intended_now_failing" }]);
   });
 
   it("flags previously_resolved_now_recurring when a resolved Learning's dedupKey now has a RECURRING Finding", () => {
@@ -55,9 +53,7 @@ describe("detectDrift (explorer-spec §10.4)", () => {
 
     const flags = detectDrift([finding], [learning]);
 
-    expect(flags).toEqual([
-      { learningId: learning.id, featureId: learning.featureId, reason: "previously_resolved_now_recurring" },
-    ]);
+    expect(flags).toEqual([{ learningId: learning.id, featureId: learning.featureId, reason: "previously_resolved_now_recurring" }]);
   });
 
   it("a resolved Learning whose Finding is NEW (not RECURRING) does not flag", () => {
@@ -81,11 +77,13 @@ describe("detectDrift (explorer-spec §10.4)", () => {
     expect(detectDrift([finding], [learning])).toEqual([]);
   });
 
-  it("a confirmed_issue (still active) Learning whose dedupKey has a Finding is not drift — only intended_behavior " +
-    "or resolved->recurring are", () => {
-    const learning = makeLearning({ learningType: "confirmed_issue", status: "active" });
-    const finding = makeFinding({ dedupKey: learning.dedupKey, status: "RECURRING" });
+  it(
+    "a confirmed_issue (still active) Learning whose dedupKey has a Finding is not drift — only intended_behavior " + "or resolved->recurring are",
+    () => {
+      const learning = makeLearning({ learningType: "confirmed_issue", status: "active" });
+      const finding = makeFinding({ dedupKey: learning.dedupKey, status: "RECURRING" });
 
-    expect(detectDrift([finding], [learning])).toEqual([]);
-  });
+      expect(detectDrift([finding], [learning])).toEqual([]);
+    },
+  );
 });

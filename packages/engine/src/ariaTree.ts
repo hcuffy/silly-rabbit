@@ -32,7 +32,9 @@ function parseColonLeafText(textAfterRole: string): { name: string; remainder: s
   const leadingBracketsMatch = /^(?:\[[^\]]*\]\s*)*/.exec(textAfterRole);
   const leadingBracketsLength = leadingBracketsMatch?.[0].length ?? 0;
   const colonMatch = /^:\s*(.*)$/.exec(textAfterRole.slice(leadingBracketsLength));
-  if (!colonMatch) return undefined;
+  if (!colonMatch) {
+    return undefined;
+  }
 
   const content = colonMatch[1] ?? "";
   const quotedContent = /^"([^"]*)"$/.exec(content);
@@ -41,7 +43,9 @@ function parseColonLeafText(textAfterRole: string): { name: string; remainder: s
 
 function parseLine(line: string): { indent: number; node: AriaNode } | undefined {
   const indentMatch = /^(\s*)-\s+(.*)$/.exec(line);
-  if (!indentMatch) return undefined;
+  if (!indentMatch) {
+    return undefined;
+  }
   const indent = indentMatch[1]?.length ?? 0;
   let rest = (indentMatch[2] ?? "").trimEnd();
 
@@ -50,7 +54,9 @@ function parseLine(line: string): { indent: number; node: AriaNode } | undefined
   }
 
   const roleMatch = /^([^\s:]+)/.exec(rest);
-  if (!roleMatch) return undefined;
+  if (!roleMatch) {
+    return undefined;
+  }
   const role = roleMatch[1] ?? "";
   rest = rest.slice(roleMatch[0].length).trimStart();
 
@@ -77,9 +83,13 @@ export function parseAriaSnapshot(raw: string): AriaNode {
   const stack: StackEntry[] = [{ indent: -1, node: root }];
 
   for (const line of raw.split("\n")) {
-    if (line.trim().length === 0) continue;
+    if (line.trim().length === 0) {
+      continue;
+    }
     const parsed = parseLine(line);
-    if (!parsed) continue;
+    if (!parsed) {
+      continue;
+    }
     const { indent, node } = parsed;
 
     while (stack.length > 0 && (stack[stack.length - 1]?.indent ?? -1) >= indent) {
@@ -102,10 +112,7 @@ export function mapAriaTree(node: AriaNode, function_: (name: string) => string)
   };
 }
 
-export function filterAriaTree(
-  node: AriaNode,
-  predicate: (node: AriaNode) => boolean,
-): AriaNode {
+export function filterAriaTree(node: AriaNode, predicate: (node: AriaNode) => boolean): AriaNode {
   return {
     role: node.role,
     name: node.name,
@@ -114,14 +121,15 @@ export function filterAriaTree(
   };
 }
 
-export function findFirstNode(
-  node: AriaNode,
-  predicate: (node: AriaNode) => boolean,
-): AriaNode | undefined {
+export function findFirstNode(node: AriaNode, predicate: (node: AriaNode) => boolean): AriaNode | undefined {
   for (const child of node.children) {
-    if (predicate(child)) return child;
+    if (predicate(child)) {
+      return child;
+    }
     const found = findFirstNode(child, predicate);
-    if (found) return found;
+    if (found) {
+      return found;
+    }
   }
   return undefined;
 }
@@ -131,7 +139,9 @@ function serializeAttributes(attributes: Record<string, string | boolean>): stri
   return keys
     .map((key) => {
       const value = attributes[key];
-      if (value === true) return ` [${key}]`;
+      if (value === true) {
+        return ` [${key}]`;
+      }
       return ` [${key}=${String(value)}]`;
     })
     .join("");

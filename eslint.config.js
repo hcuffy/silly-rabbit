@@ -5,15 +5,7 @@ import unicorn from "eslint-plugin-unicorn";
 
 export default tseslint.config(
   {
-    ignores: [
-      "**/dist/**",
-      "**/node_modules/**",
-      "**/coverage/**",
-      "**/vitest.config.ts",
-      "**/vite.config.ts",
-      "**/scripts/**",
-      "**/repro-specs/**",
-    ],
+    ignores: ["**/dist/**", "**/node_modules/**", "**/coverage/**", "**/vitest.config.ts", "**/vite.config.ts", "**/scripts/**", "**/repro-specs/**"],
   },
   js.configs.recommended,
   {
@@ -29,11 +21,11 @@ export default tseslint.config(
     rules: {
       "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/no-floating-promises": "error",
-      "max-params": ["error", 4],
+      "max-params": ["error", 3],
       "max-lines": ["error", { max: 250, skipBlankLines: true, skipComments: true }],
       "unicorn/name-replacements": [
         "error",
-        { replacements: { db: false }, allowList: { env: true, deps: true, Deps: true }, ignore: ["e2e"] },
+        { replacements: { db: false }, allowList: { env: true, deps: true, Deps: true, props: true, Props: true }, ignore: ["e2e"] },
       ],
     },
   },
@@ -48,6 +40,7 @@ export default tseslint.config(
     files: ["**/*.ts", "**/*.tsx"],
     rules: {
       "max-len": ["error", { code: 150 }],
+      curly: ["error", "all"],
     },
   },
 );

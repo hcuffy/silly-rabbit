@@ -8,7 +8,9 @@ interface RunDetailNavigationState {
 export function RunDetailPage() {
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
-  if (!id) return null;
+  if (!id) {
+    return null;
+  }
 
   const runNumber = (location.state as RunDetailNavigationState | null)?.runNumber;
   return <RunDetail runId={id} runNumber={runNumber} />;

@@ -47,32 +47,28 @@ describe("RunDetail polling (frontend-spec §4)", () => {
     vi.unstubAllGlobals();
   });
 
-  it(
-    "polls a RUNNING run every 2s and stops once it goes COMPLETED",
-    async () => {
-      let callCount = 0;
-      const fetchMock = vi.fn((url: string) => {
-        if (url.includes("/findings/stats")) {
-          return Promise.resolve(jsonResponse({ newCount: 0, suppressedCount: 0, agree: 0, disagree: 0 }));
-        }
-        callCount += 1;
-        return Promise.resolve(jsonResponse(makeRunDetail({ status: callCount === 1 ? "RUNNING" : "COMPLETED" })));
-      });
-      vi.stubGlobal("fetch", fetchMock);
+  it("polls a RUNNING run every 2s and stops once it goes COMPLETED", async () => {
+    let callCount = 0;
+    const fetchMock = vi.fn((url: string) => {
+      if (url.includes("/findings/stats")) {
+        return Promise.resolve(jsonResponse({ newCount: 0, suppressedCount: 0, agree: 0, disagree: 0 }));
+      }
+      callCount += 1;
+      return Promise.resolve(jsonResponse(makeRunDetail({ status: callCount === 1 ? "RUNNING" : "COMPLETED" })));
+    });
+    vi.stubGlobal("fetch", fetchMock);
 
-      renderWithClient(<RunDetail runId={RUN_ID} />);
+    renderWithClient(<RunDetail runId={RUN_ID} />);
 
-      expect(await screen.findByText("RUNNING")).toBeInTheDocument();
-      expect(callCount).toBe(1);
+    expect(await screen.findByText("RUNNING")).toBeInTheDocument();
+    expect(callCount).toBe(1);
 
-      expect(await screen.findByText("COMPLETED", {}, { timeout: 4000 })).toBeInTheDocument();
-      expect(callCount).toBe(2);
+    expect(await screen.findByText("COMPLETED", {}, { timeout: 4000 })).toBeInTheDocument();
+    expect(callCount).toBe(2);
 
-      await new Promise((resolve) => setTimeout(resolve, 2500));
-      expect(callCount).toBe(2);
-    },
-    10_000,
-  );
+    await new Promise((resolve) => setTimeout(resolve, 2500));
+    expect(callCount).toBe(2);
+  }, 10_000);
 });
 
 describe("RunDetail — D8 TestRun section (D8 dashboard)", () => {
@@ -142,8 +138,7 @@ describe("RunDetail — D8 TestRun section (D8 dashboard)", () => {
     expect(screen.getByText(/Keyboard:/)).toBeInTheDocument();
   });
 
-  it("shows the run history list's own computed number in the header when provided (reused via " +
-    "navigation state, not recomputed)", async () => {
+  it("shows the run history list's own computed number in the header when provided (reused via " + "navigation state, not recomputed)", async () => {
     stubFetchWithRunDetail();
 
     renderWithClient(<RunDetail runId={RUN_ID} runNumber={4} />);
@@ -152,15 +147,18 @@ describe("RunDetail — D8 TestRun section (D8 dashboard)", () => {
     expect(screen.getByText(RUN_ID.slice(0, 8))).toBeInTheDocument();
   });
 
-  it("falls back to a plain header, no stray '#', when reached without a run number (direct URL/" +
-    "deep link — a real, disclosed limitation, not silently wrong)", async () => {
-    stubFetchWithRunDetail();
+  it(
+    "falls back to a plain header, no stray '#', when reached without a run number (direct URL/" +
+      "deep link — a real, disclosed limitation, not silently wrong)",
+    async () => {
+      stubFetchWithRunDetail();
 
-    renderWithClient(<RunDetail runId={RUN_ID} />);
+      renderWithClient(<RunDetail runId={RUN_ID} />);
 
-    expect(await screen.findByText("Run detail")).toBeInTheDocument();
-    expect(screen.queryByText(/Run detail #/)).not.toBeInTheDocument();
-  });
+      expect(await screen.findByText("Run detail")).toBeInTheDocument();
+      expect(screen.queryByText(/Run detail #/)).not.toBeInTheDocument();
+    },
+  );
 });
 
 describe("RunDetail — cycle-scoped header (run-cycles-spec.md §9), the real fragility fix", () => {
@@ -196,24 +194,30 @@ describe("RunDetail — cycle-scoped header (run-cycles-spec.md §9), the real f
     );
   }
 
-  it("a cycled run reached WITHOUT a navigation-state runNumber (the direct-link/refresh case that used " +
-    "to break) still shows the correct cycle-scoped number — read straight off the persisted Run record, " +
-    "not dependent on how the page was reached", async () => {
-    stubFetchWithCycledRunDetail();
+  it(
+    "a cycled run reached WITHOUT a navigation-state runNumber (the direct-link/refresh case that used " +
+      "to break) still shows the correct cycle-scoped number — read straight off the persisted Run record, " +
+      "not dependent on how the page was reached",
+    async () => {
+      stubFetchWithCycledRunDetail();
 
-    renderWithClient(<RunDetail runId={RUN_ID} />);
+      renderWithClient(<RunDetail runId={RUN_ID} />);
 
-    expect(await screen.findByText("Release 3.22, Run 2")).toBeInTheDocument();
-    expect(screen.queryByText(/^Run detail/)).not.toBeInTheDocument();
-  });
+      expect(await screen.findByText("Release 3.22, Run 2")).toBeInTheDocument();
+      expect(screen.queryByText(/^Run detail/)).not.toBeInTheDocument();
+    },
+  );
 
-  it("a cycled run reached WITH a (now-irrelevant) navigation-state runNumber still prefers the " +
-    "persisted cycle-scoped number over the flat nav-state one", async () => {
-    stubFetchWithCycledRunDetail();
+  it(
+    "a cycled run reached WITH a (now-irrelevant) navigation-state runNumber still prefers the " +
+      "persisted cycle-scoped number over the flat nav-state one",
+    async () => {
+      stubFetchWithCycledRunDetail();
 
-    renderWithClient(<RunDetail runId={RUN_ID} runNumber={99} />);
+      renderWithClient(<RunDetail runId={RUN_ID} runNumber={99} />);
 
-    expect(await screen.findByText("Release 3.22, Run 2")).toBeInTheDocument();
-    expect(screen.queryByText(/#99/)).not.toBeInTheDocument();
-  });
+      expect(await screen.findByText("Release 3.22, Run 2")).toBeInTheDocument();
+      expect(screen.queryByText(/#99/)).not.toBeInTheDocument();
+    },
+  );
 });

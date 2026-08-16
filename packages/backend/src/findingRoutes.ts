@@ -28,25 +28,28 @@ export function registerFindingRoutes(app: FastifyInstance, deps: AppDeps): void
 
   app.get<{ Params: { id: string } }>("/findings/:id", async (request, reply) => {
     const finding = await deps.findingRepo.get(request.params.id);
-    if (!finding) return reply.status(404).send({ error: "finding not found" });
+    if (!finding) {
+      return reply.status(404).send({ error: "finding not found" });
+    }
     return finding;
   });
 
   app.get<{ Params: { id: string } }>("/findings/:id/repro", async (request, reply) => {
     const finding = await deps.findingRepo.get(request.params.id);
-    if (!finding?.reproSpecPath) return reply.status(404).send({ error: "no repro spec for this finding" });
+    if (!finding?.reproSpecPath) {
+      return reply.status(404).send({ error: "no repro spec for this finding" });
+    }
 
     const content = await readFile(finding.reproSpecPath, "utf8");
     const safeFilenameId = finding.id.replace(/[^a-zA-Z0-9-]/g, "_");
-    return reply
-      .type("application/typescript")
-      .header("Content-Disposition", `attachment; filename="${safeFilenameId}.spec.ts"`)
-      .send(content);
+    return reply.type("application/typescript").header("Content-Disposition", `attachment; filename="${safeFilenameId}.spec.ts"`).send(content);
   });
 
   app.get<{ Params: { id: string } }>("/findings/:id/screenshot", async (request, reply) => {
     const finding = await deps.findingRepo.get(request.params.id);
-    if (!finding?.screenshotPath) return reply.status(404).send({ error: "no screenshot for this finding" });
+    if (!finding?.screenshotPath) {
+      return reply.status(404).send({ error: "no screenshot for this finding" });
+    }
 
     const content = await readFile(finding.screenshotPath);
     return reply.type("image/png").send(content);
@@ -58,10 +61,7 @@ export function registerFindingRoutes(app: FastifyInstance, deps: AppDeps): void
       return reply.status(404).send({ error: "pixel-diff requires both a before and an after screenshot for this finding" });
     }
 
-    const [before, after] = await Promise.all([
-      readFile(finding.beforeScreenshotPath),
-      readFile(finding.screenshotPath),
-    ]);
+    const [before, after] = await Promise.all([readFile(finding.beforeScreenshotPath), readFile(finding.screenshotPath)]);
     const pixelDiffScore = computePixelDiffScore(before, after);
     if (pixelDiffScore === undefined) {
       return reply.status(422).send({ error: "before/after screenshots have mismatched dimensions — cannot compute a pixel diff" });
@@ -77,7 +77,9 @@ export function registerFindingRoutes(app: FastifyInstance, deps: AppDeps): void
     }
 
     const finding = await deps.findingRepo.get(request.params.id);
-    if (!finding) return reply.status(404).send({ error: "finding not found" });
+    if (!finding) {
+      return reply.status(404).send({ error: "finding not found" });
+    }
 
     const { verdict } = parsedBody.data;
     if (verdict !== "dismiss" && !finding.featureId) {

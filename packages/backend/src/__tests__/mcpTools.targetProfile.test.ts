@@ -85,8 +85,7 @@ describe("MCP tools — profileId (target-profiles-spec.md phase 3), real chromi
       judgeClientFactory: throwingJudgeClient,
       allowedDomains: ["env-only.example"],
       productionUrlPatterns: [],
-      installRoutes: (context: Parameters<NonNullable<McpToolDeps["installRoutes"]>>[0]) =>
-        installMockTarget(context, "baseline", seedFor()),
+      installRoutes: (context: Parameters<NonNullable<McpToolDeps["installRoutes"]>>[0]) => installMockTarget(context, "baseline", seedFor()),
     };
 
     const deps: McpToolDeps = { ...baseDeps, targetProfileRepo };
@@ -164,17 +163,20 @@ describe("MCP tools — profileId (target-profiles-spec.md phase 3), real chromi
     expect(body.error).toContain("profileId");
   });
 
-  it("passing profileId when target profiles aren't configured on this MCP server fails gracefully " +
-    "(clear errorResult, not an uncaught throw) — same shape a future ephemeral mode would hit", async () => {
-    const result = await clientNoProfileRepo.callTool({
-      name: "trigger_charter_run",
-      arguments: { charter: "test the locations flow", profileId: randomUUID() },
-    });
+  it(
+    "passing profileId when target profiles aren't configured on this MCP server fails gracefully " +
+      "(clear errorResult, not an uncaught throw) — same shape a future ephemeral mode would hit",
+    async () => {
+      const result = await clientNoProfileRepo.callTool({
+        name: "trigger_charter_run",
+        arguments: { charter: "test the locations flow", profileId: randomUUID() },
+      });
 
-    expect(result.isError).toBe(true);
-    const body = textOf(result as never) as { error: string };
-    expect(body.error).toContain("not configured");
-  });
+      expect(result.isError).toBe(true);
+      const body = textOf(result as never) as { error: string };
+      expect(body.error).toContain("not configured");
+    },
+  );
 
   it("omitting profileId entirely behaves exactly as before — unaffected by any of this", async () => {
     const result = await clientNoProfileRepo.callTool({

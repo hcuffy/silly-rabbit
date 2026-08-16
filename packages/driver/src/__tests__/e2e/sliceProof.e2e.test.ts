@@ -69,8 +69,7 @@ describe("D3 §8 three-run slice", () => {
       charter: CHARTER,
       baseUrl: MOCK_BASE_URL,
       browser,
-      installRoutes: (context) =>
-        installMockTarget(context, "volatile-only", seedFor({ timestamp: new Date(Date.now() + 60_000).toISOString() })),
+      installRoutes: (context) => installMockTarget(context, "volatile-only", seedFor({ timestamp: new Date(Date.now() + 60_000).toISOString() })),
     });
     const run2Output = await runEngineLoop({
       runId: "run-2",
@@ -99,17 +98,19 @@ describe("D3 §8 three-run slice", () => {
       judge: { clientFactory: fakeJudgeClient },
     });
 
-    const divergence = run2pOutput.findings.find(
-      (finding) => finding.type === "STATE_DIVERGENCE" && finding.status === "NEW",
-    );
+    const divergence = run2pOutput.findings.find((finding) => finding.type === "STATE_DIVERGENCE" && finding.status === "NEW");
     expect(divergence).toBeDefined();
-    if (!divergence) throw new Error("unreachable — asserted above");
+    if (!divergence) {
+      throw new Error("unreachable — asserted above");
+    }
     expect(divergence.verdict).toBe("REGRESSION");
     expect(run2pOutput.llmCallsUsed).toBe(1);
 
     const [listObservation] = run2pObservations;
     expect(listObservation).toBeDefined();
-    if (!listObservation) throw new Error("unreachable — asserted above");
+    if (!listObservation) {
+      throw new Error("unreachable — asserted above");
+    }
 
     expect(divergence.screenId).toBe(deriveScreenId(listObservation).screenId);
 

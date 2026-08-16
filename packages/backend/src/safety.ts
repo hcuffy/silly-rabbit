@@ -1,10 +1,5 @@
 import type { NavigationGuardOptions } from "@silly-rabbit/driver";
-import {
-  assertAllowedUrl,
-  assertNotProductionUrl,
-  SafetyViolation,
-  type ActionDescriptor,
-} from "@silly-rabbit/shared";
+import { assertAllowedUrl, assertNotProductionUrl, SafetyViolation, type ActionDescriptor } from "@silly-rabbit/shared";
 
 export { assertAllowedUrl, assertNotProductionUrl, SafetyViolation, type ActionDescriptor };
 export {
@@ -26,7 +21,9 @@ export function warnIfAllowedDomainsEmpty(allowedDomains: readonly string[]): vo
 }
 
 export function assertRollbackDeleteAllowed(action: ActionDescriptor, verifiedMarkerMatch: boolean): void {
-  if (verifiedMarkerMatch) return;
+  if (verifiedMarkerMatch) {
+    return;
+  }
   throw new SafetyViolation(
     "DESTRUCTIVE_ACTION",
     `rollback delete click on "${action.accessibleName}" (role: ${action.role}) was not verified against ` +

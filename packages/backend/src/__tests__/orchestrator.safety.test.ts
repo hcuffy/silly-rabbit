@@ -34,7 +34,9 @@ function throwingJudgeClient(): AnthropicLike {
 async function waitForTerminal(runRepo: RunRepo, runId: string): Promise<Run> {
   for (let attempt = 0; attempt < 300; attempt++) {
     const run = await runRepo.get(runId);
-    if (run && (run.status === "COMPLETED" || run.status === "FAILED")) return run;
+    if (run && (run.status === "COMPLETED" || run.status === "FAILED")) {
+      return run;
+    }
     await new Promise((resolve) => setTimeout(resolve, 50));
   }
   throw new Error(`run ${runId} did not reach a terminal state in time`);
@@ -70,10 +72,7 @@ describe("orchestrator safety floor (safety-spec §2/§3/§5)", () => {
   });
 
   it("an off-allowlist targetBaseUrl is refused before the browser ever launches", async () => {
-    const run = await startRun(
-      { charter: CHARTER, targetBaseUrl: "http://not-allowed.example" },
-      deps,
-    );
+    const run = await startRun({ charter: CHARTER, targetBaseUrl: "http://not-allowed.example" }, deps);
     const final = await waitForTerminal(deps.runRepo, run.id);
 
     expect(final.status).toBe("FAILED");
@@ -103,10 +102,7 @@ describe("orchestrator safety floor (safety-spec §2/§3/§5)", () => {
     expect(final.stepsUsed).toBe(0);
   }, 15_000);
   it("an allowlisted host that also matches a configured prod-URL pattern is refused before the browser ever launches", async () => {
-    const run = await startRun(
-      { charter: CHARTER, targetBaseUrl: MOCK_BASE_URL },
-      { ...deps, productionUrlPatterns: [/^mock\.local$/i] },
-    );
+    const run = await startRun({ charter: CHARTER, targetBaseUrl: MOCK_BASE_URL }, { ...deps, productionUrlPatterns: [/^mock\.local$/i] });
     const final = await waitForTerminal(deps.runRepo, run.id);
 
     expect(final.status).toBe("FAILED");

@@ -55,7 +55,9 @@ function throwingJudgeClient(): AnthropicLike {
 
 async function waitUntil(predicate: () => Promise<boolean>): Promise<void> {
   for (let attempt = 0; attempt < 300; attempt++) {
-    if (await predicate()) return;
+    if (await predicate()) {
+      return;
+    }
     await new Promise((resolve) => setTimeout(resolve, 50));
   }
   throw new Error("condition not met in time");

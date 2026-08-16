@@ -43,8 +43,7 @@ describe("SessionReplayRunRepo (session-replay-spec §8.2) — mongodb-memory-se
     expect(await repo.get(randomUUID())).toBeNull();
   });
 
-  it("update patches status/summary/completedAt/error without touching immutable fields " +
-    "(id/sessionId/replayMode/startedAt)", async () => {
+  it("update patches status/summary/completedAt/error without touching immutable fields " + "(id/sessionId/replayMode/startedAt)", async () => {
     const repo = new SessionReplayRunRepo(connection.db);
     const run = makeRun();
     await repo.create(run);
@@ -74,27 +73,30 @@ describe("SessionReplayRunRepo (session-replay-spec §8.2) — mongodb-memory-se
     expect(fetched?.error).toBe("browser launch failed");
   });
 
-  it("does not reintroduce the undefined-serializes-as-null bug class — an explicit undefined " +
-    "completedAt/error on create, and on a patch, is stripped rather than written as a literal null", async () => {
-    const repo = new SessionReplayRunRepo(connection.db);
-    const run = makeRun({ completedAt: undefined, error: undefined });
-    await repo.create(run);
+  it(
+    "does not reintroduce the undefined-serializes-as-null bug class — an explicit undefined " +
+      "completedAt/error on create, and on a patch, is stripped rather than written as a literal null",
+    async () => {
+      const repo = new SessionReplayRunRepo(connection.db);
+      const run = makeRun({ completedAt: undefined, error: undefined });
+      await repo.create(run);
 
-    let document = await connection.db.collection<{ _id: string }>("sessionReplayRuns").findOne({ _id: run.id });
-    expect(document).not.toHaveProperty("completedAt");
-    expect(document).not.toHaveProperty("error");
+      let document = await connection.db.collection<{ _id: string }>("sessionReplayRuns").findOne({ _id: run.id });
+      expect(document).not.toHaveProperty("completedAt");
+      expect(document).not.toHaveProperty("error");
 
-    await repo.update(run.id, {
-      status: "RUNNING",
-      summary: { stepsExecuted: 1, stepsDrifted: 0, stepsErrored: 0 },
-      completedAt: undefined,
-      error: undefined,
-    });
+      await repo.update(run.id, {
+        status: "RUNNING",
+        summary: { stepsExecuted: 1, stepsDrifted: 0, stepsErrored: 0 },
+        completedAt: undefined,
+        error: undefined,
+      });
 
-    document = await connection.db.collection<{ _id: string }>("sessionReplayRuns").findOne({ _id: run.id });
-    expect(document).not.toHaveProperty("completedAt");
-    expect(document).not.toHaveProperty("error");
-  });
+      document = await connection.db.collection<{ _id: string }>("sessionReplayRuns").findOne({ _id: run.id });
+      expect(document).not.toHaveProperty("completedAt");
+      expect(document).not.toHaveProperty("error");
+    },
+  );
 
   it("list paginates most-recent-first and reports total, mirroring RunRepo.list()", async () => {
     const repo = new SessionReplayRunRepo(connection.db);
@@ -121,8 +123,7 @@ describe("SessionReplayRunRepo (session-replay-spec §8.2) — mongodb-memory-se
     expect(indexes.some((index) => index.key.sessionId === 1 && index.key.startedAt === -1)).toBe(true);
   });
 
-  it("cancel() flips RUNNING to CANCELLED and returns true; false and unchanged once COMPLETED " +
-    "(delete-cancel-spec.md, phase 1)", async () => {
+  it("cancel() flips RUNNING to CANCELLED and returns true; false and unchanged once COMPLETED " + "(delete-cancel-spec.md, phase 1)", async () => {
     const repo = new SessionReplayRunRepo(connection.db);
     const running = makeRun({ status: "RUNNING" });
     await repo.create(running);

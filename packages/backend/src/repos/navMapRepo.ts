@@ -58,22 +58,22 @@ export class NavMapRepo {
     await this.collection.deleteOne({ baseUrl });
   }
 
-  async updateEntryVerification(
-    baseUrl: string,
-    role: string,
-    label: string,
-    patch: NavMapEntryVerificationPatch,
-  ): Promise<void> {
+  // eslint-disable-next-line max-params -- named patch param, not a raw scalar
+  async updateEntryVerification(baseUrl: string, role: string, label: string, patch: NavMapEntryVerificationPatch): Promise<void> {
     const setFields: Record<string, unknown> = { "entries.$[entry].isStale": patch.isStale };
-    if (patch.label) setFields["entries.$[entry].label"] = patch.label;
-    if (patch.lastVerifiedAt) setFields["entries.$[entry].lastVerifiedAt"] = patch.lastVerifiedAt;
-    if (patch.lastRelabeledAt) setFields["entries.$[entry].lastRelabeledAt"] = patch.lastRelabeledAt;
-    if (patch.pageStructure) setFields["entries.$[entry].pageStructure"] = toDocumentPageStructure(patch.pageStructure);
+    if (patch.label) {
+      setFields["entries.$[entry].label"] = patch.label;
+    }
+    if (patch.lastVerifiedAt) {
+      setFields["entries.$[entry].lastVerifiedAt"] = patch.lastVerifiedAt;
+    }
+    if (patch.lastRelabeledAt) {
+      setFields["entries.$[entry].lastRelabeledAt"] = patch.lastRelabeledAt;
+    }
+    if (patch.pageStructure) {
+      setFields["entries.$[entry].pageStructure"] = toDocumentPageStructure(patch.pageStructure);
+    }
 
-    await this.collection.updateOne(
-      { baseUrl },
-      { $set: setFields },
-      { arrayFilters: [{ "entry.role": role, "entry.label": label }] },
-    );
+    await this.collection.updateOne({ baseUrl }, { $set: setFields }, { arrayFilters: [{ "entry.role": role, "entry.label": label }] });
   }
 }

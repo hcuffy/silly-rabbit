@@ -27,8 +27,12 @@ describe("TargetProfileList (Settings page)", () => {
     vi.stubGlobal(
       "fetch",
       vi.fn((url: string) => {
-        if (url.includes("/target-profiles/active")) return Promise.resolve(jsonResponse({ profileId: PROFILE_A.id }));
-        if (url.endsWith("/target-profiles")) return Promise.resolve(jsonResponse([PROFILE_A]));
+        if (url.includes("/target-profiles/active")) {
+          return Promise.resolve(jsonResponse({ profileId: PROFILE_A.id }));
+        }
+        if (url.endsWith("/target-profiles")) {
+          return Promise.resolve(jsonResponse([PROFILE_A]));
+        }
         return Promise.resolve(jsonResponse({ error: `unexpected url in test: ${url}` }, 500));
       }),
     );

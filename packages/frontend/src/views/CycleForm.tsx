@@ -4,17 +4,15 @@ import { findEmptyRequiredFields, focusFirstInvalidField } from "../lib/required
 
 const NAME_REQUIRED_MESSAGE = "Name is required.";
 
-export function CycleForm({
-  onSubmit,
-  onCancel,
-  isSubmitting,
-  submitError,
-}: {
+interface CycleFormProps {
   onSubmit: (payload: CycleWriteInput) => void;
   onCancel: () => void;
   isSubmitting: boolean;
   submitError?: string;
-}) {
+}
+
+export function CycleForm(props: CycleFormProps) {
+  const { onSubmit, onCancel, isSubmitting, submitError } = props;
   const [name, setName] = useState("");
   const [kind, setKind] = useState<"sprint" | "release">("release");
   const [validationError, setValidationError] = useState<string | undefined>(undefined);
@@ -69,12 +67,7 @@ export function CycleForm({
           *
         </span>
       </div>
-      <select
-        id="cycleKind"
-        value={kind}
-        onChange={(event) => setKind(event.target.value as "sprint" | "release")}
-        required
-      >
+      <select id="cycleKind" value={kind} onChange={(event) => setKind(event.target.value as "sprint" | "release")} required>
         <option value="release">Release</option>
         <option value="sprint">Sprint</option>
       </select>

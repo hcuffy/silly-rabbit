@@ -17,25 +17,17 @@ function entryIdentity(entry: NavMapEntry): string {
   return `${entry.role}::${entry.label}`;
 }
 
-export function pickStalestNavMapEntries(
-  entries: NavMapEntry[],
-  batchSize: number,
-  excludeEntry?: NavMapEntry,
-): NavMapEntry[] {
+export function pickStalestNavMapEntries(entries: NavMapEntry[], batchSize: number, excludeEntry?: NavMapEntry): NavMapEntry[] {
   const excludeKey = excludeEntry ? entryIdentity(excludeEntry) : undefined;
   const candidates = excludeKey ? entries.filter((entry) => entryIdentity(entry) !== excludeKey) : entries;
 
-  return [...candidates]
-    .sort((a, b) => (a.lastVerifiedAt?.getTime() ?? 0) - (b.lastVerifiedAt?.getTime() ?? 0))
-    .slice(0, batchSize);
+  return [...candidates].sort((a, b) => (a.lastVerifiedAt?.getTime() ?? 0) - (b.lastVerifiedAt?.getTime() ?? 0)).slice(0, batchSize);
 }
 
-async function tryCorroborateViaDestination(
-  page: Page,
-  entry: NavMapEntry,
-  options: NavMapSweepOptions,
-): Promise<NavMapPageStructure | undefined> {
-  if (!entry.normalizedUrl) return undefined;
+async function tryCorroborateViaDestination(page: Page, entry: NavMapEntry, options: NavMapSweepOptions): Promise<NavMapPageStructure | undefined> {
+  if (!entry.normalizedUrl) {
+    return undefined;
+  }
 
   await options.onBeforeNavigate?.(entry.normalizedUrl);
   await page.goto(entry.normalizedUrl);
@@ -57,9 +49,7 @@ async function sweepOneEntry(page: Page, entry: NavMapEntry, options: NavMapSwee
     if (!resolved) {
       const corroboratedStructure = await tryCorroborateViaDestination(page, entry, options);
       if (corroboratedStructure) {
-        console.log(
-          `navMap sweep: label mismatch corroborated as the same destination — "${entry.label}" (${entry.role}) not marked stale`,
-        );
+        console.log(`navMap sweep: label mismatch corroborated as the same destination — "${entry.label}" (${entry.role}) not marked stale`);
         return { ...entry, isStale: false, lastVerifiedAt: new Date(), lastRelabeledAt: new Date(), pageStructure: corroboratedStructure };
       }
       console.log(`navMap sweep: nav-label drift — "${entry.label}" (${entry.role}) no longer resolves live`);
@@ -78,11 +68,7 @@ async function sweepOneEntry(page: Page, entry: NavMapEntry, options: NavMapSwee
   }
 }
 
-export async function sweepNavMapEntries(
-  page: Page,
-  navMap: NavMap,
-  options: NavMapSweepOptions = {},
-): Promise<NavMapEntry[]> {
+export async function sweepNavMapEntries(page: Page, navMap: NavMap, options: NavMapSweepOptions = {}): Promise<NavMapEntry[]> {
   const batchSize = options.batchSize ?? DEFAULT_NAV_MAP_SWEEP_BATCH_SIZE;
   const targets = pickStalestNavMapEntries(navMap.entries, batchSize, options.excludeEntry);
 

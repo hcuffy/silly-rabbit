@@ -33,22 +33,50 @@ type SafeTargetProfile = Omit<TargetProfile, "email" | "password">;
 
 function toSafeProfile(profile: TargetProfile): SafeTargetProfile {
   const {
-    id, name, baseUrl, loginUrl, emailSelector, passwordSelector, submitSelector,
-    nextSelector, timeoutMs, loginReadyTimeoutMs, locationsPath, allowedDomains, createdAt, updatedAt,
+    id,
+    name,
+    baseUrl,
+    loginUrl,
+    emailSelector,
+    passwordSelector,
+    submitSelector,
+    nextSelector,
+    timeoutMs,
+    loginReadyTimeoutMs,
+    locationsPath,
+    allowedDomains,
+    createdAt,
+    updatedAt,
   } = profile;
   return {
-    id, name, baseUrl, loginUrl, emailSelector, passwordSelector, submitSelector,
-    nextSelector, timeoutMs, loginReadyTimeoutMs, locationsPath, allowedDomains, createdAt, updatedAt,
+    id,
+    name,
+    baseUrl,
+    loginUrl,
+    emailSelector,
+    passwordSelector,
+    submitSelector,
+    nextSelector,
+    timeoutMs,
+    loginReadyTimeoutMs,
+    locationsPath,
+    allowedDomains,
+    createdAt,
+    updatedAt,
   };
 }
 
 function requireTargetProfileRepo(deps: AppDeps): TargetProfileRepo {
-  if (!deps.targetProfileRepo) throw new Error("targetProfileRepo not configured");
+  if (!deps.targetProfileRepo) {
+    throw new Error("targetProfileRepo not configured");
+  }
   return deps.targetProfileRepo;
 }
 
 function requireActiveTargetProfileRepo(deps: AppDeps): ActiveTargetProfileRepo {
-  if (!deps.activeTargetProfileRepo) throw new Error("activeTargetProfileRepo not configured");
+  if (!deps.activeTargetProfileRepo) {
+    throw new Error("activeTargetProfileRepo not configured");
+  }
   return deps.activeTargetProfileRepo;
 }
 
@@ -65,7 +93,9 @@ export function registerTargetProfileRoutes(app: FastifyInstance, deps: AppDeps)
 
   app.get<{ Params: { id: string } }>("/target-profiles/:id", async (request, reply) => {
     const profile = await targetProfileRepo.get(request.params.id);
-    if (!profile) return reply.status(404).send({ error: "target profile not found" });
+    if (!profile) {
+      return reply.status(404).send({ error: "target profile not found" });
+    }
     return toSafeProfile(profile);
   });
 
@@ -83,7 +113,9 @@ export function registerTargetProfileRoutes(app: FastifyInstance, deps: AppDeps)
 
   app.put<{ Params: { id: string } }>("/target-profiles/:id", async (request, reply) => {
     const existing = await targetProfileRepo.get(request.params.id);
-    if (!existing) return reply.status(404).send({ error: "target profile not found" });
+    if (!existing) {
+      return reply.status(404).send({ error: "target profile not found" });
+    }
 
     const parsed = TargetProfilePatchBodySchema.safeParse(request.body);
     if (!parsed.success) {
@@ -97,7 +129,9 @@ export function registerTargetProfileRoutes(app: FastifyInstance, deps: AppDeps)
 
   app.delete<{ Params: { id: string } }>("/target-profiles/:id", async (request, reply) => {
     const existing = await targetProfileRepo.get(request.params.id);
-    if (!existing) return reply.status(404).send({ error: "target profile not found" });
+    if (!existing) {
+      return reply.status(404).send({ error: "target profile not found" });
+    }
 
     const activePointer = await activeTargetProfileRepo.get();
     if (activePointer?.profileId === request.params.id) {
@@ -110,7 +144,9 @@ export function registerTargetProfileRoutes(app: FastifyInstance, deps: AppDeps)
 
   app.post<{ Params: { id: string } }>("/target-profiles/:id/activate", async (request, reply) => {
     const existing = await targetProfileRepo.get(request.params.id);
-    if (!existing) return reply.status(404).send({ error: "target profile not found" });
+    if (!existing) {
+      return reply.status(404).send({ error: "target profile not found" });
+    }
 
     await activeTargetProfileRepo.set(request.params.id);
     return reply.status(204).send();

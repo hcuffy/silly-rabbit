@@ -33,7 +33,9 @@ export interface SessionReplayStepResult {
 }
 
 function describeStepSelector(step: SessionRecordingStep): string {
-  if (step.selectorStrategy === "role") return `role=${step.role ?? "?"} name="${step.accessibleName ?? "?"}"`;
+  if (step.selectorStrategy === "role") {
+    return `role=${step.role ?? "?"} name="${step.accessibleName ?? "?"}"`;
+  }
   return `css=${step.cssSelector ?? "?"}`;
 }
 
@@ -65,7 +67,9 @@ async function resolveReplayLocator(page: Page, step: SessionRecordingStep): Pro
   if (step.selectorStrategy === "role" && step.role && step.accessibleName) {
     const role = step.role as PlaywrightRole;
     const byName = page.getByRole(role, { name: step.accessibleName });
-    if ((await byName.count()) > 0) return byName;
+    if ((await byName.count()) > 0) {
+      return byName;
+    }
 
     const normalizedName = normalizeLabelForLlmMatchComparison(step.accessibleName);
     return page.getByRole(role).filter({ hasText: new RegExp(escapeRegExp(normalizedName), "i") });
@@ -80,7 +84,9 @@ async function performStepAction(input: SessionReplayStepInput): Promise<Session
   const { page, step } = input;
 
   if (step.action === "navigate") {
-    if (!step.value) return { status: "drift", findings: [buildStepFailureFinding(input, "recorded navigate step has no URL")] };
+    if (!step.value) {
+      return { status: "drift", findings: [buildStepFailureFinding(input, "recorded navigate step has no URL")] };
+    }
     await input.onBeforeNavigate?.(step.value);
     await page.goto(step.value);
     return undefined;
@@ -197,7 +203,9 @@ export async function executeSessionReplayStep(input: SessionReplayStepInput): P
 
   try {
     const driftOrError = await performStepAction(input);
-    if (driftOrError) return driftOrError;
+    if (driftOrError) {
+      return driftOrError;
+    }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return { status: "error", findings: [buildStepFailureFinding(input, `execution error: ${message}`)] };

@@ -8,8 +8,12 @@ import { useSessionReplayRunDetail } from "../lib/queries.js";
 
 function describeStep(step: SessionRecordingStep): string {
   const target = step.selectorStrategy === "role" ? step.accessibleName : step.cssSelector;
-  if (step.action === "navigate") return `Navigate to ${step.value}`;
-  if (step.action === "fill") return `Fill "${target}" with "${step.value}"`;
+  if (step.action === "navigate") {
+    return `Navigate to ${step.value}`;
+  }
+  if (step.action === "fill") {
+    return `Fill "${target}" with "${step.value}"`;
+  }
   return `Click "${target}"`;
 }
 
@@ -17,19 +21,20 @@ export function SessionReplayDetail({ runId }: { runId: string }) {
   const runQuery = useSessionReplayRunDetail(runId);
   const cycleQuery = useCycle(runQuery.data?.cycleId);
 
-  if (runQuery.isPending) return <p>Loading session-replay run…</p>;
-  if (runQuery.isError)
+  if (runQuery.isPending) {
+    return <p>Loading session-replay run…</p>;
+  }
+  if (runQuery.isError) {
     return (
       <p className="form-error" role="alert">
         Failed to load session-replay run: {runQuery.error.message}
       </p>
     );
+  }
 
   const run = runQuery.data;
   const headerText =
-    run.cycleId && run.replayRunNumber !== undefined
-      ? `${cycleQuery.data?.name ?? "…"}, Replay ${run.replayRunNumber}`
-      : "Session replay detail";
+    run.cycleId && run.replayRunNumber !== undefined ? `${cycleQuery.data?.name ?? "…"}, Replay ${run.replayRunNumber}` : "Session replay detail";
 
   return (
     <section className="session-replay-detail">

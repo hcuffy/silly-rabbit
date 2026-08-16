@@ -33,21 +33,25 @@ const EXISTING_NAV_MAP = {
   crawlDurationMs: 4200,
 };
 
-function stubFetch(handlers: {
-  navMap?: () => Response;
-  crawl?: () => Response;
-  del?: () => Response;
-}): void {
+function stubFetch(handlers: { navMap?: () => Response; crawl?: () => Response; del?: () => Response }): void {
   vi.stubGlobal(
     "fetch",
     vi.fn((url: string, init?: RequestInit) => {
-      if (url.includes("/target-profiles/active")) return Promise.resolve(jsonResponse({ profileId: PROFILE.id }));
-      if (url.endsWith("/target-profiles")) return Promise.resolve(jsonResponse([PROFILE]));
-      if (url.includes("/nav-map/crawl")) return Promise.resolve(handlers.crawl?.() ?? jsonResponse({ error: "no crawl handler" }, 500));
+      if (url.includes("/target-profiles/active")) {
+        return Promise.resolve(jsonResponse({ profileId: PROFILE.id }));
+      }
+      if (url.endsWith("/target-profiles")) {
+        return Promise.resolve(jsonResponse([PROFILE]));
+      }
+      if (url.includes("/nav-map/crawl")) {
+        return Promise.resolve(handlers.crawl?.() ?? jsonResponse({ error: "no crawl handler" }, 500));
+      }
       if (url.includes("/nav-map") && init?.method === "DELETE") {
         return Promise.resolve(handlers.del?.() ?? new Response(null, { status: 204 }));
       }
-      if (url.includes("/nav-map")) return Promise.resolve(handlers.navMap?.() ?? jsonResponse({ error: "no nav-map handler" }, 500));
+      if (url.includes("/nav-map")) {
+        return Promise.resolve(handlers.navMap?.() ?? jsonResponse({ error: "no nav-map handler" }, 500));
+      }
       return Promise.resolve(jsonResponse({ error: `unexpected url in test: ${url}` }, 500));
     }),
   );
@@ -78,31 +82,33 @@ describe("NavMapPanel (Settings page)", () => {
     expect(await screen.findByText("No NavMap yet for this baseUrl. Click Crawl to build one.")).toBeInTheDocument();
   });
 
-  it("Crawl shows an in-progress message while the (delayed, real-crawls-are-slow-shaped) request is " +
-    "in flight, then the result on success", async () => {
-    stubFetch({
-      navMap: () => jsonResponse({ error: "no nav map" }, 404),
-      crawl: () => jsonResponse(EXISTING_NAV_MAP),
-    });
-    const user = userEvent.setup();
-    renderWithClient(<NavMapPanel />);
-    await screen.findByText("No NavMap yet for this baseUrl. Click Crawl to build one.");
+  it(
+    "Crawl shows an in-progress message while the (delayed, real-crawls-are-slow-shaped) request is " + "in flight, then the result on success",
+    async () => {
+      stubFetch({
+        navMap: () => jsonResponse({ error: "no nav map" }, 404),
+        crawl: () => jsonResponse(EXISTING_NAV_MAP),
+      });
+      const user = userEvent.setup();
+      renderWithClient(<NavMapPanel />);
+      await screen.findByText("No NavMap yet for this baseUrl. Click Crawl to build one.");
 
-    const fetchMock = vi.mocked(fetch);
-    const instantImplementation = fetchMock.getMockImplementation()!;
-    fetchMock.mockImplementation(async (...arguments_) => {
-      const [url] = arguments_;
-      if (typeof url === "string" && url.includes("/nav-map/crawl")) {
-        await new Promise((resolve) => setTimeout(resolve, 50));
-      }
-      return instantImplementation(...arguments_);
-    });
+      const fetchMock = vi.mocked(fetch);
+      const instantImplementation = fetchMock.getMockImplementation()!;
+      fetchMock.mockImplementation(async (...arguments_) => {
+        const [url] = arguments_;
+        if (typeof url === "string" && url.includes("/nav-map/crawl")) {
+          await new Promise((resolve) => setTimeout(resolve, 50));
+        }
+        return instantImplementation(...arguments_);
+      });
 
-    await user.click(screen.getByRole("button", { name: "Crawl" }));
+      await user.click(screen.getByRole("button", { name: "Crawl" }));
 
-    expect(await screen.findByRole("status")).toHaveTextContent(/can take a while/);
-    expect(await screen.findByText("Locations")).toBeInTheDocument();
-  });
+      expect(await screen.findByRole("status")).toHaveTextContent(/can take a while/);
+      expect(await screen.findByText("Locations")).toBeInTheDocument();
+    },
+  );
 
   it("a crawl failure (e.g. destructive-guard rejection, unreachable target) shows a clear error", async () => {
     stubFetch({

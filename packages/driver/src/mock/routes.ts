@@ -4,11 +4,7 @@ import { renderLocationDetailHtml, renderLocationsListHtml, type MockSeed, type 
 const LIST_PATH = "/fleet/auth/platform/locations";
 const DETAIL_PATH = /^\/fleet\/auth\/platform\/locations\/\d+$/;
 
-export async function installMockTarget(
-  context: BrowserContext,
-  variant: MockVariant,
-  seed: MockSeed,
-): Promise<void> {
+export async function installMockTarget(context: BrowserContext, variant: MockVariant, seed: MockSeed): Promise<void> {
   await context.route(`**${LIST_PATH}**`, async (route) => {
     const pathname = new URL(route.request().url()).pathname;
 

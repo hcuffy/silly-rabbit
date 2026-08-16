@@ -29,6 +29,7 @@ LLM-driven navigation), `TARGET_*` env vars only. Flag anything that relitigates
 silently drifts from these.
 
 **2. CLAUDE.md code rules:**
+
 - Comments explain WHY only (spec refs, bug rationale, non-obvious gotchas). Any
   comment that just restates what the next line does — flag it.
 - Full-word identifiers; `id`/`url`/`db` and other established domain terms are fine,
@@ -40,6 +41,7 @@ silently drifts from these.
 
 **3. Target-agnostic** — this is the class `.leakcheck` can't catch (that's a literal
 string blocklist). Look for:
+
 - Structural assumptions stated as fact about "the" target: a specific route shape,
   nav pattern, locale count, or field name presented as universal rather than
   per-target config. (Real example from this repo's history: engine-spec once locked

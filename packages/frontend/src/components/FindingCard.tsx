@@ -30,15 +30,11 @@ export function FindingCard({ finding, isActive = false }: { finding: Finding; i
       <div className="finding-card__header">
         <span className="finding-card__type">{finding.type}</span>
         {finding.verdict && (
-          <span className={`finding-card__verdict finding-card__verdict--${finding.verdict.toLowerCase()}`}>
-            {finding.verdict}
-          </span>
+          <span className={`finding-card__verdict finding-card__verdict--${finding.verdict.toLowerCase()}`}>{finding.verdict}</span>
         )}
         {finding.severity && <span className="finding-card__severity">{finding.severity}</span>}
         {finding.escalatedToOpus === true && <span className="finding-card__escalated">Opus</span>}
-        {finding.confidence !== undefined && (
-          <span className="finding-card__confidence">confidence {Math.round(finding.confidence * 100)}%</span>
-        )}
+        {finding.confidence !== undefined && <span className="finding-card__confidence">confidence {Math.round(finding.confidence * 100)}%</span>}
         {finding.status === "DISMISSED" && <span className="finding-card__status">DISMISSED</span>}
       </div>
       {finding.reasoning && <p className="finding-card__reasoning">{finding.reasoning}</p>}
@@ -53,9 +49,7 @@ export function FindingCard({ finding, isActive = false }: { finding: Finding; i
           <img className="finding-card__screenshot" src={screenshotUrl(finding.id)} alt="Screenshot at time of finding" />
         </a>
       )}
-      {pixelDiffScore !== undefined && (
-        <span className="finding-card__pixel-diff">pixel diff {(pixelDiffScore * 100).toFixed(1)}%</span>
-      )}
+      {pixelDiffScore !== undefined && <span className="finding-card__pixel-diff">pixel diff {(pixelDiffScore * 100).toFixed(1)}%</span>}
       {finding.reproSpecPath && (
         <a className="finding-card__repro-link" href={reproDownloadUrl(finding.id)} download>
           Download repro

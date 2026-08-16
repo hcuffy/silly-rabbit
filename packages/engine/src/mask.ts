@@ -44,7 +44,9 @@ const NUMBER_TOKEN = /\d{1,3}(?:[.,]\d{3})+(?:[.,]\d+)?|\d+(?:[.,]\d+)?/g;
 
 export function canonicalizeNumber(raw: string): string {
   const parts = raw.split(/[.,]/);
-  if (parts.length === 1) return parts[0] ?? raw;
+  if (parts.length === 1) {
+    return parts[0] ?? raw;
+  }
 
   const last = parts[parts.length - 1] ?? "";
   if (last.length <= 2) {
@@ -67,8 +69,12 @@ function replaceAllPatterns(text: string, patterns: RegExp[], token: string): st
 
 export function maskText(text: string): string {
   const trimmed = text.trim();
-  if (matchesWhole(trimmed, TIME_PATTERNS)) return "<TIME>";
-  if (matchesWhole(trimmed, ID_PATTERNS)) return "<ID>";
+  if (matchesWhole(trimmed, TIME_PATTERNS)) {
+    return "<TIME>";
+  }
+  if (matchesWhole(trimmed, ID_PATTERNS)) {
+    return "<ID>";
+  }
 
   let working = replaceAllPatterns(trimmed, TIME_PATTERNS, "<TIME>");
   working = replaceAllPatterns(working, ID_PATTERNS, "<ID>");
@@ -83,7 +89,9 @@ export function maskText(text: string): string {
   const hasOtherWords = working.replace(/<TIME>|<ID>/g, "").trim().length > 0;
 
   const parts = [...specialTokens, ...numbers];
-  if (hasOtherWords) parts.push("<TEXT>");
+  if (hasOtherWords) {
+    parts.push("<TEXT>");
+  }
 
   return parts.length > 0 ? parts.join(" ") : "<TEXT>";
 }

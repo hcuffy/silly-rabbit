@@ -38,11 +38,18 @@ const DEFAULT_SESSION_SECRET_PATH = "../../.silly-rabbit/session-secret";
 const DEFAULT_CREDENTIAL_ENCRYPTION_KEY_PATH = "../../.silly-rabbit/credential-encryption-key";
 
 function parseLoginCreds(environment: NodeJS.ProcessEnv): LoginCreds | undefined {
-  const { TARGET_LOGIN_URL, TARGET_EMAIL, TARGET_PASSWORD,
-          TARGET_EMAIL_SELECTOR, TARGET_PASSWORD_SELECTOR, TARGET_SUBMIT_SELECTOR,
-          TARGET_NEXT_SELECTOR, TIMEOUT_MS, LOGIN_READY_TIMEOUT_MS } = environment;
-  if (!TARGET_LOGIN_URL || !TARGET_EMAIL || !TARGET_PASSWORD ||
-      !TARGET_EMAIL_SELECTOR || !TARGET_PASSWORD_SELECTOR || !TARGET_SUBMIT_SELECTOR) {
+  const {
+    TARGET_LOGIN_URL,
+    TARGET_EMAIL,
+    TARGET_PASSWORD,
+    TARGET_EMAIL_SELECTOR,
+    TARGET_PASSWORD_SELECTOR,
+    TARGET_SUBMIT_SELECTOR,
+    TARGET_NEXT_SELECTOR,
+    TIMEOUT_MS,
+    LOGIN_READY_TIMEOUT_MS,
+  } = environment;
+  if (!TARGET_LOGIN_URL || !TARGET_EMAIL || !TARGET_PASSWORD || !TARGET_EMAIL_SELECTOR || !TARGET_PASSWORD_SELECTOR || !TARGET_SUBMIT_SELECTOR) {
     return undefined;
   }
   return {
@@ -67,12 +74,16 @@ function parseCorsOrigins(environmentValue: string | undefined): string[] {
 
 function requireEnvironmentVariable(environment: NodeJS.ProcessEnv, name: string): string {
   const value = environment[name];
-  if (!value) throw new Error(`${name} environment variable is required`);
+  if (!value) {
+    throw new Error(`${name} environment variable is required`);
+  }
   return value;
 }
 
 function parseCookieSameSite(environmentValue: string | undefined): "lax" | "none" | "strict" {
-  if (environmentValue === "none" || environmentValue === "strict") return environmentValue;
+  if (environmentValue === "none" || environmentValue === "strict") {
+    return environmentValue;
+  }
   return "lax";
 }
 
@@ -172,8 +183,7 @@ async function main(): Promise<void> {
       assertNotProductionUrl(url, productionUrlPatterns);
     },
     onBeforeAction: (action: ActionDescriptor) => assertNotDestructive(action, DEFAULT_DESTRUCTIVE_PATTERNS),
-    onBeforeRollbackDelete: (action: ActionDescriptor, verifiedMarkerMatch: boolean) =>
-      assertRollbackDeleteAllowed(action, verifiedMarkerMatch),
+    onBeforeRollbackDelete: (action: ActionDescriptor, verifiedMarkerMatch: boolean) => assertRollbackDeleteAllowed(action, verifiedMarkerMatch),
   });
 
   const shutdown = async (): Promise<void> => {

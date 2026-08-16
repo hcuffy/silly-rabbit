@@ -27,9 +27,7 @@ async function captureRealDivergence(): Promise<EvalCase> {
   try {
     const page = await browser.newPage();
 
-    await page.route(`${MOCK_URL}**`, (route) =>
-      route.fulfill({ contentType: "text/html", body: renderLocationsListHtml({ withAddButton: true }) }),
-    );
+    await page.route(`${MOCK_URL}**`, (route) => route.fulfill({ contentType: "text/html", body: renderLocationsListHtml({ withAddButton: true }) }));
     await page.goto(MOCK_URL);
     const baselineRaw = await page.ariaSnapshot({ boxes: true });
 
@@ -74,12 +72,7 @@ function handWrittenCases(): EvalCase[] {
       input: {
         charter: CHARTER,
         screenId: "c48994fdd89616ac5ecfc910de83a6421445d921588514dab3eb02912761f525",
-        baselineAriaSnapshotMasked: [
-          '- heading "Locations" [level=1]',
-          "- list",
-          "  - listitem",
-          '    - link "Main Warehouse"',
-        ].join("\n"),
+        baselineAriaSnapshotMasked: ['- heading "Locations" [level=1]', "- list", "  - listitem", '    - link "Main Warehouse"'].join("\n"),
         currentAriaSnapshotMasked: [
           '- heading "Locations" [level=1]',
           '- text "Tip: click a location to see its detail page."',

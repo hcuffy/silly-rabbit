@@ -26,13 +26,19 @@ export function registerMcpNavMapTools(server: McpServer, deps: McpToolDeps): vo
       },
     },
     async (arguments_) => {
-      if (!deps.navMapRepo) return errorResult("NavMap is not configured on this MCP server");
+      if (!deps.navMapRepo) {
+        return errorResult("NavMap is not configured on this MCP server");
+      }
 
       const resolution = await resolveExplicitProfileOverrides(deps, arguments_.profileId);
-      if (!resolution.ok) return resolution.result;
+      if (!resolution.ok) {
+        return resolution.result;
+      }
 
       const targetBaseUrl = arguments_.targetBaseUrl ?? resolution.overrides?.baseUrl;
-      if (!targetBaseUrl) return errorResult("targetBaseUrl is required (directly, or via a profileId whose profile has a baseUrl)");
+      if (!targetBaseUrl) {
+        return errorResult("targetBaseUrl is required (directly, or via a profileId whose profile has a baseUrl)");
+      }
 
       const effectiveDeps = resolution.overrides
         ? { ...deps, navMapRepo: deps.navMapRepo, loginCreds: resolution.overrides.loginCreds, allowedDomains: resolution.overrides.allowedDomains }
@@ -41,7 +47,9 @@ export function registerMcpNavMapTools(server: McpServer, deps: McpToolDeps): vo
       try {
         return jsonResult(await buildNavMap({ baseUrl: targetBaseUrl }, effectiveDeps));
       } catch (error) {
-        if (error instanceof RunCapacityError) return errorResult(error.message);
+        if (error instanceof RunCapacityError) {
+          return errorResult(error.message);
+        }
         throw error;
       }
     },
@@ -55,10 +63,14 @@ export function registerMcpNavMapTools(server: McpServer, deps: McpToolDeps): vo
       inputSchema: { targetBaseUrl: z.string().url() },
     },
     async ({ targetBaseUrl }) => {
-      if (!deps.navMapRepo) return errorResult("NavMap is not configured on this MCP server");
+      if (!deps.navMapRepo) {
+        return errorResult("NavMap is not configured on this MCP server");
+      }
 
       const navMap = await deps.navMapRepo.getByBaseUrl(targetBaseUrl);
-      if (!navMap) return errorResult("no nav map for this baseUrl — call crawl_nav_map first");
+      if (!navMap) {
+        return errorResult("no nav map for this baseUrl — call crawl_nav_map first");
+      }
       return jsonResult(navMap);
     },
   );
@@ -67,16 +79,21 @@ export function registerMcpNavMapTools(server: McpServer, deps: McpToolDeps): vo
     "delete_nav_map",
     {
       title: "Delete a target's NavMap",
-      description: "Permanently delete the persisted NavMap for a baseUrl. Nothing else references a NavMap " +
+      description:
+        "Permanently delete the persisted NavMap for a baseUrl. Nothing else references a NavMap " +
         "by id, so this is a standalone delete — no cascade. Call without force first to preview; call again " +
         "with force:true to confirm.",
       inputSchema: { targetBaseUrl: z.string().url(), force: z.boolean().optional() },
     },
     async ({ targetBaseUrl, force }) => {
-      if (!deps.navMapRepo) return errorResult("NavMap is not configured on this MCP server");
+      if (!deps.navMapRepo) {
+        return errorResult("NavMap is not configured on this MCP server");
+      }
 
       const navMap = await deps.navMapRepo.getByBaseUrl(targetBaseUrl);
-      if (!navMap) return errorResult("no nav map for this baseUrl");
+      if (!navMap) {
+        return errorResult("no nav map for this baseUrl");
+      }
       if (!force) {
         return errorResult(
           `This will permanently delete the NavMap for ${targetBaseUrl} (${navMap.entries.length} entries). ` +

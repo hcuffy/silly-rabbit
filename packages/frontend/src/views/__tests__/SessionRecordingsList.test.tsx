@@ -33,14 +33,16 @@ function renderRouted() {
   );
 }
 
-describe("SessionRecordingsList (dashboard-integration slice 2, session-replay-spec §8.3 " +
-  "CONFIRM-7/CONFIRM-8, resolved)", () => {
+describe("SessionRecordingsList (dashboard-integration slice 2, session-replay-spec §8.3 " + "CONFIRM-7/CONFIRM-8, resolved)", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
   it("renders a row per recording — sessionId, targetBaseUrl, recordedAt", async () => {
-    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(jsonResponse([makeRecording()]))));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => Promise.resolve(jsonResponse([makeRecording()]))),
+    );
 
     renderRouted();
 
@@ -49,20 +51,28 @@ describe("SessionRecordingsList (dashboard-integration slice 2, session-replay-s
     expect(screen.getByText(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)).toBeInTheDocument();
   });
 
-  it("shows no filtering/search controls — plain list only (CONFIRM-7, resolved: no filtering for v1). " +
-    "The per-row cycle <select> is a real combobox now (run-cycles-spec.md §5.3) — an explicit-assignment " +
-    "control on the trigger action, not a filter over the recordings list, so it's excluded from this check",
-  async () => {
-    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(jsonResponse([makeRecording()]))));
+  it(
+    "shows no filtering/search controls — plain list only (CONFIRM-7, resolved: no filtering for v1). " +
+      "The per-row cycle <select> is a real combobox now (run-cycles-spec.md §5.3) — an explicit-assignment " +
+      "control on the trigger action, not a filter over the recordings list, so it's excluded from this check",
+    async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(() => Promise.resolve(jsonResponse([makeRecording()]))),
+      );
 
-    renderRouted();
-    await screen.findByText("https://dev.example");
+      renderRouted();
+      await screen.findByText("https://dev.example");
 
-    expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
-  });
+      expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
+    },
+  );
 
   it("never shows a 'record new session' control (CONFIRM-8, resolved: dashboard is replay-trigger only)", async () => {
-    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(jsonResponse([makeRecording()]))));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => Promise.resolve(jsonResponse([makeRecording()]))),
+    );
 
     renderRouted();
     await screen.findByText("https://dev.example");
@@ -72,7 +82,9 @@ describe("SessionRecordingsList (dashboard-integration slice 2, session-replay-s
 
   it("clicking Replay POSTs /session-replay/runs with the row's sessionId and navigates to the returned runId", async () => {
     const fetchMock = vi.fn((url: string, init?: RequestInit) => {
-      if (init?.method === "POST") return Promise.resolve(jsonResponse({ runId: "new-replay-run", status: "PENDING" }, 202));
+      if (init?.method === "POST") {
+        return Promise.resolve(jsonResponse({ runId: "new-replay-run", status: "PENDING" }, 202));
+      }
       return Promise.resolve(jsonResponse([makeRecording()]));
     });
     vi.stubGlobal("fetch", fetchMock);
@@ -90,7 +102,10 @@ describe("SessionRecordingsList (dashboard-integration slice 2, session-replay-s
   });
 
   it("shows a message when no recordings exist yet", async () => {
-    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(jsonResponse([]))));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => Promise.resolve(jsonResponse([]))),
+    );
 
     renderRouted();
 

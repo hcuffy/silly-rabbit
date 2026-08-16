@@ -22,8 +22,7 @@ export function RunId({ id }: { id: string }) {
         onClick={(event) => {
           event.stopPropagation();
           void handleCopy();
-        }}
-      >
+        }}>
         {copied ? "Copied!" : "Copy"}
       </button>
     </span>

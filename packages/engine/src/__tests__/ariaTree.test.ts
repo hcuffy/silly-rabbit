@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest";
 import { parseAriaSnapshot } from "../ariaTree.js";
 
 describe("parseAriaSnapshot — leaf-text formats (found via real-target validation, all three now handled)", () => {
-  it("format A (already working): role \"name\" [attrs] on one line", () => {
+  it('format A (already working): role "name" [attrs] on one line', () => {
     const tree = parseAriaSnapshot('- textbox "Search" [required]');
     expect(tree.children[0]).toMatchObject({ role: "textbox", name: "Search", attrs: { required: true } });
   });
 
-  it("format B (was silently dropped): role [attrs]: \"quoted text\"", () => {
+  it('format B (was silently dropped): role [attrs]: "quoted text"', () => {
     const tree = parseAriaSnapshot('- paragraph [box=8,66,1264,18]: "Showing 10 of 42 results"');
     expect(tree.children[0]).toMatchObject({ role: "paragraph", name: "Showing 10 of 42 results" });
   });

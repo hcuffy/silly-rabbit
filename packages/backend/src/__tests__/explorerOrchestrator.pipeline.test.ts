@@ -83,7 +83,9 @@ function mockAnthropicClient(): AnthropicLike {
   return {
     messages: {
       create: (parameters) => {
-        if (parameters.tool_choice?.name === "submit_test_plan") return Promise.resolve(testPlanResponse());
+        if (parameters.tool_choice?.name === "submit_test_plan") {
+          return Promise.resolve(testPlanResponse());
+        }
         const promptText = parameters.messages[0]?.content ?? "";
         return Promise.resolve(outcomeJudgeResponse(promptText));
       },
@@ -118,64 +120,70 @@ describe("runExplorerTestRun — full D8 pipeline (explorer-spec §3/§10, real 
     await mongod.stop();
   });
 
-  it("research -> test-plan -> happy-path -> boundary(+rollback despite REGRESSION verdict) -> persists TestRun + " +
-    "Findings, end to end", async () => {
-    await page.setContent(SECTION_PAGE);
-    const featureId = `locations-${randomUUID()}`;
-    const runId = `run-${randomUUID()}`;
-    const runStartedAt = new Date();
+  it(
+    "research -> test-plan -> happy-path -> boundary(+rollback despite REGRESSION verdict) -> persists TestRun + " + "Findings, end to end",
+    async () => {
+      await page.setContent(SECTION_PAGE);
+      const featureId = `locations-${randomUUID()}`;
+      const runId = `run-${randomUUID()}`;
+      const runStartedAt = new Date();
 
-    const testRun = await runExplorerTestRun(
-      { page, featureId, runId, runStartedAt },
-      {
-        testRunRepo,
-        learningRepo,
-        findingRepo,
-        judgeClientFactory: mockAnthropicClient,
-        allowedDomains: ["example.test"],
-        productionUrlPatterns: [],
-        screenshotDirectory,
-        screenshotStorageCapBytes: 1_000_000_000,
-      },
-    );
+      const testRun = await runExplorerTestRun(
+        { page, featureId, runId, runStartedAt },
+        {
+          testRunRepo,
+          learningRepo,
+          findingRepo,
+          judgeClientFactory: mockAnthropicClient,
+          allowedDomains: ["example.test"],
+          productionUrlPatterns: [],
+          screenshotDirectory,
+          screenshotStorageCapBytes: 1_000_000_000,
+        },
+      );
 
-    expect(testRun.status).toBe("COMPLETED");
-    expect(testRun.featureId).toBe(featureId);
-    expect(testRun.runId).toBe(runId);
-    expect(testRun.testPlan).toHaveLength(1);
-    expect(testRun.checkOutcomes).toEqual([
-      { hypothesisId: testRun.testPlan[0]?.id, check: "happy", result: "passed" },
-      { hypothesisId: testRun.testPlan[0]?.id, check: "boundary", result: "failed" },
-    ]);
+      expect(testRun.status).toBe("COMPLETED");
+      expect(testRun.featureId).toBe(featureId);
+      expect(testRun.runId).toBe(runId);
+      expect(testRun.testPlan).toHaveLength(1);
+      expect(testRun.checkOutcomes).toEqual([
+        { hypothesisId: testRun.testPlan[0]?.id, check: "happy", result: "passed" },
+        { hypothesisId: testRun.testPlan[0]?.id, check: "boundary", result: "failed" },
+      ]);
 
-    expect(testRun.findingIds).toHaveLength(1);
-    const persistedTestRun = await testRunRepo.get(testRun.id);
-    expect(persistedTestRun).toEqual(testRun);
+      expect(testRun.findingIds).toHaveLength(1);
+      const persistedTestRun = await testRunRepo.get(testRun.id);
+      expect(persistedTestRun).toEqual(testRun);
 
-    const persistedFindings = await findingRepo.listByRun(runId);
-    expect(persistedFindings).toHaveLength(1);
-    expect(persistedFindings[0]).toMatchObject({
-      id: testRun.findingIds[0],
-      type: "BEHAVIOR_CHECK_FAILED",
-      verdict: "REGRESSION",
-      reasoning: "empty name silently accepted, no validation error shown",
-    });
+      const persistedFindings = await findingRepo.listByRun(runId);
+      expect(persistedFindings).toHaveLength(1);
+      expect(persistedFindings[0]).toMatchObject({
+        id: testRun.findingIds[0],
+        type: "BEHAVIOR_CHECK_FAILED",
+        verdict: "REGRESSION",
+        reasoning: "empty name silently accepted, no validation error shown",
+      });
 
-    const screenshotPath = persistedFindings[0]?.screenshotPath;
-    expect(screenshotPath).toBeDefined();
-    if (!screenshotPath) throw new Error("unreachable — asserted above");
-    const screenshotBytes = await readFile(screenshotPath);
-    expect(screenshotBytes.subarray(0, 8)).toEqual(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+      const screenshotPath = persistedFindings[0]?.screenshotPath;
+      expect(screenshotPath).toBeDefined();
+      if (!screenshotPath) {
+        throw new Error("unreachable — asserted above");
+      }
+      const screenshotBytes = await readFile(screenshotPath);
+      expect(screenshotBytes.subarray(0, 8)).toEqual(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
 
-    const beforeScreenshotPath = persistedFindings[0]?.beforeScreenshotPath;
-    expect(beforeScreenshotPath).toBeDefined();
-    if (!beforeScreenshotPath) throw new Error("unreachable — asserted above");
-    expect(beforeScreenshotPath).not.toBe(screenshotPath);
-    const beforeScreenshotBytes = await readFile(beforeScreenshotPath);
-    expect(beforeScreenshotBytes.subarray(0, 8)).toEqual(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+      const beforeScreenshotPath = persistedFindings[0]?.beforeScreenshotPath;
+      expect(beforeScreenshotPath).toBeDefined();
+      if (!beforeScreenshotPath) {
+        throw new Error("unreachable — asserted above");
+      }
+      expect(beforeScreenshotPath).not.toBe(screenshotPath);
+      const beforeScreenshotBytes = await readFile(beforeScreenshotPath);
+      expect(beforeScreenshotBytes.subarray(0, 8)).toEqual(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
 
-    const rowsRemainingAfterRollback = await page.getByRole("row").all();
-    expect(rowsRemainingAfterRollback).toHaveLength(2);
-    expect(await page.getByText("Test Location").count()).toBe(1);
-  });
+      const rowsRemainingAfterRollback = await page.getByRole("row").all();
+      expect(rowsRemainingAfterRollback).toHaveLength(2);
+      expect(await page.getByText("Test Location").count()).toBe(1);
+    },
+  );
 });

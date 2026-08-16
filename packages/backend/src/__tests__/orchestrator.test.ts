@@ -44,7 +44,9 @@ function regressionJudgeClient(): AnthropicLike {
 async function waitForTerminal(runRepo: RunRepo, runId: string): Promise<Run> {
   for (let attempt = 0; attempt < 300; attempt++) {
     const run = await runRepo.get(runId);
-    if (run && (run.status === "COMPLETED" || run.status === "FAILED")) return run;
+    if (run && (run.status === "COMPLETED" || run.status === "FAILED")) {
+      return run;
+    }
     await new Promise((resolve) => setTimeout(resolve, 50));
   }
   throw new Error(`run ${runId} did not reach a terminal state in time`);
@@ -97,10 +99,14 @@ describe("orchestrator (backend-spec §4) — D3 mock through the real engine, p
     expect(appMapAfterRun1?.screens.length).toBe(1);
 
     const screenId = appMapAfterRun1?.screens[0]?.screenId;
-    if (!screenId) throw new Error("unreachable — asserted screens.length above");
+    if (!screenId) {
+      throw new Error("unreachable — asserted screens.length above");
+    }
     const [baseline] = await deps.baselineRepo.getByScreenIds([screenId]);
     expect(baseline?.baselineScreenshotPath).toBeDefined();
-    if (!baseline?.baselineScreenshotPath) throw new Error("unreachable — asserted above");
+    if (!baseline?.baselineScreenshotPath) {
+      throw new Error("unreachable — asserted above");
+    }
     const baselineScreenshotBytes = await readFile(baseline.baselineScreenshotPath);
     expect(baselineScreenshotBytes.subarray(0, 8)).toEqual(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
 
@@ -108,12 +114,7 @@ describe("orchestrator (backend-spec §4) — D3 mock through the real engine, p
       { charter: CHARTER, targetBaseUrl: MOCK_BASE_URL },
       {
         ...deps,
-        installRoutes: (context) =>
-          installMockTarget(
-            context,
-            "volatile-only",
-            seedFor({ timestamp: new Date(Date.now() + 60_000).toISOString() }),
-          ),
+        installRoutes: (context) => installMockTarget(context, "volatile-only", seedFor({ timestamp: new Date(Date.now() + 60_000).toISOString() })),
       },
     );
     const run2Final = await waitForTerminal(deps.runRepo, run2.id);
@@ -152,14 +153,18 @@ describe("orchestrator (backend-spec §4) — D3 mock through the real engine, p
     expect(divergence).toBeDefined();
     expect(divergence?.verdict).toBe("REGRESSION");
     expect(divergence?.reproSpecPath).toBeDefined();
-    if (!divergence?.reproSpecPath) throw new Error("unreachable — asserted above");
+    if (!divergence?.reproSpecPath) {
+      throw new Error("unreachable — asserted above");
+    }
 
     const reproContents = await readFile(divergence.reproSpecPath, "utf8");
     expect(reproContents).toContain("test(");
     expect(reproContents).toContain("deriveFingerprint");
 
     expect(divergence.screenshotPath).toBeDefined();
-    if (!divergence.screenshotPath) throw new Error("unreachable — asserted above");
+    if (!divergence.screenshotPath) {
+      throw new Error("unreachable — asserted above");
+    }
     const screenshotBytes = await readFile(divergence.screenshotPath);
     expect(screenshotBytes.length).toBeGreaterThan(0);
     expect(screenshotBytes.subarray(0, 8)).toEqual(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));

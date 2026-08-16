@@ -36,31 +36,32 @@ describe("buildDedupSignature (fixes a real dedup collision — see below for pr
 
   it("same description + same category (or no category) produce the same signature — dedup still works", () => {
     expect(buildDedupSignature("Submit a valid location")).toBe(buildDedupSignature("Submit a valid location"));
-    expect(buildDedupSignature("Submit with a bad value", "long_string")).toBe(
-      buildDedupSignature("Submit with a bad value", "long_string"),
-    );
+    expect(buildDedupSignature("Submit with a bad value", "long_string")).toBe(buildDedupSignature("Submit with a bad value", "long_string"));
   });
 
-  it("PROOF the collision this replaces was real: maskText collapses any two plain-English " +
-    "descriptions to the identical literal token '<TEXT>', which is why routing check descriptions " +
-    "through it (the pre-fix approach) silently merged unrelated checks' findings", () => {
-    const first = maskText("Submit a valid location");
-    const second = maskText("Click the export button");
-    const third = maskText("Submit with a bad value long_string");
-    const fourth = maskText("Submit with a bad value empty_required");
+  it(
+    "PROOF the collision this replaces was real: maskText collapses any two plain-English " +
+      "descriptions to the identical literal token '<TEXT>', which is why routing check descriptions " +
+      "through it (the pre-fix approach) silently merged unrelated checks' findings",
+    () => {
+      const first = maskText("Submit a valid location");
+      const second = maskText("Click the export button");
+      const third = maskText("Submit with a bad value long_string");
+      const fourth = maskText("Submit with a bad value empty_required");
 
-    expect(first).toBe("<TEXT>");
-    expect(second).toBe("<TEXT>");
-    expect(third).toBe("<TEXT>");
-    expect(fourth).toBe("<TEXT>");
-    expect(first).toBe(second);
-    expect(third).toBe(fourth);
+      expect(first).toBe("<TEXT>");
+      expect(second).toBe("<TEXT>");
+      expect(third).toBe("<TEXT>");
+      expect(fourth).toBe("<TEXT>");
+      expect(first).toBe(second);
+      expect(third).toBe(fourth);
 
-    expect(buildDedupSignature("Submit a valid location")).not.toBe(buildDedupSignature("Click the export button"));
-    expect(buildDedupSignature("Submit with a bad value", "long_string")).not.toBe(
-      buildDedupSignature("Submit with a bad value", "empty_required"),
-    );
-  });
+      expect(buildDedupSignature("Submit a valid location")).not.toBe(buildDedupSignature("Click the export button"));
+      expect(buildDedupSignature("Submit with a bad value", "long_string")).not.toBe(
+        buildDedupSignature("Submit with a bad value", "empty_required"),
+      );
+    },
+  );
 });
 
 describe("computeCheckDedupKey (explorer-spec §10.4 — pure function, no Finding object required to exist)", () => {

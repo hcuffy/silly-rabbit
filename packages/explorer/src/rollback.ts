@@ -40,8 +40,12 @@ function findCandidateRows(tree: AriaNode): { role: string; nodes: AriaNode[] } 
 }
 
 function collectLeafTexts(node: AriaNode, out: string[]): void {
-  if (node.name) out.push(node.name);
-  for (const child of node.children) collectLeafTexts(child, out);
+  if (node.name) {
+    out.push(node.name);
+  }
+  for (const child of node.children) {
+    collectLeafTexts(child, out);
+  }
 }
 
 function matchesMarker(row: AriaNode, marker: string): boolean {
@@ -52,7 +56,9 @@ function matchesMarker(row: AriaNode, marker: string): boolean {
 
 function matchesFieldValues(row: AriaNode, inputValues: Record<string, string>): boolean {
   const values = Object.values(inputValues);
-  if (values.length === 0) return false;
+  if (values.length === 0) {
+    return false;
+  }
   const texts: string[] = [];
   collectLeafTexts(row, texts);
   return values.every((value) => texts.includes(value));
@@ -72,22 +78,32 @@ async function locateCandidates(page: Page, locator: RollbackLocator): Promise<{
   const snapshot = await page.ariaSnapshot({ boxes: true });
   const tree = parseAriaSnapshot(snapshot);
   const found = findCandidateRows(tree);
-  if (!found) return { role: "row", nodes: [] };
+  if (!found) {
+    return { role: "row", nodes: [] };
+  }
   return { role: found.role, nodes: found.nodes.filter((row) => matchesLocator(row, locator)) };
 }
 
 export async function rollback(page: Page, locator: RollbackLocator, options: RollbackOptions = {}): Promise<RollbackResult> {
   const candidates = await locateCandidates(page, locator);
-  if (candidates.nodes.length === 0) return { status: "FAILED", reason: "row not found" };
-  if (candidates.nodes.length > 1) return { status: "FAILED", reason: "ambiguous match" };
+  if (candidates.nodes.length === 0) {
+    return { status: "FAILED", reason: "row not found" };
+  }
+  if (candidates.nodes.length > 1) {
+    return { status: "FAILED", reason: "ambiguous match" };
+  }
 
   const [row] = candidates.nodes;
   const deleteButtonName = row ? findDeleteButtonName(row) : undefined;
-  if (!row || !deleteButtonName) return { status: "FAILED", reason: "row not found" };
+  if (!row || !deleteButtonName) {
+    return { status: "FAILED", reason: "row not found" };
+  }
 
   const identifyingTexts = locator.kind === "marker" ? [locator.marker] : Object.values(locator.inputValues);
   let rowLocator = page.getByRole(candidates.role as PlaywrightRole);
-  for (const text of identifyingTexts) rowLocator = rowLocator.filter({ hasText: text });
+  for (const text of identifyingTexts) {
+    rowLocator = rowLocator.filter({ hasText: text });
+  }
 
   const action: ActionDescriptor = { role: "button", accessibleName: deleteButtonName };
   await options.onBeforeRollbackDelete?.(action, true);

@@ -34,7 +34,9 @@ export async function loadLocalStore(path: string): Promise<LocalStore> {
   try {
     raw = await readFile(path, "utf8");
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return emptyLocalStore();
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return emptyLocalStore();
+    }
     throw error;
   }
 

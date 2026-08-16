@@ -44,20 +44,23 @@ describe("FindingRepo — hardDelete (delete-cancel-spec.md, phase 1) — distin
     expect(await repo.get(finding.id)).toBeNull();
   });
 
-  it("a DISMISSED finding still exists (queryable, appears in listByRun) until hardDelete is called " +
-    "separately — dismiss and hard-delete are two distinct mechanisms, not one", async () => {
-    const repo = new FindingRepo(connection.db);
-    const finding = makeFinding({ status: "DISMISSED", runId: `run-${randomUUID()}` });
-    await repo.upsert(finding);
+  it(
+    "a DISMISSED finding still exists (queryable, appears in listByRun) until hardDelete is called " +
+      "separately — dismiss and hard-delete are two distinct mechanisms, not one",
+    async () => {
+      const repo = new FindingRepo(connection.db);
+      const finding = makeFinding({ status: "DISMISSED", runId: `run-${randomUUID()}` });
+      await repo.upsert(finding);
 
-    const beforeDelete = await repo.get(finding.id);
-    expect(beforeDelete?.status).toBe("DISMISSED");
-    expect(await repo.listByRun(finding.runId)).toHaveLength(1);
+      const beforeDelete = await repo.get(finding.id);
+      expect(beforeDelete?.status).toBe("DISMISSED");
+      expect(await repo.listByRun(finding.runId)).toHaveLength(1);
 
-    await repo.hardDelete(finding.id);
-    expect(await repo.get(finding.id)).toBeNull();
-    expect(await repo.listByRun(finding.runId)).toHaveLength(0);
-  });
+      await repo.hardDelete(finding.id);
+      expect(await repo.get(finding.id)).toBeNull();
+      expect(await repo.listByRun(finding.runId)).toHaveLength(0);
+    },
+  );
 
   it("deleteByRunIds() bulk-removes every finding for the given run ids, leaves others untouched", async () => {
     const repo = new FindingRepo(connection.db);

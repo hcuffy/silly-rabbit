@@ -28,12 +28,12 @@ export async function explore(options: ExploreOptions): Promise<CapturedObservat
   const plan = resolveCharter(options.charter, options.charterNav);
   const steps = options.maxSteps !== undefined ? plan.steps.slice(0, options.maxSteps) : plan.steps;
   const useStorageState = options.loginCreds === undefined && options.storageState !== undefined;
-  const context = await options.browser.newContext(
-    useStorageState ? { storageState: options.storageState } : {},
-  );
+  const context = await options.browser.newContext(useStorageState ? { storageState: options.storageState } : {});
 
   try {
-    if (options.installRoutes) await options.installRoutes(context);
+    if (options.installRoutes) {
+      await options.installRoutes(context);
+    }
 
     const page = await context.newPage();
     if (options.isNavigationAllowed) {

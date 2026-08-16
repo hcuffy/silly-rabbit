@@ -153,54 +153,60 @@ describe("executeHappyPathCheck — button-targeting precedence (targetElement >
     expect(result.checkOutcome).toEqual({ hypothesisId: HYPOTHESIS_ID, check: "happy", result: "skipped" });
   });
 
-  it("a targetElement naming an export/download/print-shaped button is refused at execution — deterministic guard, " +
-    "not just a prompt instruction — judge never called, click never fires even though the button genuinely " +
-    "exists and matches (D8 live-incident fix, same reasoning as marker.ts's auth/routing exclusion)", async () => {
-    await page.setContent(
-      `<html><body><h1>Locations</h1><button type="button" onclick="document.title = 'export-clicked'">Export</button></body></html>`,
-    );
-    const exportResearch = research({ elements: [{ kind: "button", accessibleName: "Export", role: "button" }] });
+  it(
+    "a targetElement naming an export/download/print-shaped button is refused at execution — deterministic guard, " +
+      "not just a prompt instruction — judge never called, click never fires even though the button genuinely " +
+      "exists and matches (D8 live-incident fix, same reasoning as marker.ts's auth/routing exclusion)",
+    async () => {
+      await page.setContent(
+        `<html><body><h1>Locations</h1><button type="button" onclick="document.title = 'export-clicked'">Export</button></body></html>`,
+      );
+      const exportResearch = research({ elements: [{ kind: "button", accessibleName: "Export", role: "button" }] });
 
-    const result = await executeHappyPathCheck({
-      page,
-      research: exportResearch,
-      hypothesisId: HYPOTHESIS_ID,
-      check: check({ inputValues: {}, targetElement: "Export" }),
-      runId: RUN_ID,
-      judge: { clientFactory: neverCalledJudgeClient },
-    });
+      const result = await executeHappyPathCheck({
+        page,
+        research: exportResearch,
+        hypothesisId: HYPOTHESIS_ID,
+        check: check({ inputValues: {}, targetElement: "Export" }),
+        runId: RUN_ID,
+        judge: { clientFactory: neverCalledJudgeClient },
+      });
 
-    expect(result.finding).toMatchObject({ verdict: "NEEDS_HUMAN", severity: "LOW", confidence: 0 });
-    expect(result.finding?.reasoning).toContain("Export");
-    expect(result.finding?.reasoning).toContain("outside the CRUD surface");
-    expect(result.checkOutcome).toEqual({ hypothesisId: HYPOTHESIS_ID, check: "happy", result: "skipped" });
-    expect(await page.title()).not.toBe("export-clicked");
-  });
+      expect(result.finding).toMatchObject({ verdict: "NEEDS_HUMAN", severity: "LOW", confidence: 0 });
+      expect(result.finding?.reasoning).toContain("Export");
+      expect(result.finding?.reasoning).toContain("outside the CRUD surface");
+      expect(result.checkOutcome).toEqual({ hypothesisId: HYPOTHESIS_ID, check: "happy", result: "skipped" });
+      expect(await page.title()).not.toBe("export-clicked");
+    },
+  );
 
-  it("a targetElement naming an import/upload-shaped button is refused at execution — same deterministic guard, " +
-    "separate exclusion reason (file-upload, not read-only-export) since Import is legitimate CRUD surface, just " +
-    "untestable without file-picker handling — judge never called, click never fires", async () => {
-    await page.setContent(
-      `<html><body><h1>Locations</h1><button type="button" onclick="document.title = 'import-clicked'">Import</button></body></html>`,
-    );
-    const importResearch = research({ elements: [{ kind: "button", accessibleName: "Import", role: "button" }] });
+  it(
+    "a targetElement naming an import/upload-shaped button is refused at execution — same deterministic guard, " +
+      "separate exclusion reason (file-upload, not read-only-export) since Import is legitimate CRUD surface, just " +
+      "untestable without file-picker handling — judge never called, click never fires",
+    async () => {
+      await page.setContent(
+        `<html><body><h1>Locations</h1><button type="button" onclick="document.title = 'import-clicked'">Import</button></body></html>`,
+      );
+      const importResearch = research({ elements: [{ kind: "button", accessibleName: "Import", role: "button" }] });
 
-    const result = await executeHappyPathCheck({
-      page,
-      research: importResearch,
-      hypothesisId: HYPOTHESIS_ID,
-      check: check({ inputValues: {}, targetElement: "Import" }),
-      runId: RUN_ID,
-      judge: { clientFactory: neverCalledJudgeClient },
-    });
+      const result = await executeHappyPathCheck({
+        page,
+        research: importResearch,
+        hypothesisId: HYPOTHESIS_ID,
+        check: check({ inputValues: {}, targetElement: "Import" }),
+        runId: RUN_ID,
+        judge: { clientFactory: neverCalledJudgeClient },
+      });
 
-    expect(result.finding).toMatchObject({ verdict: "NEEDS_HUMAN", severity: "LOW", confidence: 0 });
-    expect(result.finding?.reasoning).toContain("Import");
-    expect(result.finding?.reasoning).toContain("file-upload action");
-    expect(result.finding?.reasoning).not.toContain("outside the CRUD surface");
-    expect(result.checkOutcome).toEqual({ hypothesisId: HYPOTHESIS_ID, check: "happy", result: "skipped" });
-    expect(await page.title()).not.toBe("import-clicked");
-  });
+      expect(result.finding).toMatchObject({ verdict: "NEEDS_HUMAN", severity: "LOW", confidence: 0 });
+      expect(result.finding?.reasoning).toContain("Import");
+      expect(result.finding?.reasoning).toContain("file-upload action");
+      expect(result.finding?.reasoning).not.toContain("outside the CRUD surface");
+      expect(result.checkOutcome).toEqual({ hypothesisId: HYPOTHESIS_ID, check: "happy", result: "skipped" });
+      expect(await page.title()).not.toBe("import-clicked");
+    },
+  );
 
   it("zero buttons in the inventory is 'not needed', not an error — proceeds straight to the judge with no click", async () => {
     await page.setContent(`<html><body><h1>Locations</h1><input aria-label="Name" /></body></html>`);

@@ -59,10 +59,7 @@ describe("buildNavMap (app-mapping-spec.md §5/§8) — real chromium + mongodb-
   }
 
   it("crawls a synthetic multi-page target end-to-end and persists a NavMap retrievable by baseUrl", async () => {
-    const navMap = await buildNavMap(
-      { baseUrl: ORIGIN_A },
-      baseDeps({ installRoutes: installRoutesFor(ORIGIN_A, ROUTES) }),
-    );
+    const navMap = await buildNavMap({ baseUrl: ORIGIN_A }, baseDeps({ installRoutes: installRoutesFor(ORIGIN_A, ROUTES) }));
 
     expect(navMap.baseUrl).toBe(ORIGIN_A);
     expect(navMap.entries).toHaveLength(2);
@@ -72,23 +69,26 @@ describe("buildNavMap (app-mapping-spec.md §5/§8) — real chromium + mongodb-
     expect(persisted).toEqual(navMap);
   });
 
-  it("crawling two different baseUrls produces two fully separate persisted NavMaps — real end-to-end proof " +
-    "of per-target isolation (repo-level isolation was already proven directly in navMapRepo.test.ts; this " +
-    "proves the full buildNavMap → NavMapRepo path doesn't collapse them)", async () => {
-    const routesB = {
-      "/": html(`<a href="/">Only Home</a>`),
-    };
+  it(
+    "crawling two different baseUrls produces two fully separate persisted NavMaps — real end-to-end proof " +
+      "of per-target isolation (repo-level isolation was already proven directly in navMapRepo.test.ts; this " +
+      "proves the full buildNavMap → NavMapRepo path doesn't collapse them)",
+    async () => {
+      const routesB = {
+        "/": html(`<a href="/">Only Home</a>`),
+      };
 
-    await buildNavMap({ baseUrl: ORIGIN_A }, baseDeps({ installRoutes: installRoutesFor(ORIGIN_A, ROUTES) }));
-    await buildNavMap({ baseUrl: ORIGIN_B }, baseDeps({ installRoutes: installRoutesFor(ORIGIN_B, routesB) }));
+      await buildNavMap({ baseUrl: ORIGIN_A }, baseDeps({ installRoutes: installRoutesFor(ORIGIN_A, ROUTES) }));
+      await buildNavMap({ baseUrl: ORIGIN_B }, baseDeps({ installRoutes: installRoutesFor(ORIGIN_B, routesB) }));
 
-    const mapA = await navMapRepo.getByBaseUrl(ORIGIN_A);
-    const mapB = await navMapRepo.getByBaseUrl(ORIGIN_B);
+      const mapA = await navMapRepo.getByBaseUrl(ORIGIN_A);
+      const mapB = await navMapRepo.getByBaseUrl(ORIGIN_B);
 
-    expect(mapA?.entries.map((entry) => entry.label).sort()).toEqual(["Home", "Settings"]);
-    expect(mapB?.entries.map((entry) => entry.label)).toEqual(["Only Home"]);
-    expect(mapA?.id).not.toBe(mapB?.id);
-  });
+      expect(mapA?.entries.map((entry) => entry.label).sort()).toEqual(["Home", "Settings"]);
+      expect(mapB?.entries.map((entry) => entry.label)).toEqual(["Only Home"]);
+      expect(mapA?.id).not.toBe(mapB?.id);
+    },
+  );
 
   it("re-crawling the same baseUrl reuses its existing NavMap id and overwrites the stored entries in place", async () => {
     const first = await buildNavMap({ baseUrl: ORIGIN_A }, baseDeps({ installRoutes: installRoutesFor(ORIGIN_A, ROUTES) }));
@@ -104,9 +104,7 @@ describe("buildNavMap (app-mapping-spec.md §5/§8) — real chromium + mongodb-
   });
 
   it("a baseUrl outside allowedDomains is rejected before any browser is launched or anything is persisted", async () => {
-    await expect(
-      buildNavMap({ baseUrl: "https://not-allowed.example.com" }, baseDeps()),
-    ).rejects.toThrow(SafetyViolation);
+    await expect(buildNavMap({ baseUrl: "https://not-allowed.example.com" }, baseDeps())).rejects.toThrow(SafetyViolation);
 
     expect(await navMapRepo.getByBaseUrl("https://not-allowed.example.com")).toBeNull();
   });

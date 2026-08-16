@@ -13,19 +13,29 @@ interface DiffLine {
 
 function splitIntoLines(value: string): string[] {
   const lines = value.split("\n");
-  if (lines[lines.length - 1] === "") lines.pop();
+  if (lines[lines.length - 1] === "") {
+    lines.pop();
+  }
   return lines;
 }
 
 function lineClassName(line: DiffLine): string {
-  if (line.added) return "evidence-diff__line evidence-diff__line--added";
-  if (line.removed) return "evidence-diff__line evidence-diff__line--removed";
+  if (line.added) {
+    return "evidence-diff__line evidence-diff__line--added";
+  }
+  if (line.removed) {
+    return "evidence-diff__line evidence-diff__line--removed";
+  }
   return "evidence-diff__line";
 }
 
 function linePrefix(line: DiffLine): string {
-  if (line.added) return "+ ";
-  if (line.removed) return "- ";
+  if (line.added) {
+    return "+ ";
+  }
+  if (line.removed) {
+    return "- ";
+  }
   return "  ";
 }
 

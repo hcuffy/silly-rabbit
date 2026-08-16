@@ -14,7 +14,9 @@ export class ActiveTargetProfileRepo {
 
   async get(): Promise<ActiveTargetProfile | null> {
     const document = await this.collection.findOne({ _id: SINGLETON_ID });
-    if (!document) return null;
+    if (!document) {
+      return null;
+    }
     return ActiveTargetProfileSchema.parse({ profileId: document.profileId, updatedAt: document.updatedAt });
   }
 

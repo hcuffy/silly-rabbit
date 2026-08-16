@@ -15,8 +15,12 @@ import { SettingsPage } from "./views/SettingsPage.js";
 export function App() {
   const sessionQuery = useSessionQuery();
 
-  if (sessionQuery.isLoading) return <LoadingScreen />;
-  if (sessionQuery.isError) return <LoginScreen />;
+  if (sessionQuery.isLoading) {
+    return <LoadingScreen />;
+  }
+  if (sessionQuery.isError) {
+    return <LoginScreen />;
+  }
 
   return (
     <Routes>

@@ -10,8 +10,12 @@ function matchesDatePattern(text: string): boolean {
 }
 
 function detectRequired(node: AriaNode): boolean | undefined {
-  if (node.attrs.required === true) return true;
-  if (node.name?.includes("*")) return true;
+  if (node.attrs.required === true) {
+    return true;
+  }
+  if (node.name?.includes("*")) {
+    return true;
+  }
   return undefined;
 }
 
@@ -57,9 +61,13 @@ function classifyInteractiveNode(node: AriaNode): SectionElement | undefined {
 
 export function walkInteractiveNodes(node: AriaNode, consumed: ReadonlySet<AriaNode>, out: SectionElement[]): void {
   for (const child of node.children) {
-    if (consumed.has(child)) continue;
+    if (consumed.has(child)) {
+      continue;
+    }
     const element = classifyInteractiveNode(child);
-    if (element) out.push(element);
+    if (element) {
+      out.push(element);
+    }
     walkInteractiveNodes(child, consumed, out);
   }
 }

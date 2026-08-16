@@ -31,14 +31,17 @@ describe("resolveSessionSecret (onboarding-friction fix — SESSION_SECRET auto-
     expect(await readFile(secretPath, "utf8")).toBe(secret);
   });
 
-  it("survives a simulated restart: a second process-like call with no env var reads back the " +
-    "SAME persisted secret instead of generating a new one — the actual point of this fix, proven " +
-    "not assumed", async () => {
-    const firstBoot = await resolveSessionSecret({}, secretPath);
-    const secondBoot = await resolveSessionSecret({}, secretPath); // simulates a fresh process, same file
+  it(
+    "survives a simulated restart: a second process-like call with no env var reads back the " +
+      "SAME persisted secret instead of generating a new one — the actual point of this fix, proven " +
+      "not assumed",
+    async () => {
+      const firstBoot = await resolveSessionSecret({}, secretPath);
+      const secondBoot = await resolveSessionSecret({}, secretPath); // simulates a fresh process, same file
 
-    expect(secondBoot).toBe(firstBoot);
-  });
+      expect(secondBoot).toBe(firstBoot);
+    },
+  );
 
   it("creates the parent directory if it doesn't exist yet (fresh .silly-rabbit/-style setup)", async () => {
     const nestedPath = join(directory, "nested", "does", "not", "exist", "session-secret");
@@ -48,14 +51,16 @@ describe("resolveSessionSecret (onboarding-friction fix — SESSION_SECRET auto-
     expect(await readFile(nestedPath, "utf8")).toBe(secret);
   });
 
-  it("a present but empty/whitespace-only persisted file is treated as absent — regenerates rather " +
-    "than returning an empty signing secret", async () => {
-    const { writeFile } = await import("node:fs/promises");
-    await writeFile(secretPath, "   \n", "utf8");
+  it(
+    "a present but empty/whitespace-only persisted file is treated as absent — regenerates rather " + "than returning an empty signing secret",
+    async () => {
+      const { writeFile } = await import("node:fs/promises");
+      await writeFile(secretPath, "   \n", "utf8");
 
-    const secret = await resolveSessionSecret({}, secretPath);
+      const secret = await resolveSessionSecret({}, secretPath);
 
-    expect(secret.trim().length).toBeGreaterThan(0);
-    expect(await readFile(secretPath, "utf8")).toBe(secret);
-  });
+      expect(secret.trim().length).toBeGreaterThan(0);
+      expect(await readFile(secretPath, "utf8")).toBe(secret);
+    },
+  );
 });

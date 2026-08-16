@@ -66,8 +66,7 @@ function outcomeResponse(): AnthropicMessageResponse {
 function mockAnthropicClient(): AnthropicLike {
   return {
     messages: {
-      create: (parameters) =>
-        Promise.resolve(parameters.tool_choice?.name === "submit_test_plan" ? testPlanResponse() : outcomeResponse()),
+      create: (parameters) => Promise.resolve(parameters.tool_choice?.name === "submit_test_plan" ? testPlanResponse() : outcomeResponse()),
     },
   };
 }
@@ -100,51 +99,55 @@ describe("runExplorerTestRun resilience (D8 live-incident fix — bounded per-ch
     await mongod.stop();
   });
 
-  it("a hung check degrades to a 'timed_out' CheckOutcome instead of killing the run, and the TestRun is " +
-    "queryable with real evidence WHILE still RUNNING, not only after completion", async () => {
-    await page.setContent(SECTION_PAGE);
-    const featureId = `locations-${randomUUID()}`;
-    const runId = `run-${randomUUID()}`;
-    const runStartedAt = new Date();
+  it(
+    "a hung check degrades to a 'timed_out' CheckOutcome instead of killing the run, and the TestRun is " +
+      "queryable with real evidence WHILE still RUNNING, not only after completion",
+    async () => {
+      await page.setContent(SECTION_PAGE);
+      const featureId = `locations-${randomUUID()}`;
+      const runId = `run-${randomUUID()}`;
+      const runStartedAt = new Date();
 
-    const runPromise = runExplorerTestRun(
-      { page, featureId, runId, runStartedAt },
-      {
-        testRunRepo,
-        learningRepo,
-        findingRepo,
-        judgeClientFactory: mockAnthropicClient,
-        allowedDomains: ["example.test"],
-        productionUrlPatterns: [],
-        screenshotDirectory,
-        screenshotStorageCapBytes: 1_000_000_000,
-      },
-    );
+      const runPromise = runExplorerTestRun(
+        { page, featureId, runId, runStartedAt },
+        {
+          testRunRepo,
+          learningRepo,
+          findingRepo,
+          judgeClientFactory: mockAnthropicClient,
+          allowedDomains: ["example.test"],
+          productionUrlPatterns: [],
+          screenshotDirectory,
+          screenshotStorageCapBytes: 1_000_000_000,
+        },
+      );
 
-    let observedMidRun = false;
-    for (let attempt = 0; attempt < 40; attempt++) {
-      const midRun = await testRunRepo.getByRunId(runId);
-      if (midRun && midRun.checkOutcomes.length >= 2 && midRun.checkOutcomes.length < 4) {
-        expect(midRun.status).toBe("RUNNING");
-        expect(midRun.checkOutcomes.every((outcome) => outcome.result === "passed")).toBe(true);
-        observedMidRun = true;
-        break;
+      let observedMidRun = false;
+      for (let attempt = 0; attempt < 40; attempt++) {
+        const midRun = await testRunRepo.getByRunId(runId);
+        if (midRun && midRun.checkOutcomes.length >= 2 && midRun.checkOutcomes.length < 4) {
+          expect(midRun.status).toBe("RUNNING");
+          expect(midRun.checkOutcomes.every((outcome) => outcome.result === "passed")).toBe(true);
+          observedMidRun = true;
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 25));
       }
-      await new Promise((resolve) => setTimeout(resolve, 25));
-    }
-    expect(observedMidRun).toBe(true);
+      expect(observedMidRun).toBe(true);
 
-    const testRun = await runPromise;
+      const testRun = await runPromise;
 
-    expect(testRun.status).toBe("COMPLETED");
-    expect(testRun.checkOutcomes).toHaveLength(4);
-    expect(testRun.checkOutcomes.filter((outcome) => outcome.result === "passed")).toHaveLength(2);
-    const stalled = testRun.checkOutcomes.filter((outcome) => outcome.result === "timed_out" || outcome.result === "failed");
-    expect(stalled).toHaveLength(2);
+      expect(testRun.status).toBe("COMPLETED");
+      expect(testRun.checkOutcomes).toHaveLength(4);
+      expect(testRun.checkOutcomes.filter((outcome) => outcome.result === "passed")).toHaveLength(2);
+      const stalled = testRun.checkOutcomes.filter((outcome) => outcome.result === "timed_out" || outcome.result === "failed");
+      expect(stalled).toHaveLength(2);
 
-    const findings = await findingRepo.listByRun(runId);
-    const stalledFindings = findings.filter((finding) => finding.verdict === "NEEDS_HUMAN" && finding.severity === "LOW");
-    expect(stalledFindings).toHaveLength(2);
-    expect(stalledFindings.every((finding) => finding.reasoning?.includes("Timeout"))).toBe(true);
-  }, 20_000);
+      const findings = await findingRepo.listByRun(runId);
+      const stalledFindings = findings.filter((finding) => finding.verdict === "NEEDS_HUMAN" && finding.severity === "LOW");
+      expect(stalledFindings).toHaveLength(2);
+      expect(stalledFindings.every((finding) => finding.reasoning?.includes("Timeout"))).toBe(true);
+    },
+    20_000,
+  );
 });

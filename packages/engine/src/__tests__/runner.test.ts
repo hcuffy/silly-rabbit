@@ -41,9 +41,7 @@ function loopInput(overrides: Partial<EngineLoopInput> = {}): EngineLoopInput {
 
 describe("runEngineLoop — run-1-learns / run-2-flags (engine-spec §5 C.3, §8 done criteria)", () => {
   it("run 1: no baseline yet -> writes a baseline, records oracle findings, no divergence", async () => {
-    const output = await runEngineLoop(
-      loopInput({ observations: [observation({ consoleErrors: ["TypeError: x is undefined at app.js:1:1"] })] }),
-    );
+    const output = await runEngineLoop(loopInput({ observations: [observation({ consoleErrors: ["TypeError: x is undefined at app.js:1:1"] })] }));
 
     expect(output.baselines).toHaveLength(1);
     expect(output.findings).toHaveLength(1);
@@ -80,8 +78,7 @@ describe("runEngineLoop — run-1-learns / run-2-flags (engine-spec §5 C.3, §8
         existingBaselines: run1.baselines,
         existingFindings: run1.findings,
         judge: {
-          clientFactory: () =>
-            verdictClient({ verdict: "REGRESSION", severity: "HIGH", reasoning: "heading changed unexpectedly", confidence: 0.9 }),
+          clientFactory: () => verdictClient({ verdict: "REGRESSION", severity: "HIGH", reasoning: "heading changed unexpectedly", confidence: 0.9 }),
         },
       }),
     );
@@ -112,8 +109,7 @@ describe("runEngineLoop — run-1-learns / run-2-flags (engine-spec §5 C.3, §8
         existingBaselines: [baselineWithScreenshot],
         existingFindings: run1.findings,
         judge: {
-          clientFactory: () =>
-            verdictClient({ verdict: "REGRESSION", severity: "HIGH", reasoning: "heading changed unexpectedly", confidence: 0.9 }),
+          clientFactory: () => verdictClient({ verdict: "REGRESSION", severity: "HIGH", reasoning: "heading changed unexpectedly", confidence: 0.9 }),
         },
       }),
     );
@@ -132,8 +128,7 @@ describe("runEngineLoop — run-1-learns / run-2-flags (engine-spec §5 C.3, §8
         existingBaselines: run1.baselines,
         existingFindings: run1.findings,
         judge: {
-          clientFactory: () =>
-            verdictClient({ verdict: "REGRESSION", severity: "HIGH", reasoning: "heading changed unexpectedly", confidence: 0.9 }),
+          clientFactory: () => verdictClient({ verdict: "REGRESSION", severity: "HIGH", reasoning: "heading changed unexpectedly", confidence: 0.9 }),
         },
       }),
     );
@@ -152,8 +147,7 @@ describe("runEngineLoop — run-1-learns / run-2-flags (engine-spec §5 C.3, §8
         existingBaselines: run1.baselines,
         existingFindings: run1.findings,
         judge: {
-          clientFactory: () =>
-            verdictClient({ verdict: "REGRESSION", severity: "LOW", reasoning: "low conf", confidence: 0.1 }),
+          clientFactory: () => verdictClient({ verdict: "REGRESSION", severity: "LOW", reasoning: "low conf", confidence: 0.1 }),
         },
       }),
     );
@@ -165,7 +159,13 @@ describe("runEngineLoop — run-1-learns / run-2-flags (engine-spec §5 C.3, §8
 
   it("run 2: judge infra failure -> explanation is populated from reasoning (error-attribution-spec §2.2.1)", async () => {
     const run1 = await runEngineLoop(loopInput({ runId: "run-1", observations: [observation()] }));
-    const throwOnCall = (): AnthropicLike => ({ messages: { create: () => { throw new Error("network down"); } } });
+    const throwOnCall = (): AnthropicLike => ({
+      messages: {
+        create: () => {
+          throw new Error("network down");
+        },
+      },
+    });
 
     const run2 = await runEngineLoop(
       loopInput({
@@ -185,9 +185,7 @@ describe("runEngineLoop — run-1-learns / run-2-flags (engine-spec §5 C.3, §8
 
   it("run 2: same issue recurring -> RECURRING status, verdict KNOWN (suppressed from the new surface)", async () => {
     const errorMessage = "TypeError: x is undefined at app.js:1:1";
-    const run1 = await runEngineLoop(
-      loopInput({ runId: "run-1", observations: [observation({ consoleErrors: [errorMessage] })] }),
-    );
+    const run1 = await runEngineLoop(loopInput({ runId: "run-1", observations: [observation({ consoleErrors: [errorMessage] })] }));
 
     const run2 = await runEngineLoop(
       loopInput({

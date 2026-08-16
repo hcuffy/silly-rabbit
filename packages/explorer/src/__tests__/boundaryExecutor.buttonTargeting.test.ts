@@ -106,70 +106,76 @@ describe("executeBoundaryCheck — button-targeting precedence and execution-tim
     expect(result.rollback).toBeUndefined();
   });
 
-  it("a targetElement naming an export/download/print-shaped button is refused at execution — deterministic " +
-    "guard, judge never called, click never fires, no marker/rollback attempted even though the button " +
-    "genuinely exists and matches (D8 live-incident fix)", async () => {
-    await page.setContent(
-      `<html><body><h1>Locations</h1><input aria-label="Name" />` +
-        `<button type="button" onclick="document.title = 'export-clicked'">Export</button></body></html>`,
-    );
-    const exportResearch = research({
-      elements: [
-        { kind: "input", accessibleName: "Name", role: "textbox" },
-        { kind: "button", accessibleName: "Export", role: "button" },
-      ],
-    });
+  it(
+    "a targetElement naming an export/download/print-shaped button is refused at execution — deterministic " +
+      "guard, judge never called, click never fires, no marker/rollback attempted even though the button " +
+      "genuinely exists and matches (D8 live-incident fix)",
+    async () => {
+      await page.setContent(
+        `<html><body><h1>Locations</h1><input aria-label="Name" />` +
+          `<button type="button" onclick="document.title = 'export-clicked'">Export</button></body></html>`,
+      );
+      const exportResearch = research({
+        elements: [
+          { kind: "input", accessibleName: "Name", role: "textbox" },
+          { kind: "button", accessibleName: "Export", role: "button" },
+        ],
+      });
 
-    const result = await executeBoundaryCheck({
-      page,
-      research: exportResearch,
-      hypothesisId: HYPOTHESIS_ID,
-      check: check({ targetElement: "Export" }),
-      runId: RUN_ID,
-      runStartedAt: RUN_STARTED_AT,
-      judge: { clientFactory: neverCalledJudgeClient },
-    });
+      const result = await executeBoundaryCheck({
+        page,
+        research: exportResearch,
+        hypothesisId: HYPOTHESIS_ID,
+        check: check({ targetElement: "Export" }),
+        runId: RUN_ID,
+        runStartedAt: RUN_STARTED_AT,
+        judge: { clientFactory: neverCalledJudgeClient },
+      });
 
-    expect(result.findings[0]).toMatchObject({ verdict: "NEEDS_HUMAN", severity: "LOW", confidence: 0 });
-    expect(result.findings[0]?.reasoning).toContain("Export");
-    expect(result.findings[0]?.reasoning).toContain("outside the CRUD surface");
-    expect(result.checkOutcome).toEqual({ hypothesisId: HYPOTHESIS_ID, check: "boundary", result: "skipped" });
-    expect(result.rollback).toBeUndefined();
-    expect(await page.title()).not.toBe("export-clicked");
-  });
+      expect(result.findings[0]).toMatchObject({ verdict: "NEEDS_HUMAN", severity: "LOW", confidence: 0 });
+      expect(result.findings[0]?.reasoning).toContain("Export");
+      expect(result.findings[0]?.reasoning).toContain("outside the CRUD surface");
+      expect(result.checkOutcome).toEqual({ hypothesisId: HYPOTHESIS_ID, check: "boundary", result: "skipped" });
+      expect(result.rollback).toBeUndefined();
+      expect(await page.title()).not.toBe("export-clicked");
+    },
+  );
 
-  it("a targetElement naming an import/upload-shaped button is refused at execution — same deterministic guard, " +
-    "separate exclusion reason (file-upload) since Import is legitimate CRUD surface, just untestable without " +
-    "file-picker handling — judge never called, click never fires, no marker/rollback attempted", async () => {
-    await page.setContent(
-      `<html><body><h1>Locations</h1><input aria-label="Name" />` +
-        `<button type="button" onclick="document.title = 'import-clicked'">Import</button></body></html>`,
-    );
-    const importResearch = research({
-      elements: [
-        { kind: "input", accessibleName: "Name", role: "textbox" },
-        { kind: "button", accessibleName: "Import", role: "button" },
-      ],
-    });
+  it(
+    "a targetElement naming an import/upload-shaped button is refused at execution — same deterministic guard, " +
+      "separate exclusion reason (file-upload) since Import is legitimate CRUD surface, just untestable without " +
+      "file-picker handling — judge never called, click never fires, no marker/rollback attempted",
+    async () => {
+      await page.setContent(
+        `<html><body><h1>Locations</h1><input aria-label="Name" />` +
+          `<button type="button" onclick="document.title = 'import-clicked'">Import</button></body></html>`,
+      );
+      const importResearch = research({
+        elements: [
+          { kind: "input", accessibleName: "Name", role: "textbox" },
+          { kind: "button", accessibleName: "Import", role: "button" },
+        ],
+      });
 
-    const result = await executeBoundaryCheck({
-      page,
-      research: importResearch,
-      hypothesisId: HYPOTHESIS_ID,
-      check: check({ targetElement: "Import" }),
-      runId: RUN_ID,
-      runStartedAt: RUN_STARTED_AT,
-      judge: { clientFactory: neverCalledJudgeClient },
-    });
+      const result = await executeBoundaryCheck({
+        page,
+        research: importResearch,
+        hypothesisId: HYPOTHESIS_ID,
+        check: check({ targetElement: "Import" }),
+        runId: RUN_ID,
+        runStartedAt: RUN_STARTED_AT,
+        judge: { clientFactory: neverCalledJudgeClient },
+      });
 
-    expect(result.findings[0]).toMatchObject({ verdict: "NEEDS_HUMAN", severity: "LOW", confidence: 0 });
-    expect(result.findings[0]?.reasoning).toContain("Import");
-    expect(result.findings[0]?.reasoning).toContain("file-upload action");
-    expect(result.findings[0]?.reasoning).not.toContain("outside the CRUD surface");
-    expect(result.checkOutcome).toEqual({ hypothesisId: HYPOTHESIS_ID, check: "boundary", result: "skipped" });
-    expect(result.rollback).toBeUndefined();
-    expect(await page.title()).not.toBe("import-clicked");
-  });
+      expect(result.findings[0]).toMatchObject({ verdict: "NEEDS_HUMAN", severity: "LOW", confidence: 0 });
+      expect(result.findings[0]?.reasoning).toContain("Import");
+      expect(result.findings[0]?.reasoning).toContain("file-upload action");
+      expect(result.findings[0]?.reasoning).not.toContain("outside the CRUD surface");
+      expect(result.checkOutcome).toEqual({ hypothesisId: HYPOTHESIS_ID, check: "boundary", result: "skipped" });
+      expect(result.rollback).toBeUndefined();
+      expect(await page.title()).not.toBe("import-clicked");
+    },
+  );
 
   it("a non-mutating check (action 'filter') never gets a marker or rollback — nothing was created to roll back", async () => {
     await page.setContent(CREATE_AND_LIST_PAGE);

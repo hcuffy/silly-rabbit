@@ -15,29 +15,41 @@ const MAX_TOKENS = 2048;
 const LEARNING_TYPE_ORDER: Learning["learningType"][] = ["confirmed_issue", "user_injected_check", "intended_behavior"];
 
 function renderElementsSummary(research: ResearchInventory): string {
-  if (research.elements.length === 0) return "No elements recorded.";
+  if (research.elements.length === 0) {
+    return "No elements recorded.";
+  }
   return research.elements
     .map((element) => {
       let line = `- ${element.kind}: ${element.accessibleName} (${element.role})`;
-      if (element.required) line += " — required";
-      if (element.options) line += ` — options: ${element.options.join(", ")}`;
+      if (element.required) {
+        line += " — required";
+      }
+      if (element.options) {
+        line += ` — options: ${element.options.join(", ")}`;
+      }
       return line;
     })
     .join("\n");
 }
 
 function renderEntityFieldsSummary(research: ResearchInventory): string {
-  if (research.entityFields.length === 0) return "No entity fields recorded.";
+  if (research.entityFields.length === 0) {
+    return "No entity fields recorded.";
+  }
   return research.entityFields.map((field) => `- ${field}`).join("\n");
 }
 
 function renderLearningsByType(activeLearnings: Learning[]): string {
-  if (activeLearnings.length === 0) return "No active learnings for this feature yet.";
+  if (activeLearnings.length === 0) {
+    return "No active learnings for this feature yet.";
+  }
 
   const sections: string[] = [];
   for (const learningType of LEARNING_TYPE_ORDER) {
     const learnings = activeLearnings.filter((learning) => learning.learningType === learningType);
-    if (learnings.length === 0) continue;
+    if (learnings.length === 0) {
+      continue;
+    }
     sections.push(`${learningType}:`);
     sections.push(...learnings.map((learning) => `- ${learning.description}`));
   }

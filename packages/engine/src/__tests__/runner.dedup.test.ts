@@ -74,10 +74,7 @@ describe("runEngineLoop — hash-route identity + in-run baseline map (audit fix
     const errorMessage = "TypeError: x is undefined at app.js:1:1";
     const output = await runEngineLoop(
       loopInput({
-        observations: [
-          observation({ url: HASH_A, consoleErrors: [errorMessage] }),
-          observation({ url: HASH_B, consoleErrors: [errorMessage] }),
-        ],
+        observations: [observation({ url: HASH_A, consoleErrors: [errorMessage] }), observation({ url: HASH_B, consoleErrors: [errorMessage] })],
       }),
     );
     const consoleFindings = output.findings.filter((f) => f.type === "CONSOLE_ERROR");

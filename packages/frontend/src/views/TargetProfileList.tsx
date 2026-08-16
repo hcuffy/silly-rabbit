@@ -23,7 +23,9 @@ export function TargetProfileList() {
   const [editingId, setEditingId] = useState<string | undefined>(undefined);
   const [rowError, setRowError] = useState<string | undefined>(undefined);
 
-  if (isPending) return <p>Loading target profiles…</p>;
+  if (isPending) {
+    return <p>Loading target profiles…</p>;
+  }
   if (isError) {
     return (
       <p className="form-error" role="alert">
@@ -33,7 +35,9 @@ export function TargetProfileList() {
   }
 
   async function handleDelete(id: string, name: string): Promise<void> {
-    if (!window.confirm(`Delete target profile "${name}"? This cannot be undone.`)) return;
+    if (!window.confirm(`Delete target profile "${name}"? This cannot be undone.`)) {
+      return;
+    }
     setRowError(undefined);
     try {
       await deleteMutation.mutateAsync(id);
@@ -89,10 +93,7 @@ export function TargetProfileList() {
                         submitError={updateMutation.isError ? updateMutation.error.message : undefined}
                         onCancel={() => setEditingId(undefined)}
                         onSubmit={(payload) => {
-                          updateMutation.mutate(
-                            { id: profile.id, patch: payload },
-                            { onSuccess: () => setEditingId(undefined) },
-                          );
+                          updateMutation.mutate({ id: profile.id, patch: payload }, { onSuccess: () => setEditingId(undefined) });
                         }}
                       />
                     </td>
@@ -105,17 +106,14 @@ export function TargetProfileList() {
                   <td>{profile.name}</td>
                   <td>{profile.baseUrl}</td>
                   <td>
-                    <span className={`status-badge status-badge--${isActive ? "active" : "inactive"}`}>
-                      {isActive ? "Active" : "Inactive"}
-                    </span>
+                    <span className={`status-badge status-badge--${isActive ? "active" : "inactive"}`}>{isActive ? "Active" : "Inactive"}</span>
                   </td>
                   <td className="target-profile-list__actions">
                     <button
                       type="button"
                       className="button button--secondary"
                       disabled={activateMutation.isPending || deactivateMutation.isPending}
-                      onClick={() => void handleToggleActive(profile.id)}
-                    >
+                      onClick={() => void handleToggleActive(profile.id)}>
                       {isActive ? "Deactivate" : "Activate"}
                     </button>
                     <button type="button" className="button button--secondary" onClick={() => setEditingId(profile.id)}>
@@ -125,8 +123,7 @@ export function TargetProfileList() {
                       type="button"
                       className="button button--destructive"
                       disabled={deleteMutation.isPending}
-                      onClick={() => void handleDelete(profile.id, profile.name)}
-                    >
+                      onClick={() => void handleDelete(profile.id, profile.name)}>
                       Delete
                     </button>
                   </td>

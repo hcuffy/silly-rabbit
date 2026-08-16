@@ -14,7 +14,9 @@ import "./styles.css";
 const queryClient = new QueryClient();
 
 const rootElement = document.getElementById("root");
-if (!rootElement) throw new Error("#root element not found");
+if (!rootElement) {
+  throw new Error("#root element not found");
+}
 
 createRoot(rootElement).render(
   <StrictMode>

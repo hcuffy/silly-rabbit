@@ -58,10 +58,14 @@ describe("cli main() --cycle flag (run-cycles-spec.md phase 3)", () => {
     const stateDirectory = await mkdtemp(join(tmpdir(), "silly-rabbit-cli-cycle-state-"));
     const outputDirectory = await mkdtemp(join(tmpdir(), "silly-rabbit-cli-cycle-out-"));
     return [
-      "--charter", "test the locations flow",
-      "--run", randomUUID(),
-      "--state", join(stateDirectory, "driver-state.json"),
-      "--out", outputDirectory,
+      "--charter",
+      "test the locations flow",
+      "--run",
+      randomUUID(),
+      "--state",
+      join(stateDirectory, "driver-state.json"),
+      "--out",
+      outputDirectory,
       ...extra,
     ];
   }
@@ -110,21 +114,23 @@ describe("cli main() --cycle flag (run-cycles-spec.md phase 3)", () => {
 
   it("--profile and --cycle together apply independently in one invocation — disjoint field sets, no conflict", async () => {
     const profileId = randomUUID();
-    await connection.db.collection<{
-      _id: string;
-      name: string;
-      baseUrl: string;
-      allowedDomains: string[];
-      createdAt: Date;
-      updatedAt: Date;
-    }>("targetProfiles").insertOne({
-      _id: profileId,
-      name: "Combined Profile",
-      baseUrl: "http://combined-profile.invalid",
-      allowedDomains: ["combined-profile.invalid"],
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
+    await connection.db
+      .collection<{
+        _id: string;
+        name: string;
+        baseUrl: string;
+        allowedDomains: string[];
+        createdAt: Date;
+        updatedAt: Date;
+      }>("targetProfiles")
+      .insertOne({
+        _id: profileId,
+        name: "Combined Profile",
+        baseUrl: "http://combined-profile.invalid",
+        allowedDomains: ["combined-profile.invalid"],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
     const cycleId = await insertCycle(connection, { name: "Combined Cycle" });
 
     await main(await runArguments(["--profile", "Combined Profile", "--cycle", "Combined Cycle"]));

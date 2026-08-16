@@ -78,20 +78,22 @@ describe("cli main() — run identification (run-identification-feature)", () =>
     expect(typeof written?.stepsUsed).toBe("number");
   });
 
-  it("--help prints real usage/examples and exits cleanly — no charter/run required, no Mongo/browser " +
-    "touched (onboarding-friction fix)", async () => {
-    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
-    const before = await connection.db.collection("runs").countDocuments();
+  it(
+    "--help prints real usage/examples and exits cleanly — no charter/run required, no Mongo/browser " + "touched (onboarding-friction fix)",
+    async () => {
+      const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+      const before = await connection.db.collection("runs").countDocuments();
 
-    await main(["--help"]);
+      await main(["--help"]);
 
-    expect(logSpy).toHaveBeenCalledTimes(1);
-    const helpText = logSpy.mock.calls[0]?.[0] as string;
-    expect(helpText).toContain("explore --charter");
-    expect(helpText).toContain('pnpm --filter driver explore --charter "test the locations flow" --run demo-1');
-    expect(helpText).toContain("changed-regression");
-    expect(await connection.db.collection("runs").countDocuments()).toBe(before);
-  });
+      expect(logSpy).toHaveBeenCalledTimes(1);
+      const helpText = logSpy.mock.calls[0]?.[0] as string;
+      expect(helpText).toContain("explore --charter");
+      expect(helpText).toContain('pnpm --filter driver explore --charter "test the locations flow" --run demo-1');
+      expect(helpText).toContain("changed-regression");
+      expect(await connection.db.collection("runs").countDocuments()).toBe(before);
+    },
+  );
 
   it("-h is a real shorthand for --help, not just documented in the text", async () => {
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
@@ -102,8 +104,7 @@ describe("cli main() — run identification (run-identification-feature)", () =>
     expect(logSpy.mock.calls[0]?.[0] as string).toContain("Usage:");
   });
 
-  it("missing --charter/--run still throws a usage error that mentions --help, unchanged behavior " +
-    "otherwise", async () => {
+  it("missing --charter/--run still throws a usage error that mentions --help, unchanged behavior " + "otherwise", async () => {
     await expect(main([])).rejects.toThrow(/--help/);
   });
 });

@@ -97,7 +97,7 @@ describe("executeBoundaryCheck (explorer-spec §8.3, real chromium)", () => {
     expect(result.checkOutcome).toEqual({ hypothesisId: HYPOTHESIS_ID, check: "boundary", result: "passed" });
     expect(result.findings).toHaveLength(0);
     expect(result.rollback).toEqual({ status: "OK" });
-    expect(await (page.getByText("Test Location")).count()).toBe(0);
+    expect(await page.getByText("Test Location").count()).toBe(0);
   });
 
   it("a confident fail produces a REGRESSION Finding, and rollback still runs regardless of verdict (§8.3 step 4)", async () => {
@@ -118,7 +118,7 @@ describe("executeBoundaryCheck (explorer-spec §8.3, real chromium)", () => {
     expect(result.findings).toHaveLength(1);
     expect(result.findings[0]).toMatchObject({ type: "BEHAVIOR_CHECK_FAILED", verdict: "REGRESSION", severity: "MEDIUM" });
     expect(result.rollback).toEqual({ status: "OK" });
-    expect(await (page.getByText("Test Location")).count()).toBe(0);
+    expect(await page.getByText("Test Location").count()).toBe(0);
   });
 
   it("two checks with the same description but different category dedup separately (§8.4 — maskedSignature includes category)", async () => {
@@ -153,9 +153,11 @@ describe("executeBoundaryCheck (explorer-spec §8.3, real chromium)", () => {
     expect(longStringDedupKey).not.toBe(emptyRequiredDedupKey);
   });
 
-  it("fallback fieldMatch locator is used and finds+deletes the row when no field is free-text-capable per §8.5's " +
-    "exclusion rules — here an Email field is 'input' kind but excluded (§8.6/§11.1)", async () => {
-    await page.setContent(`
+  it(
+    "fallback fieldMatch locator is used and finds+deletes the row when no field is free-text-capable per §8.5's " +
+      "exclusion rules — here an Email field is 'input' kind but excluded (§8.6/§11.1)",
+    async () => {
+      await page.setContent(`
       <html><body>
         <h1>Locations</h1>
         <input aria-label="Email" />
@@ -176,28 +178,29 @@ describe("executeBoundaryCheck (explorer-spec §8.3, real chromium)", () => {
         </script>
       </body></html>
     `);
-    const client = fakeJudgeClient(outcomeResponse({ passed: true, reasoning: "ok", confidence: 0.9 }));
-    const emailOnlyResearch = research({
-      elements: [
-        { kind: "input", accessibleName: "Email", role: "textbox" },
-        { kind: "button", accessibleName: "Save", role: "button" },
-      ],
-    });
+      const client = fakeJudgeClient(outcomeResponse({ passed: true, reasoning: "ok", confidence: 0.9 }));
+      const emailOnlyResearch = research({
+        elements: [
+          { kind: "input", accessibleName: "Email", role: "textbox" },
+          { kind: "button", accessibleName: "Save", role: "button" },
+        ],
+      });
 
-    const result = await executeBoundaryCheck({
-      page,
-      research: emailOnlyResearch,
-      hypothesisId: HYPOTHESIS_ID,
-      check: check({ inputValues: { Email: "new@example.com" }, targetElement: "Save" }),
-      runId: RUN_ID,
-      runStartedAt: RUN_STARTED_AT,
-      judge: { clientFactory: () => client },
-    });
+      const result = await executeBoundaryCheck({
+        page,
+        research: emailOnlyResearch,
+        hypothesisId: HYPOTHESIS_ID,
+        check: check({ inputValues: { Email: "new@example.com" }, targetElement: "Save" }),
+        runId: RUN_ID,
+        runStartedAt: RUN_STARTED_AT,
+        judge: { clientFactory: () => client },
+      });
 
-    expect(result.rollback).toEqual({ status: "OK" });
-    expect(result.findings).toHaveLength(0);
-    expect(await page.getByText("new@example.com", { exact: true }).count()).toBe(0);
-  });
+      expect(result.rollback).toEqual({ status: "OK" });
+      expect(result.findings).toHaveLength(0);
+      expect(await page.getByText("new@example.com", { exact: true }).count()).toBe(0);
+    },
+  );
 
   it("a FAILED rollback surfaces as a WARNING-severity Finding alongside the check finding, run still completes (§11.3)", async () => {
     await page.setContent(`
@@ -236,5 +239,4 @@ describe("executeBoundaryCheck (explorer-spec §8.3, real chromium)", () => {
     expect(result.findings[0]).toMatchObject({ type: "OTHER", verdict: "NEEDS_HUMAN", severity: "WARNING" });
     expect(result.findings[0]?.reasoning).toContain("delete did not take effect");
   });
-
 });

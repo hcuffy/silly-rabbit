@@ -6,7 +6,9 @@ import type { SessionReplayRunRepo } from "./repos/sessionReplayRunRepo.js";
 import type { TestRunRepo } from "./repos/testRunRepo.js";
 
 async function unlinkIfPresent(path: string | undefined): Promise<void> {
-  if (!path) return;
+  if (!path) {
+    return;
+  }
   try {
     await unlink(path);
   } catch {
@@ -15,11 +17,7 @@ async function unlinkIfPresent(path: string | undefined): Promise<void> {
 }
 
 async function unlinkFindingFiles(finding: { screenshotPath?: string; beforeScreenshotPath?: string; reproSpecPath?: string }): Promise<void> {
-  await Promise.all([
-    unlinkIfPresent(finding.screenshotPath),
-    unlinkIfPresent(finding.beforeScreenshotPath),
-    unlinkIfPresent(finding.reproSpecPath),
-  ]);
+  await Promise.all([unlinkIfPresent(finding.screenshotPath), unlinkIfPresent(finding.beforeScreenshotPath), unlinkIfPresent(finding.reproSpecPath)]);
 }
 
 export interface RunCascadeDeps {
@@ -53,7 +51,9 @@ const inFlightRunDeletes = new Map<string, Promise<RunCascadeResult>>();
 
 export function deleteRunCascade(runId: string, deps: RunCascadeDeps): Promise<RunCascadeResult> {
   const existingJob = inFlightRunDeletes.get(runId);
-  if (existingJob) return existingJob;
+  if (existingJob) {
+    return existingJob;
+  }
 
   const job = performRunCascadeDelete(runId, deps);
   inFlightRunDeletes.set(runId, job);
@@ -67,7 +67,9 @@ async function performRunCascadeDelete(runId: string, deps: RunCascadeDeps): Pro
   await deps.findingRepo.deleteByRunIds([runId]);
 
   const testRun = await deps.testRunRepo.getByRunId(runId);
-  if (testRun) await deps.testRunRepo.delete(testRun.id);
+  if (testRun) {
+    await deps.testRunRepo.delete(testRun.id);
+  }
 
   await deps.runRepo.delete(runId);
 
@@ -101,12 +103,11 @@ export async function previewSessionReplayRunCascade(
 
 const inFlightSessionReplayRunDeletes = new Map<string, Promise<SessionReplayRunCascadeResult>>();
 
-export function deleteSessionReplayRunCascade(
-  sessionReplayRunId: string,
-  deps: SessionReplayRunCascadeDeps,
-): Promise<SessionReplayRunCascadeResult> {
+export function deleteSessionReplayRunCascade(sessionReplayRunId: string, deps: SessionReplayRunCascadeDeps): Promise<SessionReplayRunCascadeResult> {
   const existingJob = inFlightSessionReplayRunDeletes.get(sessionReplayRunId);
-  if (existingJob) return existingJob;
+  if (existingJob) {
+    return existingJob;
+  }
 
   const job = performSessionReplayRunCascadeDelete(sessionReplayRunId, deps);
   inFlightSessionReplayRunDeletes.set(sessionReplayRunId, job);
@@ -140,10 +141,7 @@ export interface SessionRecordingCascadePreview {
   findingCount: number;
 }
 
-export async function previewSessionRecordingCascade(
-  sessionId: string,
-  deps: SessionRecordingCascadeDeps,
-): Promise<SessionRecordingCascadePreview> {
+export async function previewSessionRecordingCascade(sessionId: string, deps: SessionRecordingCascadeDeps): Promise<SessionRecordingCascadePreview> {
   const replayRuns = await deps.sessionReplayRunRepo.findBySessionId(sessionId);
   const previews = await Promise.all(replayRuns.map((run) => previewSessionReplayRunCascade(run.id, deps)));
   return {
@@ -154,12 +152,11 @@ export async function previewSessionRecordingCascade(
 
 const inFlightSessionRecordingDeletes = new Map<string, Promise<SessionRecordingCascadeResult>>();
 
-export function deleteSessionRecordingCascade(
-  sessionId: string,
-  deps: SessionRecordingCascadeDeps,
-): Promise<SessionRecordingCascadeResult> {
+export function deleteSessionRecordingCascade(sessionId: string, deps: SessionRecordingCascadeDeps): Promise<SessionRecordingCascadeResult> {
   const existingJob = inFlightSessionRecordingDeletes.get(sessionId);
-  if (existingJob) return existingJob;
+  if (existingJob) {
+    return existingJob;
+  }
 
   const job = performSessionRecordingCascadeDelete(sessionId, deps);
   inFlightSessionRecordingDeletes.set(sessionId, job);
@@ -167,10 +164,7 @@ export function deleteSessionRecordingCascade(
   return job;
 }
 
-async function performSessionRecordingCascadeDelete(
-  sessionId: string,
-  deps: SessionRecordingCascadeDeps,
-): Promise<SessionRecordingCascadeResult> {
+async function performSessionRecordingCascadeDelete(sessionId: string, deps: SessionRecordingCascadeDeps): Promise<SessionRecordingCascadeResult> {
   const replayRuns = await deps.sessionReplayRunRepo.findBySessionId(sessionId);
   const replayRunIds = replayRuns.map((run) => run.id);
 

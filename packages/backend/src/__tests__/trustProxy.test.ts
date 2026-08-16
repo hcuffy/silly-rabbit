@@ -27,10 +27,7 @@ function throwingJudgeClient(): AnthropicLike {
   };
 }
 
-async function withTestApp(
-  trustProxy: boolean | undefined,
-  run: (app: FastifyInstance, sessionCookie: string) => Promise<void>,
-): Promise<void> {
+async function withTestApp(trustProxy: boolean | undefined, run: (app: FastifyInstance, sessionCookie: string) => Promise<void>): Promise<void> {
   const mongod = await MongoMemoryServer.create();
   const connection = await connectMongo(mongod.getUri());
   try {

@@ -59,7 +59,7 @@ describe("installNavigationGuard (safety-critical, request-level, subsumes onBef
     await page.waitForLoadState("networkidle");
 
     expect(page.url()).toBe("https://allowed.example/");
-    expect(await (page.getByRole("heading", { name: "Allowed Landed" })).isVisible()).toBe(true);
+    expect(await page.getByRole("heading", { name: "Allowed Landed" }).isVisible()).toBe(true);
   });
 
   it("a handler attached via JS after page load (not static markup) is still caught — real-world SPA pattern", async () => {
@@ -103,7 +103,7 @@ describe("installNavigationGuard (safety-critical, request-level, subsumes onBef
     await page.waitForLoadState("networkidle");
 
     expect(page.url()).toBe("https://allowed.example/submit");
-    expect(await (page.getByRole("heading", { name: "Submitted" })).isVisible()).toBe(true);
+    expect(await page.getByRole("heading", { name: "Submitted" }).isVisible()).toBe(true);
   });
 
   it("an existing real <a href> link click to an allowed host still completes with the guard installed (no regression)", async () => {
@@ -126,50 +126,53 @@ describe("installNavigationGuard (safety-critical, request-level, subsumes onBef
     await page.waitForLoadState("networkidle");
 
     expect(page.url()).toBe("https://allowed.example/detail");
-    expect(await (page.getByRole("heading", { name: "Detail" })).isVisible()).toBe(true);
+    expect(await page.getByRole("heading", { name: "Detail" }).isVisible()).toBe(true);
   });
 
-  it("fallback() correctness, proven directly: an earlier-registered mock/fixture route still serves an allowed " +
-    "navigation, and the guard's abort() unconditionally wins over a mock that would otherwise have served a " +
-    "disallowed one", async () => {
-    page = await browser.newPage();
-    let mockServedBlocked = false;
+  it(
+    "fallback() correctness, proven directly: an earlier-registered mock/fixture route still serves an allowed " +
+      "navigation, and the guard's abort() unconditionally wins over a mock that would otherwise have served a " +
+      "disallowed one",
+    async () => {
+      page = await browser.newPage();
+      let mockServedBlocked = false;
 
-    await page.route("**/*", async (route) => {
-      const url = route.request().url();
-      if (url === "https://allowed.example/") {
-        await route.fulfill({ contentType: "text/html", body: "<html><body><h1>Mock Served Allowed</h1></body></html>" });
-        return;
-      }
-      if (url === "https://blocked.example/") {
-        mockServedBlocked = true;
-        await route.fulfill({ contentType: "text/html", body: "<html><body><h1>Mock Served Blocked</h1></body></html>" });
-        return;
-      }
-      await route.fallback();
-    });
-    await installNavigationGuard(page, { isNavigationAllowed: allowOnly("allowed.example") });
-    await page.setContent(
-      `<html><body><h1>Start</h1>
+      await page.route("**/*", async (route) => {
+        const url = route.request().url();
+        if (url === "https://allowed.example/") {
+          await route.fulfill({ contentType: "text/html", body: "<html><body><h1>Mock Served Allowed</h1></body></html>" });
+          return;
+        }
+        if (url === "https://blocked.example/") {
+          mockServedBlocked = true;
+          await route.fulfill({ contentType: "text/html", body: "<html><body><h1>Mock Served Blocked</h1></body></html>" });
+          return;
+        }
+        await route.fallback();
+      });
+      await installNavigationGuard(page, { isNavigationAllowed: allowOnly("allowed.example") });
+      await page.setContent(
+        `<html><body><h1>Start</h1>
         <button type="button" id="allowed" onclick="window.location.href='https://allowed.example/'">Allowed</button>
         <button type="button" id="blocked" onclick="window.location.href='https://blocked.example/'">Blocked</button>
       </body></html>`,
-    );
+      );
 
-    await page.getByRole("button", { name: "Allowed" }).click();
-    await page.waitForLoadState("networkidle");
-    expect(page.url()).toBe("https://allowed.example/");
-    expect(await (page.getByRole("heading", { name: "Mock Served Allowed" })).isVisible()).toBe(true);
+      await page.getByRole("button", { name: "Allowed" }).click();
+      await page.waitForLoadState("networkidle");
+      expect(page.url()).toBe("https://allowed.example/");
+      expect(await page.getByRole("heading", { name: "Mock Served Allowed" }).isVisible()).toBe(true);
 
-    await page.setContent(
-      `<html><body><h1>Start Again</h1>
+      await page.setContent(
+        `<html><body><h1>Start Again</h1>
         <button type="button" id="blocked" onclick="window.location.href='https://blocked.example/'">Blocked</button>
       </body></html>`,
-    );
-    await page.getByRole("button", { name: "Blocked" }).click();
-    await page.waitForLoadState("networkidle").catch(() => undefined);
+      );
+      await page.getByRole("button", { name: "Blocked" }).click();
+      await page.waitForLoadState("networkidle").catch(() => undefined);
 
-    expect(mockServedBlocked).toBe(false);
-    expect(page.url()).not.toContain("blocked.example");
-  });
+      expect(mockServedBlocked).toBe(false);
+      expect(page.url()).not.toContain("blocked.example");
+    },
+  );
 });

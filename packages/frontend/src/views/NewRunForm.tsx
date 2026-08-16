@@ -44,7 +44,9 @@ export function NewRunForm({ onCreated }: { onCreated: (runId: string) => void }
       return;
     }
     setValidationError(undefined);
-    if (cycleId) setLastUsedCycleId(cycleId);
+    if (cycleId) {
+      setLastUsedCycleId(cycleId);
+    }
     mutation.mutate(parsed.data, {
       onSuccess: (response) => onCreated(response.runId),
     });
@@ -60,7 +62,7 @@ export function NewRunForm({ onCreated }: { onCreated: (runId: string) => void }
         </span>
         <FieldHint
           text={
-            'A full plain-language instruction: what to do, step by step if needed. ' +
+            "A full plain-language instruction: what to do, step by step if needed. " +
             'Example: "Log in, open account settings, change the display name, and confirm it saved."'
           }
         />
@@ -83,9 +85,10 @@ export function NewRunForm({ onCreated }: { onCreated: (runId: string) => void }
         aria-label="Insert an example charter"
         value=""
         onChange={(event) => {
-          if (event.target.value) setCharter(event.target.value);
-        }}
-      >
+          if (event.target.value) {
+            setCharter(event.target.value);
+          }
+        }}>
         <option value="">— insert an example charter —</option>
         {EXAMPLE_CHARTERS.map((example) => (
           <option key={example} value={example}>

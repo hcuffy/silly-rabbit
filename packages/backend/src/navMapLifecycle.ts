@@ -42,7 +42,9 @@ async function executeNavMapCrawl(input: BuildNavMapInput, deps: NavMapLifecycle
   const browser = await chromium.launch();
   try {
     const context = await browser.newContext();
-    if (deps.installRoutes) await deps.installRoutes(context);
+    if (deps.installRoutes) {
+      await deps.installRoutes(context);
+    }
 
     const page = await context.newPage();
     await installNavigationGuard(page, {

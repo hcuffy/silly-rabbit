@@ -68,13 +68,27 @@ describe("CycleList (run-cycles-spec.md §4 — cycle management + overview, one
         }
         return Promise.resolve(jsonResponse({ ...ARCHIVED_CYCLE, id }));
       }
-      if (init?.method === "POST" && url.endsWith("/activate")) return Promise.resolve(new Response(null, { status: 204 }));
-      if (init?.method === "POST") return Promise.resolve(jsonResponse({ ...RELEASE_CYCLE, name: "New Cycle" }, 201));
-      if (url.includes("/cycles/active")) return Promise.resolve(jsonResponse({ cycleId: RELEASE_CYCLE.id }));
-      if (url.includes(`/cycles/${DEFAULT_CYCLE.id}/stats`)) return Promise.resolve(jsonResponse(statsFor(DEFAULT_CYCLE)));
-      if (url.includes(`/cycles/${RELEASE_CYCLE.id}/stats`)) return Promise.resolve(jsonResponse(statsFor(RELEASE_CYCLE)));
-      if (url.includes(`/cycles/${ARCHIVED_CYCLE.id}/stats`)) return Promise.resolve(jsonResponse(statsFor(ARCHIVED_CYCLE)));
-      if (url.endsWith("/cycles")) return Promise.resolve(jsonResponse([DEFAULT_CYCLE, RELEASE_CYCLE, ARCHIVED_CYCLE]));
+      if (init?.method === "POST" && url.endsWith("/activate")) {
+        return Promise.resolve(new Response(null, { status: 204 }));
+      }
+      if (init?.method === "POST") {
+        return Promise.resolve(jsonResponse({ ...RELEASE_CYCLE, name: "New Cycle" }, 201));
+      }
+      if (url.includes("/cycles/active")) {
+        return Promise.resolve(jsonResponse({ cycleId: RELEASE_CYCLE.id }));
+      }
+      if (url.includes(`/cycles/${DEFAULT_CYCLE.id}/stats`)) {
+        return Promise.resolve(jsonResponse(statsFor(DEFAULT_CYCLE)));
+      }
+      if (url.includes(`/cycles/${RELEASE_CYCLE.id}/stats`)) {
+        return Promise.resolve(jsonResponse(statsFor(RELEASE_CYCLE)));
+      }
+      if (url.includes(`/cycles/${ARCHIVED_CYCLE.id}/stats`)) {
+        return Promise.resolve(jsonResponse(statsFor(ARCHIVED_CYCLE)));
+      }
+      if (url.endsWith("/cycles")) {
+        return Promise.resolve(jsonResponse([DEFAULT_CYCLE, RELEASE_CYCLE, ARCHIVED_CYCLE]));
+      }
       return Promise.resolve(jsonResponse({ error: `unexpected url in test: ${url}` }, 500));
     });
   }
@@ -88,8 +102,7 @@ describe("CycleList (run-cycles-spec.md §4 — cycle management + overview, one
     vi.unstubAllGlobals();
   });
 
-  it("lists active cycles with stats, the active pointer badge, and archived cycles separately, " +
-    "de-emphasized", async () => {
+  it("lists active cycles with stats, the active pointer badge, and archived cycles separately, " + "de-emphasized", async () => {
     renderWithClient(<CycleList />);
 
     expect(await screen.findByText("Release 3.22")).toBeInTheDocument();
@@ -140,8 +153,7 @@ describe("CycleList (run-cycles-spec.md §4 — cycle management + overview, one
     expect(screen.getByLabelText("Kind")).toBeRequired();
   });
 
-  it("the cycle-create form suppresses native validation bubbles (noValidate) — required stays for " +
-    "screen readers", async () => {
+  it("the cycle-create form suppresses native validation bubbles (noValidate) — required stays for " + "screen readers", async () => {
     const user = userEvent.setup();
     const { container } = renderWithClient(<CycleList />);
     await screen.findByText("Release 3.22");
@@ -186,8 +198,6 @@ describe("CycleList (run-cycles-spec.md §4 — cycle management + overview, one
     const defaultCard = screen.getByText("Uncategorized").closest(".cycle-card") as HTMLElement;
     await user.click(within(defaultCard).getByRole("button", { name: "Set active" }));
 
-    expect(
-      fetchMock.mock.calls.some(([url, init]) => init?.method === "POST" && url.includes("/activate")),
-    ).toBe(true);
+    expect(fetchMock.mock.calls.some(([url, init]) => init?.method === "POST" && url.includes("/activate"))).toBe(true);
   });
 });

@@ -18,9 +18,7 @@ function relativeLuminance(hex: string): number {
   const r = Number.parseInt(hex.slice(1, 3), 16) / 255;
   const g = Number.parseInt(hex.slice(3, 5), 16) / 255;
   const b = Number.parseInt(hex.slice(5, 7), 16) / 255;
-  const [linearR, linearG, linearB] = [r, g, b].map((c) =>
-    c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4,
-  );
+  const [linearR, linearG, linearB] = [r, g, b].map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
   return 0.2126 * linearR + 0.7152 * linearG + 0.0722 * linearB;
 }
 
@@ -134,13 +132,10 @@ describe("phase 2 — card gradient tints still clear AA for the text sitting on
     ["tint-pass-bg", "text-muted"],
     ["tint-warning-bg", "text-muted"],
     ["tint-neutral-bg", "text-muted"],
-  ] as const)(
-    "FindingCard body text (--%s) on the --%s verdict-gradient's most saturated stop clears 4.5:1",
-    (bgToken, textToken) => {
-      const ratio = contrastRatio(readToken(css, textToken), readToken(css, bgToken));
-      expect(ratio).toBeGreaterThanOrEqual(4.5);
-    },
-  );
+  ] as const)("FindingCard body text (--%s) on the --%s verdict-gradient's most saturated stop clears 4.5:1", (bgToken, textToken) => {
+    const ratio = contrastRatio(readToken(css, textToken), readToken(css, bgToken));
+    expect(ratio).toBeGreaterThanOrEqual(4.5);
+  });
 
   it("CycleCard's accent-tint-bg gradient stop (8% teal over white) still clears 4.5:1 for --text and --text-muted", () => {
     // --accent-tint-bg is rgba(15, 118, 110, 0.08), locked in phase 1 — composited over white here
@@ -201,15 +196,18 @@ describe("live-review bugfix round — required-field inline validation styling"
 });
 
 describe("live-review bugfix round #2 — NavMap input matches the shared form-input styling", () => {
-  it("the base-url input in NavMapPanel is styled by the same rule block as every other form input, " +
-    "not left bare — it was missing from the shared selector group entirely (no .new-run-form ancestor, " +
-    "since the crawl-result table below it can't be squeezed to the form's 480px max-width)", () => {
-    const sharedInputBlock = css.match(/\.new-run-form textarea,\n\.new-run-form input,\n\.new-run-form select,\n\.nav-map-panel input \{[^}]*\}/);
-    expect(sharedInputBlock).not.toBeNull();
-    expect(sharedInputBlock?.[0]).toMatch(/border: 1px solid var\(--border\);/);
-    expect(sharedInputBlock?.[0]).toMatch(/border-radius: var\(--radius-sm\);/);
-    expect(sharedInputBlock?.[0]).toMatch(/background: var\(--surface\);/);
-  });
+  it(
+    "the base-url input in NavMapPanel is styled by the same rule block as every other form input, " +
+      "not left bare — it was missing from the shared selector group entirely (no .new-run-form ancestor, " +
+      "since the crawl-result table below it can't be squeezed to the form's 480px max-width)",
+    () => {
+      const sharedInputBlock = css.match(/\.new-run-form textarea,\n\.new-run-form input,\n\.new-run-form select,\n\.nav-map-panel input \{[^}]*\}/);
+      expect(sharedInputBlock).not.toBeNull();
+      expect(sharedInputBlock?.[0]).toMatch(/border: 1px solid var\(--border\);/);
+      expect(sharedInputBlock?.[0]).toMatch(/border-radius: var\(--radius-sm\);/);
+      expect(sharedInputBlock?.[0]).toMatch(/background: var\(--surface\);/);
+    },
+  );
 
   it("the NavMap input also gets the same focus-visible outline as every other form input", () => {
     expect(css).toMatch(/\.new-run-form textarea:focus-visible,\n\.new-run-form input:focus-visible,\n\.nav-map-panel input:focus-visible \{/);
@@ -217,42 +215,54 @@ describe("live-review bugfix round #2 — NavMap input matches the shared form-i
 });
 
 describe("live-review bugfix round #2 — FieldHint tooltip contrast (real audit, not eyeballed)", () => {
-  it("the tooltip's background/text tokens (as written in .field-hint::after) resolve to real hex " +
-    "and clear 4.5:1 AA — audit conclusion: both already reference light-theme tokens (var(--surface), " +
-    "var(--text)), giving 17.8:1 in the current stylesheet; this test locks that in as a regression guard", () => {
-    const tooltipBlock = css.match(/\.field-hint::after \{[^}]*\}/s)?.[0] ?? "";
-    const backgroundMatch = tooltipBlock.match(/background: var\(--([\w-]+)\);/);
-    const colorMatch = tooltipBlock.match(/\n {2}color: var\(--([\w-]+)\);/);
-    expect(backgroundMatch).not.toBeNull();
-    expect(colorMatch).not.toBeNull();
+  it(
+    "the tooltip's background/text tokens (as written in .field-hint::after) resolve to real hex " +
+      "and clear 4.5:1 AA — audit conclusion: both already reference light-theme tokens (var(--surface), " +
+      "var(--text)), giving 17.8:1 in the current stylesheet; this test locks that in as a regression guard",
+    () => {
+      const tooltipBlock = css.match(/\.field-hint::after \{[^}]*\}/s)?.[0] ?? "";
+      const backgroundMatch = tooltipBlock.match(/background: var\(--([\w-]+)\);/);
+      const colorMatch = tooltipBlock.match(/\n {2}color: var\(--([\w-]+)\);/);
+      expect(backgroundMatch).not.toBeNull();
+      expect(colorMatch).not.toBeNull();
 
-    const backgroundHex = readToken(css, backgroundMatch![1]);
-    const textHex = readToken(css, colorMatch![1]);
-    expect(contrastRatio(textHex, backgroundHex)).toBeGreaterThanOrEqual(4.5);
-  });
+      const backgroundHex = readToken(css, backgroundMatch![1]);
+      const textHex = readToken(css, colorMatch![1]);
+      expect(contrastRatio(textHex, backgroundHex)).toBeGreaterThanOrEqual(4.5);
+    },
+  );
 
-  it("opacity is the only animated property on the tooltip — background/color are never mid-transition, " +
-    "so there is no possible opacity-vs-background timing race in the current rule", () => {
-    const tooltipBlock = css.match(/\.field-hint::after \{[^}]*\}/s)?.[0] ?? "";
-    const transitionMatch = tooltipBlock.match(/transition: ([^;]+);/);
-    expect(transitionMatch?.[1]).toBe("opacity 0.1s ease");
-  });
+  it(
+    "opacity is the only animated property on the tooltip — background/color are never mid-transition, " +
+      "so there is no possible opacity-vs-background timing race in the current rule",
+    () => {
+      const tooltipBlock = css.match(/\.field-hint::after \{[^}]*\}/s)?.[0] ?? "";
+      const transitionMatch = tooltipBlock.match(/transition: ([^;]+);/);
+      expect(transitionMatch?.[1]).toBe("opacity 0.1s ease");
+    },
+  );
 });
 
 describe("live-review bugfix round #3 — native-bubble suppression, aria-invalid stays reliable", () => {
-  it("marks empty required fields invalid via a real border-color token, keyed off aria-invalid — " +
-    "reliable regardless of whether the browser's :user-invalid still activates once noValidate " +
-    "suppresses the interactive-validation step that normally drives it", () => {
-    expect(css).toContain('.new-run-form textarea[aria-invalid="true"],');
-    expect(css).toContain('.new-run-form input[aria-invalid="true"],');
-    expect(css).toContain('.new-run-form select[aria-invalid="true"] {');
-    const ariaInvalidBlock = css.match(/\[aria-invalid="true"\] \{[^}]*\}/s)?.[0] ?? "";
-    expect(ariaInvalidBlock).toMatch(/border-color: var\(--tint-critical-text\);/);
-  });
+  it(
+    "marks empty required fields invalid via a real border-color token, keyed off aria-invalid — " +
+      "reliable regardless of whether the browser's :user-invalid still activates once noValidate " +
+      "suppresses the interactive-validation step that normally drives it",
+    () => {
+      expect(css).toContain('.new-run-form textarea[aria-invalid="true"],');
+      expect(css).toContain('.new-run-form input[aria-invalid="true"],');
+      expect(css).toContain('.new-run-form select[aria-invalid="true"] {');
+      const ariaInvalidBlock = css.match(/\[aria-invalid="true"\] \{[^}]*\}/s)?.[0] ?? "";
+      expect(ariaInvalidBlock).toMatch(/border-color: var\(--tint-critical-text\);/);
+    },
+  );
 
-  it("the required-field error message color (--tint-critical-text, reused from .form-error) clears AA " +
-    "on the form's white surface — same rigor as every other color pairing this session", () => {
-    const ratio = contrastRatio(readToken(css, "tint-critical-text"), readToken(css, "surface"));
-    expect(ratio).toBeGreaterThanOrEqual(4.5);
-  });
+  it(
+    "the required-field error message color (--tint-critical-text, reused from .form-error) clears AA " +
+      "on the form's white surface — same rigor as every other color pairing this session",
+    () => {
+      const ratio = contrastRatio(readToken(css, "tint-critical-text"), readToken(css, "surface"));
+      expect(ratio).toBeGreaterThanOrEqual(4.5);
+    },
+  );
 });

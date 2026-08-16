@@ -14,7 +14,9 @@ const ROUTE_FRAGMENT = /^#(!?)\//;
 
 function normalizeFragment(hash: string, idPattern: RegExp): string {
   const match = ROUTE_FRAGMENT.exec(hash);
-  if (!match) return "";
+  if (!match) {
+    return "";
+  }
   const routePart = hash.slice(match[0].length).split("?")[0] ?? "";
   const segments = collapseTrailingId(
     routePart.split("/").filter((segment) => segment.length > 0),
@@ -39,17 +41,25 @@ export function normalizeUrl(rawUrl: string, idPattern: RegExp = DEFAULT_ID_PATT
 }
 
 function isHeading(node: AriaNode, level?: string): boolean {
-  if (node.role !== "heading") return false;
-  if (level === undefined) return true;
+  if (node.role !== "heading") {
+    return false;
+  }
+  if (level === undefined) {
+    return true;
+  }
   return String(node.attrs.level) === level;
 }
 
 export function deriveHeadingAnchor(tree: AriaNode, documentTitle?: string): string {
   const h1 = findFirstNode(tree, (node) => isHeading(node, "1"));
-  if (h1?.name) return h1.name;
+  if (h1?.name) {
+    return h1.name;
+  }
 
   const h2 = findFirstNode(tree, (node) => isHeading(node, "2"));
-  if (h2?.name) return h2.name;
+  if (h2?.name) {
+    return h2.name;
+  }
 
   return documentTitle ?? "";
 }

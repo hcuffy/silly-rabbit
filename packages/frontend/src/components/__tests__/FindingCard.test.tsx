@@ -132,10 +132,7 @@ describe("FindingCard (frontend-spec §5)", () => {
     );
     const thumbnail = screen.getByAltText("Screenshot at time of finding");
     expect(thumbnail).toHaveAttribute("src", expect.stringContaining("/findings/11111111-1111-1111-1111-111111111111/screenshot"));
-    expect(thumbnail.closest("a")).toHaveAttribute(
-      "href",
-      expect.stringContaining("/findings/11111111-1111-1111-1111-111111111111/screenshot"),
-    );
+    expect(thumbnail.closest("a")).toHaveAttribute("href", expect.stringContaining("/findings/11111111-1111-1111-1111-111111111111/screenshot"));
   });
 
   it("never requests a pixel-diff when before/after screenshot paths aren't both present", () => {
@@ -156,7 +153,9 @@ describe("FindingCard (frontend-spec §5)", () => {
     vi.stubGlobal(
       "fetch",
       vi.fn((url: string) => {
-        if (url.includes("/pixel-diff")) return Promise.resolve(jsonResponse({ pixelDiffScore: 0.427 }));
+        if (url.includes("/pixel-diff")) {
+          return Promise.resolve(jsonResponse({ pixelDiffScore: 0.427 }));
+        }
         return Promise.resolve(jsonResponse({}, 404));
       }),
     );

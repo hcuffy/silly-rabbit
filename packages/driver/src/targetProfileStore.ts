@@ -14,11 +14,7 @@ function fromDocument(document: TargetProfileDocument, credentialEncryptionKey: 
   });
 }
 
-export async function resolveTargetProfileByNameOrId(
-  db: Db,
-  nameOrId: string,
-  credentialEncryptionKey: string,
-): Promise<TargetProfile | undefined> {
+export async function resolveTargetProfileByNameOrId(db: Db, nameOrId: string, credentialEncryptionKey: string): Promise<TargetProfile | undefined> {
   const collection = db.collection<TargetProfileDocument>("targetProfiles");
   const document = (await collection.findOne({ _id: nameOrId })) ?? (await collection.findOne({ name: nameOrId }));
   return document ? fromDocument(document, credentialEncryptionKey) : undefined;

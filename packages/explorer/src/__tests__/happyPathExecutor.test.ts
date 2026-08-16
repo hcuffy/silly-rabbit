@@ -113,33 +113,36 @@ describe("executeHappyPathCheck (explorer-spec §8.1/§8.2/§8.4, real chromium)
     expect(result.checkOutcome).toEqual({ hypothesisId: HYPOTHESIS_ID, check: "happy", result: "failed" });
   });
 
-  it("two checks with different descriptions on the same screen dedup separately, not into one Finding " +
-    "(regression test — description used to be routed through maskText, which collapses any plain-English " +
-    "text to the literal '<TEXT>', silently merging every failing happy-path check's dedupKey together)", async () => {
-    const client = fakeJudgeClient(outcomeResponse({ passed: false, reasoning: "no row appeared", confidence: 0.9 }));
+  it(
+    "two checks with different descriptions on the same screen dedup separately, not into one Finding " +
+      "(regression test — description used to be routed through maskText, which collapses any plain-English " +
+      "text to the literal '<TEXT>', silently merging every failing happy-path check's dedupKey together)",
+    async () => {
+      const client = fakeJudgeClient(outcomeResponse({ passed: false, reasoning: "no row appeared", confidence: 0.9 }));
 
-    const first = await executeHappyPathCheck({
-      page,
-      research: research(),
-      hypothesisId: HYPOTHESIS_ID,
-      check: check({ description: "Submit a valid location" }),
-      runId: RUN_ID,
-      judge: { clientFactory: () => client },
-    });
+      const first = await executeHappyPathCheck({
+        page,
+        research: research(),
+        hypothesisId: HYPOTHESIS_ID,
+        check: check({ description: "Submit a valid location" }),
+        runId: RUN_ID,
+        judge: { clientFactory: () => client },
+      });
 
-    const second = await executeHappyPathCheck({
-      page,
-      research: research(),
-      hypothesisId: HYPOTHESIS_ID,
-      check: check({ description: "Submit a location with a different name" }),
-      runId: RUN_ID,
-      judge: { clientFactory: () => client },
-    });
+      const second = await executeHappyPathCheck({
+        page,
+        research: research(),
+        hypothesisId: HYPOTHESIS_ID,
+        check: check({ description: "Submit a location with a different name" }),
+        runId: RUN_ID,
+        judge: { clientFactory: () => client },
+      });
 
-    expect(first.finding?.dedupKey).toBeDefined();
-    expect(second.finding?.dedupKey).toBeDefined();
-    expect(first.finding?.dedupKey).not.toBe(second.finding?.dedupKey);
-  });
+      expect(first.finding?.dedupKey).toBeDefined();
+      expect(second.finding?.dedupKey).toBeDefined();
+      expect(first.finding?.dedupKey).not.toBe(second.finding?.dedupKey);
+    },
+  );
 
   it("a low-confidence verdict produces a NEEDS_HUMAN Finding, checkOutcome result 'failed' (§8.2 contract)", async () => {
     const client = fakeJudgeClient(outcomeResponse({ passed: true, reasoning: "unsure", confidence: 0.2 }));

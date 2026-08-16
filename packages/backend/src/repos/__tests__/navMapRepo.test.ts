@@ -9,9 +9,7 @@ function makeNavMap(overrides: Partial<NavMap> = {}): NavMap {
   return {
     id: randomUUID(),
     baseUrl: "https://target-a.example.com",
-    entries: [
-      { role: "link", label: "Home", discoveredAt: new Date(), isStale: false },
-    ],
+    entries: [{ role: "link", label: "Home", discoveredAt: new Date(), isStale: false }],
     crawledAt: new Date(),
     crawlDurationMs: 1234,
     ...overrides,
@@ -65,31 +63,34 @@ describe("NavMapRepo (app-mapping-spec.md §4) — mongodb-memory-server, no Doc
     expect(rawCount).toBe(1);
   });
 
-  it("two different baseUrls produce two fully separate NavMap documents — no cross-target contamination " +
-    "(the exact AppMapRepo mistake this repo must not repeat: AppMapRepo.get() does a bare findOne({}) " +
-    "with no baseUrl filter, returning one global document regardless of target)", async () => {
-    const repo = new NavMapRepo(connection.db);
-    const navMapA = makeNavMap({
-      id: randomUUID(),
-      baseUrl: "https://isolation-a.example.com",
-      entries: [{ role: "link", label: "Only in A", discoveredAt: new Date(), isStale: false }],
-    });
-    const navMapB = makeNavMap({
-      id: randomUUID(),
-      baseUrl: "https://isolation-b.example.com",
-      entries: [{ role: "link", label: "Only in B", discoveredAt: new Date(), isStale: false }],
-    });
+  it(
+    "two different baseUrls produce two fully separate NavMap documents — no cross-target contamination " +
+      "(the exact AppMapRepo mistake this repo must not repeat: AppMapRepo.get() does a bare findOne({}) " +
+      "with no baseUrl filter, returning one global document regardless of target)",
+    async () => {
+      const repo = new NavMapRepo(connection.db);
+      const navMapA = makeNavMap({
+        id: randomUUID(),
+        baseUrl: "https://isolation-a.example.com",
+        entries: [{ role: "link", label: "Only in A", discoveredAt: new Date(), isStale: false }],
+      });
+      const navMapB = makeNavMap({
+        id: randomUUID(),
+        baseUrl: "https://isolation-b.example.com",
+        entries: [{ role: "link", label: "Only in B", discoveredAt: new Date(), isStale: false }],
+      });
 
-    await repo.upsert(navMapA);
-    await repo.upsert(navMapB);
+      await repo.upsert(navMapA);
+      await repo.upsert(navMapB);
 
-    const retrievedA = await repo.getByBaseUrl(navMapA.baseUrl);
-    const retrievedB = await repo.getByBaseUrl(navMapB.baseUrl);
+      const retrievedA = await repo.getByBaseUrl(navMapA.baseUrl);
+      const retrievedB = await repo.getByBaseUrl(navMapB.baseUrl);
 
-    expect(retrievedA?.entries.map((entry) => entry.label)).toEqual(["Only in A"]);
-    expect(retrievedB?.entries.map((entry) => entry.label)).toEqual(["Only in B"]);
-    expect(retrievedA?.id).not.toBe(retrievedB?.id);
-  });
+      expect(retrievedA?.entries.map((entry) => entry.label)).toEqual(["Only in A"]);
+      expect(retrievedB?.entries.map((entry) => entry.label)).toEqual(["Only in B"]);
+      expect(retrievedA?.id).not.toBe(retrievedB?.id);
+    },
+  );
 
   it("delete removes only the targeted baseUrl's NavMap", async () => {
     const repo = new NavMapRepo(connection.db);
@@ -115,17 +116,20 @@ describe("NavMapRepo (app-mapping-spec.md §4) — mongodb-memory-server, no Doc
     expect(baseUrlIndex?.unique).toBe(true);
   });
 
-  it("the unique baseUrl index actually rejects a second document for the same baseUrl inserted directly " +
-    "(not just relying on the repo's own replaceOne-by-id logic to prevent duplicates)", async () => {
-    const repo = new NavMapRepo(connection.db);
-    await repo.ensureIndexes();
-    const baseUrl = "https://duplicate-guard.example.com";
-    await repo.upsert(makeNavMap({ id: randomUUID(), baseUrl }));
+  it(
+    "the unique baseUrl index actually rejects a second document for the same baseUrl inserted directly " +
+      "(not just relying on the repo's own replaceOne-by-id logic to prevent duplicates)",
+    async () => {
+      const repo = new NavMapRepo(connection.db);
+      await repo.ensureIndexes();
+      const baseUrl = "https://duplicate-guard.example.com";
+      await repo.upsert(makeNavMap({ id: randomUUID(), baseUrl }));
 
-    await expect(
-      connection.db
-        .collection<{ _id: string; baseUrl: string; entries: unknown[]; crawledAt: Date; crawlDurationMs: number }>("navMaps")
-        .insertOne({ _id: randomUUID(), baseUrl, entries: [], crawledAt: new Date(), crawlDurationMs: 0 }),
-    ).rejects.toThrow();
-  });
+      await expect(
+        connection.db
+          .collection<{ _id: string; baseUrl: string; entries: unknown[]; crawledAt: Date; crawlDurationMs: number }>("navMaps")
+          .insertOne({ _id: randomUUID(), baseUrl, entries: [], crawledAt: new Date(), crawlDurationMs: 0 }),
+      ).rejects.toThrow();
+    },
+  );
 });

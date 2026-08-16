@@ -11,9 +11,13 @@ export function detectDrift(currentFindings: Finding[], learnings: Learning[]): 
   const flags: DriftFlag[] = [];
 
   for (const learning of learnings) {
-    if (!learning.dedupKey) continue;
+    if (!learning.dedupKey) {
+      continue;
+    }
     const matchingFinding = findingsByDedupKey.get(learning.dedupKey);
-    if (!matchingFinding) continue;
+    if (!matchingFinding) {
+      continue;
+    }
 
     if (learning.learningType === "intended_behavior") {
       flags.push({ learningId: learning.id, featureId: learning.featureId, reason: "previously_intended_now_failing" });

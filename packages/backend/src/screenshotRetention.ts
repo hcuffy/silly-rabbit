@@ -26,7 +26,9 @@ export async function enforceScreenshotStorageCap(screenshotDirectory: string, m
 
   let totalBytes = files.reduce((sum, file) => sum + file.size, 0);
   for (const file of files) {
-    if (totalBytes <= maxTotalBytes) break;
+    if (totalBytes <= maxTotalBytes) {
+      break;
+    }
     await unlink(file.path);
     totalBytes -= file.size;
   }

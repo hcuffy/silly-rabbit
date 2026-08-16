@@ -52,14 +52,15 @@ function emptyPlanJudgeClient(): AnthropicLike {
 
 async function waitUntil(predicate: () => Promise<boolean>): Promise<void> {
   for (let attempt = 0; attempt < 300; attempt++) {
-    if (await predicate()) return;
+    if (await predicate()) {
+      return;
+    }
     await new Promise((resolve) => setTimeout(resolve, 50));
   }
   throw new Error("condition not met in time");
 }
 
-describe("HTTP cancel/delete routes — explorer, session-replay, session-recordings " +
-  "(delete-cancel-spec.md phase 2)", () => {
+describe("HTTP cancel/delete routes — explorer, session-replay, session-recordings " + "(delete-cancel-spec.md phase 2)", () => {
   let mongod: MongoMemoryServer;
   let connection: MongoConnection;
   let app: FastifyInstance;
@@ -126,7 +127,9 @@ describe("HTTP cancel/delete routes — explorer, session-replay, session-record
       { sessionId: recording.sessionId },
       { ...deps, installRoutes: (context) => installMockTarget(context, "baseline", seedFor()) },
     );
-    if (!run) throw new Error("unreachable");
+    if (!run) {
+      throw new Error("unreachable");
+    }
     await waitUntil(async () => (await deps.sessionReplayRunRepo.get(run.id))?.status === "COMPLETED");
 
     const deleteResponse = await injectAuthed({ method: "DELETE", url: `/session-recordings/${recording.sessionId}` });
@@ -142,52 +145,67 @@ describe("HTTP cancel/delete routes — explorer, session-replay, session-record
     expect(response.statusCode).toBe(404);
   });
 
-  it("POST /explorer/runs/:id/cancel and DELETE /explorer/runs/:id wire through correctly (real " +
-    "chromium close already proven at the lifecycle-function level in phase 1 — this checks the " +
-    "route layer's status codes and cascade wiring specifically)", async () => {
-    const run = await startExplorerRun(
-      { featureId: "locations", sectionDescription: "warehouse", targetBaseUrl: `${MOCK_BASE_URL}${LIST_PATH}` },
-      {
-        ...deps,
-        judgeClientFactory: emptyPlanJudgeClient,
-        installRoutes: (context) => installMockTarget(context, "baseline", seedFor()),
-      },
-    );
-    await waitUntil(async () => (await deps.runRepo.get(run.id))?.status === "COMPLETED");
+  it(
+    "POST /explorer/runs/:id/cancel and DELETE /explorer/runs/:id wire through correctly (real " +
+      "chromium close already proven at the lifecycle-function level in phase 1 — this checks the " +
+      "route layer's status codes and cascade wiring specifically)",
+    async () => {
+      const run = await startExplorerRun(
+        { featureId: "locations", sectionDescription: "warehouse", targetBaseUrl: `${MOCK_BASE_URL}${LIST_PATH}` },
+        {
+          ...deps,
+          judgeClientFactory: emptyPlanJudgeClient,
+          installRoutes: (context) => installMockTarget(context, "baseline", seedFor()),
+        },
+      );
+      await waitUntil(async () => (await deps.runRepo.get(run.id))?.status === "COMPLETED");
 
-    const cancelResponse = await injectAuthed({ method: "POST", url: `/explorer/runs/${run.id}/cancel` });
-    expect(cancelResponse.statusCode).toBe(409);
+      const cancelResponse = await injectAuthed({ method: "POST", url: `/explorer/runs/${run.id}/cancel` });
+      expect(cancelResponse.statusCode).toBe(409);
 
-    const deleteResponse = await injectAuthed({ method: "DELETE", url: `/explorer/runs/${run.id}` });
-    expect(deleteResponse.statusCode).toBe(200);
-    expect(await deps.runRepo.get(run.id)).toBeNull();
-  }, 20_000);
+      const deleteResponse = await injectAuthed({ method: "DELETE", url: `/explorer/runs/${run.id}` });
+      expect(deleteResponse.statusCode).toBe(200);
+      expect(await deps.runRepo.get(run.id)).toBeNull();
+    },
+    20_000,
+  );
 
-  it("POST /session-replay/runs/:id/cancel on a real RUNNING run closes the real chromium instance " +
-    "and the status sticks at CANCELLED — verifies the sessionReplayOrchestrator fix through the " +
-    "route layer, not just the lifecycle function", async () => {
-    const recording: SessionRecording = {
-      sessionId: randomUUID(),
-      targetBaseUrl: MOCK_BASE_URL,
-      recordedAt: new Date(),
-      steps: [{ action: "navigate", selectorStrategy: "css", value: MOCK_BASE_URL, timestampOffsetMs: 0 }],
-    };
-    await deps.sessionRecordingRepo.create(recording);
+  it(
+    "POST /session-replay/runs/:id/cancel on a real RUNNING run closes the real chromium instance " +
+      "and the status sticks at CANCELLED — verifies the sessionReplayOrchestrator fix through the " +
+      "route layer, not just the lifecycle function",
+    async () => {
+      const recording: SessionRecording = {
+        sessionId: randomUUID(),
+        targetBaseUrl: MOCK_BASE_URL,
+        recordedAt: new Date(),
+        steps: [{ action: "navigate", selectorStrategy: "css", value: MOCK_BASE_URL, timestampOffsetMs: 0 }],
+      };
+      await deps.sessionRecordingRepo.create(recording);
 
-    const run = await startSessionReplayRun(
-      { sessionId: recording.sessionId },
-      { ...deps, installRoutes: async (context) => { await context.route("**/*", () => new Promise(() => {})); } },
-    );
-    if (!run) throw new Error("unreachable");
-    await waitUntil(async () => (await deps.sessionReplayRunRepo.get(run.id))?.status === "RUNNING");
-    await new Promise((resolve) => setTimeout(resolve, 400));
+      const run = await startSessionReplayRun(
+        { sessionId: recording.sessionId },
+        {
+          ...deps,
+          installRoutes: async (context) => {
+            await context.route("**/*", () => new Promise(() => {}));
+          },
+        },
+      );
+      if (!run) {
+        throw new Error("unreachable");
+      }
+      await waitUntil(async () => (await deps.sessionReplayRunRepo.get(run.id))?.status === "RUNNING");
+      await new Promise((resolve) => setTimeout(resolve, 400));
 
-    const cancelResponse = await injectAuthed({ method: "POST", url: `/session-replay/runs/${run.id}/cancel` });
-    expect(cancelResponse.statusCode).toBe(200);
+      const cancelResponse = await injectAuthed({ method: "POST", url: `/session-replay/runs/${run.id}/cancel` });
+      expect(cancelResponse.statusCode).toBe(200);
 
-    await waitUntil(async () => (await deps.sessionReplayRunRepo.get(run.id))?.status === "CANCELLED");
+      await waitUntil(async () => (await deps.sessionReplayRunRepo.get(run.id))?.status === "CANCELLED");
 
-    const deleteResponse = await injectAuthed({ method: "DELETE", url: `/session-replay/runs/${run.id}` });
-    expect(deleteResponse.statusCode).toBe(200);
-  }, 20_000);
+      const deleteResponse = await injectAuthed({ method: "DELETE", url: `/session-replay/runs/${run.id}` });
+      expect(deleteResponse.statusCode).toBe(200);
+    },
+    20_000,
+  );
 });
